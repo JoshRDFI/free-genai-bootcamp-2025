@@ -1,0 +1,24 @@
+Step 1: Vocabulary Table
+English	Japanese (Dictionary Form)	Romaji
+To see	見る	miru
+Raven	カラス	karasu
+Garden	庭	niwa
+This morning	今朝	kesa
+Step 2: Guiding Questions (in Japanese characters)
+Time Expression:
+時間の表現「今朝」はどこに入れますか？文の始めですか？
+「今朝」の後に何の助詞を使いますか？
+Main Clause:
+「カラス」を見たのは誰ですか？主語は必要ですか？
+「見る」は過去の出来事なので、どう変化させますか？
+「庭」で見たことを表すには、どの助詞を使いますか？「に」？「で」？
+質問文にするために、最後に何をつけますか？
+Step 3: Sentence Structure Hint (in Japanese characters)
+「[時間]、[あなたは][場所]でカラスを[見ました]か？」
+
+ヒント:
+「は」→ 主語（あなた）を示す
+「を」→ 目的語（カラス）を示す
+「で」→ 動作の場所（庭）を示す
+「か」→ 質問を示す
+時間の表現は文の最初に来ることが多いです。

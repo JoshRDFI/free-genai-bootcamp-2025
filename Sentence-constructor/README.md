@@ -1,5 +1,7 @@
 ## Sentence Constructor
 
+The best prompt came from Deepseek R1. Each of the 4 AI Assistants I tested -- ChatGTP's GPT-4o, Deepseek R1, MetaAI's Llama 3.1 405B, and Claude Sonnet 3.5 -- was tested against it's own prompt creation and the use of the Deepseek R1 prompt. 
+
 ### Technical Uncertainty
 
 #### How well can an AI-Powered Assistant perform a very broad task?
