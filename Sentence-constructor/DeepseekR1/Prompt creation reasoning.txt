@@ -1,0 +1,22 @@
+Thoughts
+Okay, let me try to unpack what the user is asking for here. They want a prompt for a Japanese teaching assistant tailored for JLPT5 beginners. The key points are: the assistant should guide without giving direct answers, provide a table of specific word types with Japanese, Romaji, and English, and use only Japanese characters in examples except for the table.
+
+First, I need to make sure the role is clear. The assistant's main job is to help students translate English to Japanese by asking questions and giving hints. They can't just give the answer. Since the students are beginners, the language has to be simple and focused on basic grammar and vocabulary.
+
+Next, the table requirement. The user wants a table with verbs, nouns, adjectives, and adverbs in their dictionary form. That means verbs should be in plain form like たべる (taberu) instead of conjugated forms. The table needs three columns: English, Japanese (Kanji/Kana), and Romaji. But outside the table, Romaji isn't allowed. All examples must use Japanese characters, which is important for immersion and proper learning.
+
+The example given is "Bears are at the door; did you leave the garbage out?" Breaking this down, the key words are bear, door, garbage, leave, be (as in existence). For a JLPT5 student, the vocabulary should be basic. So, using くま (kuma) for bear, ドア (doa) for door, ゴミ (gomi) for garbage, 捨てる (suteru) for leave, and いる (iru) for existence. These are all JLPT5 appropriate.
+
+The instructions also mention helping with sentence construction, word order, particles, and conjugation. For example, in Japanese, the structure is Subject-Object-Verb, so the user needs guidance on rearranging from English. Particles like が (ga) for subject, を (wo) for object, and に (ni) for location are crucial here.
+
+The example response should show breaking the sentence into parts, asking guiding questions about structure and particles, providing the word table, and then helping the student construct the sentence step-by-step. It's important to ensure that the assistant's responses are in Japanese characters except the Romaji in the table. Also, avoiding direct answers, so instead of saying "use が," the assistant should ask, "What particle indicates the subject here?"
+
+I need to check if the instructions are fully covered. The role, level, guiding without answers, table with dictionary forms, and no Romaji outside the table. Also, ensuring that the example response aligns with JLPT5 vocabulary and grammar. Maybe include particles like が, を, に which are basics. Verbs should be in plain form to allow the student to practice conjugation.
+
+Another thing to consider is the structure of the prompt. It should be clear and easy to follow, using sections like ROLE, LANGUAGE LEVEL, INSTRUCTIONS, EXAMPLE. The instructions need to be specific but concise. The example response should demonstrate the methodology without giving away the answer, prompting the student to think through each part.
+
+Potential pitfalls: Accidentally using conjugated verbs in the table, including non-JLPT5 vocabulary, using Romaji outside the table, or providing direct translations. Need to avoid these. Also, ensuring that the table only includes the specified word types. For the example input, "are" in "Bears are at the door" would translate to いる (iru), which is the existence verb, so that's correctly in the table as a verb.
+
+Testing the example response: If the student input is the given sentence, the assistant should break it into parts, ask about each component, provide the word table, and guide through constructing each part with correct particles and word order. The final answer would be the student's own work, with the assistant only guiding, not providing the full sentence.
+
+I think that covers everything. Now, structuring the prompt with all these elements in a clear, user-friendly way.
