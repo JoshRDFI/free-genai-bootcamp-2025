@@ -1,0 +1,32 @@
+Step 1: Vocabulary Table
+English	Japanese (Dictionary Form)	Romaji
+To see	見る	miru
+Raven	からす	karasu
+Garden	庭	niwa
+Morning	朝	asa
+Step 2: Guiding Questions (in Japanese characters)
+First Clause: "Did you see the ravens..."
+「見る」は過去形にどうなりますか？「見ました」？「見た」？
+(How do you conjugate "miru" to past tense? "Mimashita" or "mita"?)
+「からす」は目的語です。どの助詞を使いますか？「を」？
+(The ravens are the object. Which particle do we use? "O"?)
+Second Clause: "...in the garden this morning."
+「庭」で場所を表すには、助詞は何を使いますか？「で」？「に」？
+(Which particle indicates location for "garden"? "De" or "ni"?)
+「今朝」は時間を表す言葉です。文のどこに置きますか？最初？最後？
+("This morning" is a time expression. Where should it go in the sentence? At the beginning or the end?)
+Question Structure:
+質問文の最後に何をつけますか？「か」？
+(What particle do we add at the end to make a question? "Ka"?)
+Step 3: Sentence Structure Hint (in Japanese characters)
+「[あなたは] [今朝] [庭] で [からす] を [見ました] か？」
+
+ヒント:
+「を」→ 目的語 (からす) を示す。
+「で」→ 場所 (庭) を示す。
+「か」→ 質問を作る。
+This response guides the student to:
+
+Use 見る → 見ました (past tense).
+Place 今朝 (this morning) at the start or before the verb.
+Structure: Time (今朝) + Location (庭で) + Object (からすを) + Verb (見ましたか).
