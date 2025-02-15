@@ -1,84 +1,88 @@
-# api/main.py
-from fastapi import FastAPI, HTTPException, Depends
-from sqlalchemy import create_engine, desc, asc
-from sqlalchemy.orm import sessionmaker, Session
-from db.models import Base, Word, WordGroup, StudySession
-from pydantic import BaseModel
-import logging
+# backend/api/main.py
 
-app = FastAPI()
-engine = create_engine("sqlite:///./langportal.db")
-Base.metadata.create_all(bind=engine)
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+from flask import Flask, jsonify, request
+from flask_sqlalchemy import SQLAlchemy
+from db.models import db, Word, Group, WordGroup, StudyActivity, StudySession, WordReviewItem
 
-# Dependency to get a database session
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
+app = Flask(__name__)
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///words.db'
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+db.init_app(app)
 
-# Response models
-class WordResponse(BaseModel):
-    id: int
-    kanji: str
-    romaji: str
-    english: str
-    group_id: int
-    correct_count: int
-    wrong_count: int
+# Helper function to paginate results
+def paginate(query, page=1, per_page=100, sort_by=None, order='asc'):
+    if sort_by:
+        if order == 'asc':
+            query = query.order_by(getattr(query.model, sort_by).asc())
+        else:
+            query = query.order_by(getattr(query.model, sort_by).desc())
+    return query.paginate(page, per_page, error_out=False)
 
-class StudySessionResponse(BaseModel):
-    id: int
-    activity_type: str
-    group_id: int
-    duration: int
-    start_time: str
-    end_time: str
-    accuracy: float
+# Routes
 
-class WordGroupResponse(BaseModel):
-    id: int
-    name: str
+@app.route('/api/words', methods=['GET'])
+def get_words():
+    page = request.args.get('page', 1, type=int)
+    sort_by = request.args.get('sort_by', 'kanji', type=str)
+    order = request.args.get('order', 'asc', type=str)
+    query = Word.query
+    pagination = paginate(query, page, sort_by=sort_by, order=order)
+    return jsonify({
+        'items': [word.to_dict() for word in pagination.items],
+        'pagination': {
+            'current_page': pagination.page,
+            'total_pages': pagination.pages,
+            'total_items': pagination.total,
+            'items_per_page': pagination.per_page
+        }
+    })
 
-# Words endpoints
-@app.get("/words", response_model=dict)
-async def get_words(page: int = 1, per_page: int = 50, sort_by: str = "kanji", order: str = "asc", db: Session = Depends(get_db)):
-    try:
-        query = db.query(Word)
-        order_func = asc if order == "asc" else desc
-        total_count = query.count()
-        words = query.order_by(order_func(sort_by)) \
-                     .offset((page-1) * per_page) \
-                     .limit(per_page).all()
-        return {"data": [WordResponse.from_orm(word) for word in words], "page": page, "total_pages": (total_count + per_page - 1) // per_page}
-    except Exception as e:
-        logging.error(f"Error fetching words: {e}")
-        raise HTTPException(status_code=500, detail="Internal Server Error")
+@app.route('/api/groups', methods=['GET'])
+def get_groups():
+    page = request.args.get('page', 1, type=int)
+    sort_by = request.args.get('sort_by', 'name', type=str)
+    order = request.args.get('order', 'asc', type=str)
+    query = Group.query
+    pagination = paginate(query, page, sort_by=sort_by, order=order)
+    return jsonify({
+        'items': [group.to_dict() for group in pagination.items],
+        'pagination': {
+            'current_page': pagination.page,
+            'total_pages': pagination.pages,
+            'total_items': pagination.total,
+            'items_per_page': pagination.per_page
+        }
+    })
 
-# Sessions endpoints
-@app.get("/sessions", response_model=dict)
-async def get_sessions(page: int = 1, per_page: int = 25, db: Session = Depends(get_db)):
-    try:
-        query = db.query(StudySession)
-        total_count = query.count()
-        sessions = query.offset((page-1) * per_page) \
-                        .limit(per_page).all()
-        return {"data": [StudySessionResponse.from_orm(session) for session in sessions], "page": page, "total_pages": (total_count + per_page - 1) // per_page}
-    except Exception as e:
-        logging.error(f"Error fetching sessions: {e}")
-        raise HTTPException(status_code=500, detail="Internal Server Error")
+@app.route('/api/groups/<int:id>', methods=['GET'])
+def get_group(id):
+    group = Group.query.get_or_404(id)
+    return jsonify(group.to_dict())
 
-# Word Groups endpoints
-@app.get("/word-groups", response_model=dict)
-async def get_word_groups(page: int = 1, per_page: int = 25, db: Session = Depends(get_db)):
-    try:
-        query = db.query(WordGroup)
-        total_count = query.count()
-        groups = query.offset((page-1) * per_page) \
-                     .limit(per_page).all()
-        return {"data": [WordGroupResponse.from_orm(group) for group in groups], "page": page, "total_pages": (total_count + per_page - 1) // per_page}
-    except Exception as e:
-        logging.error(f"Error fetching word groups: {e}")
-        raise HTTPException(status_code=500, detail="Internal Server Error")
+@app.route('/api/study_sessions', methods=['POST'])
+def create_study_session():
+    data = request.json
+    group_id = data.get('group_id')
+    study_activity_id = data.get('study_activity_id')
+    if not group_id or not study_activity_id:
+        return jsonify({'error': 'group_id and study_activity_id are required'}), 400
+    session = StudySession(group_id=group_id, study_activity_id=study_activity_id)
+    db.session.add(session)
+    db.session.commit()
+    return jsonify(session.to_dict()), 201
+
+@app.route('/api/study_sessions/<int:id>/review', methods=['POST'])
+def log_review(id):
+    data = request.json
+    word_id = data.get('word_id')
+    correct = data.get('correct')
+    if not word_id or correct is None:
+        return jsonify({'error': 'word_id and correct are required'}), 400
+    session = StudySession.query.get_or_404(id)
+    review = WordReviewItem(word_id=word_id, study_session_id=session.id, correct=correct)
+    db.session.add(review)
+    db.session.commit()
+    return jsonify(review.to_dict()), 201
+
+if __name__ == '__main__':
+    app.run(debug=True)

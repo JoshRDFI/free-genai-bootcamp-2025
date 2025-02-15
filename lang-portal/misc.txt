@@ -56,3 +56,10 @@ db.close()
 pip install fastapi sqlalchemy uvicorn
 sqlite3 langportal.db < schema.sql
 python populate_db.py
+
+Initialize the database:
+python -c "from db.models import Base; from sqlalchemy import create_engine; engine = create_engine('sqlite:///words.db'); Base.metadata.create_all(engine)"
+
+Run the Flask application:
+python backend/api/main.py
+
