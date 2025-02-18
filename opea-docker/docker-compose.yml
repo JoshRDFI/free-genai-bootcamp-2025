@@ -1,17 +1,18 @@
-version: "3.8"
 
 services:
   ollama-server:
     image: ollama/ollama
     container_name: ollama-server
     ports:
-      - ${LLM_ENDPOINT_PORT:-8008}:11434
+      - "${LLM_ENDPOINT_PORT:-8008}:11434"
+    volumes:
+      - ollama_data:/root/.ollama
     environment:
-      no_proxy: ${no_proxy}
-      http_proxy: ${http_proxy}
-      https_proxy: ${https_proxy}
-      LLM_MODEL_ID: ${LLM_MODEL_ID}
-      host_ip: ${host_ip}
+      - no_proxy=${no_proxy}
+      - http_proxy=${http_proxy}
+      - https_proxy=${https_proxy}
+      - LLM_MODEL_ID=${LLM_MODEL_ID}
+    restart: unless-stopped
 
   opea-service:
     build:
@@ -21,12 +22,15 @@ services:
     ports:
       - "9000:9000"
     environment:
-      HUGGINGFACEHUB_API_TOKEN: ${HUGGINGFACEHUB_API_TOKEN}
-      LLM_ENDPOINT: http://ollama-server:11434
+      - LLM_ENDPOINT=${LLM_ENDPOINT}
     depends_on:
       - ollama-server
     volumes:
       - .:/app
+    restart: unless-stopped
+
+volumes:
+  ollama_data:
 
 networks:
   default:
