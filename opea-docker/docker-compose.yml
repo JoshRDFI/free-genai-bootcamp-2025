@@ -1,0 +1,37 @@
+
+services:
+  ollama-server:
+    image: ollama/ollama
+    container_name: ollama-server
+    ports:
+      - "${LLM_ENDPOINT_PORT:-8008}:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    environment:
+      - no_proxy=${no_proxy}
+      - http_proxy=${http_proxy}
+      - https_proxy=${https_proxy}
+      - LLM_MODEL_ID=${LLM_MODEL_ID}
+    restart: unless-stopped
+
+  opea-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: opea-service
+    ports:
+      - "9000:9000"
+    environment:
+      - LLM_ENDPOINT=${LLM_ENDPOINT}
+    depends_on:
+      - ollama-server
+    volumes:
+      - .:/app
+    restart: unless-stopped
+
+volumes:
+  ollama_data:
+
+networks:
+  default:
+    driver: bridge
