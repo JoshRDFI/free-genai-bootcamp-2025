@@ -1,0 +1,34 @@
+{
+    "api": {
+      "ollama_endpoint": "http://localhost:9000/v1/chat/completions",
+      "timeout": 30
+    },
+    "database": {
+      "path": "data/vocabulary.db"
+    },
+    "storage": {
+      "json_output_dir": "data/json_output",
+      "import_dir": "data/imports"
+    },
+    "jlpt_progression": {
+      "N5": {
+        "required_accuracy": 0.8,
+        "minimum_reviews": 50,
+        "next_level": "N4"
+      },
+      "N4": {
+        "required_accuracy": 0.8,
+        "minimum_reviews": 100,
+        "next_level": "N3"
+      }
+    },
+    "jlpt_words": {
+      "N5": [],  // This would be populated with actual N5 words
+      "N4": []   // This would be populated with actual N4 words
+    },
+    "study_settings": {
+      "daily_word_limit": 20,
+      "review_interval_days": 7,
+      "minimum_reviews_per_word": 5
+    }
+  }

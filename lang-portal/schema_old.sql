@@ -4,8 +4,7 @@ PRAGMA foreign_keys = ON;
 -- Word Groups Table
 CREATE TABLE IF NOT EXISTS word_groups (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    name TEXT NOT NULL UNIQUE,
-    level TEXT CHECK(level IN ('N5', 'N4', 'N3', 'N2', 'N1')) -- Optional: Associate groups with JLPT levels
+    name TEXT NOT NULL UNIQUE
 );
 
 -- Words Table with FTS (Full Text Search) support
@@ -43,14 +42,6 @@ CREATE TABLE IF NOT EXISTS word_review_items (
     FOREIGN KEY (session_id) REFERENCES study_sessions(id)
 );
 
--- Progression History Table
-CREATE TABLE IF NOT EXISTS progression_history (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    previous_level TEXT NOT NULL CHECK(previous_level IN ('N5', 'N4', 'N3', 'N2', 'N1')),
-    new_level TEXT NOT NULL CHECK(new_level IN ('N5', 'N4', 'N3', 'N2', 'N1')),
-    progressed_at DATETIME DEFAULT CURRENT_TIMESTAMP
-);
-
 -- Optimize common queries with indexes
 CREATE INDEX IF NOT EXISTS idx_words_group ON words(group_id);
 CREATE INDEX IF NOT EXISTS idx_sessions_activity ON study_sessions(activity_type);
@@ -62,7 +53,19 @@ CREATE TRIGGER IF NOT EXISTS update_word_counts
 AFTER INSERT ON word_review_items
 BEGIN
     UPDATE words SET
-    correct_count = correct_count + CASE WHEN NEW.correct THEN 1 ELSE 0 END,
-    wrong_count = wrong_count + CASE WHEN NEW.correct THEN 0 ELSE 1 END
+        correct_count = correct_count + CASE WHEN NEW.correct THEN 1 ELSE 0 END,
+        wrong_count = wrong_count + CASE WHEN NEW.correct THEN 0 ELSE 1 END
     WHERE id = NEW.word_id;
+
+CREATE TABLE IF NOT EXISTS progression_history (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    previous_level TEXT NOT NULL CHECK(previous_level IN ('N5', 'N4', 'N3', 'N2', 'N1')),
+    new_level TEXT NOT NULL CHECK(new_level IN ('N5', 'N4', 'N3', 'N2', 'N1')),
+    progressed_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id)
+);
+
+ALTER TABLE word_groups ADD COLUMN level TEXT CHECK(level IN ('N5', 'N4', 'N3', 'N2', 'N1'));
+
 END;

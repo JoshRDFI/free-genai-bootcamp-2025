@@ -1,11 +1,19 @@
 -- Enable foreign key constraints
 PRAGMA foreign_keys = ON;
 
+-- Users Table
+CREATE TABLE IF NOT EXISTS users (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    current_level TEXT NOT NULL CHECK(current_level IN ('N5', 'N4', 'N3', 'N2', 'N1')),
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
 -- Word Groups Table
 CREATE TABLE IF NOT EXISTS word_groups (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT NOT NULL UNIQUE,
-    level TEXT CHECK(level IN ('N5', 'N4', 'N3', 'N2', 'N1')) -- Optional: Associate groups with JLPT levels
+    level TEXT CHECK(level IN ('N5', 'N4', 'N3', 'N2', 'N1'))
 );
 
 -- Words Table with FTS (Full Text Search) support
@@ -25,11 +33,13 @@ CREATE TABLE IF NOT EXISTS study_sessions (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     activity_type TEXT NOT NULL CHECK(activity_type IN ('typing_tutor', 'adventure_mud', 'flashcards')),
     group_id INTEGER NOT NULL,
+    user_id INTEGER NOT NULL,
     duration INTEGER NOT NULL,  -- in minutes
     start_time DATETIME NOT NULL,
     end_time DATETIME NOT NULL,
     accuracy REAL NOT NULL CHECK(accuracy >= 0 AND accuracy <= 100),
-    FOREIGN KEY (group_id) REFERENCES word_groups(id)
+    FOREIGN KEY (group_id) REFERENCES word_groups(id),
+    FOREIGN KEY (user_id) REFERENCES users(id)
 );
 
 -- Word Review Items (for session results)
@@ -46,9 +56,11 @@ CREATE TABLE IF NOT EXISTS word_review_items (
 -- Progression History Table
 CREATE TABLE IF NOT EXISTS progression_history (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
     previous_level TEXT NOT NULL CHECK(previous_level IN ('N5', 'N4', 'N3', 'N2', 'N1')),
     new_level TEXT NOT NULL CHECK(new_level IN ('N5', 'N4', 'N3', 'N2', 'N1')),
-    progressed_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    progressed_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id)
 );
 
 -- Optimize common queries with indexes
