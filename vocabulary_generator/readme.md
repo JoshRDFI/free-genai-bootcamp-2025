@@ -20,7 +20,6 @@ vocabulary_generator/
 │   └── test_sentence_gen.py
 └── main.py              # Entry point
 
-
 # Japanese Language Learning System
 
 ## Overview
@@ -114,5 +113,3 @@ The system uses a JSON configuration file (`config.json`) to manage:
 - **Requests**
 - **PyKakasi**
 - **Pytest** (for testing)
-
-

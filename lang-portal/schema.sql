@@ -65,4 +65,34 @@ BEGIN
     correct_count = correct_count + CASE WHEN NEW.correct THEN 1 ELSE 0 END,
     wrong_count = wrong_count + CASE WHEN NEW.correct THEN 0 ELSE 1 END
     WHERE id = NEW.word_id;
+
+-- Transcripts Table
+CREATE TABLE IF NOT EXISTS transcripts (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    video_id TEXT NOT NULL UNIQUE,
+    transcript TEXT NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Generated Questions Table
+CREATE TABLE IF NOT EXISTS generated_questions (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    transcript_id INTEGER NOT NULL,
+    question TEXT NOT NULL,
+    options TEXT NOT NULL, -- JSON array of options
+    correct_option INTEGER NOT NULL, -- Index of the correct option (1-4)
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (transcript_id) REFERENCES transcripts(id)
+);
+
+-- User Feedback Table
+CREATE TABLE IF NOT EXISTS user_feedback (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    question_id INTEGER NOT NULL,
+    selected_option INTEGER NOT NULL,
+    correct BOOLEAN NOT NULL,
+    feedback TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (question_id) REFERENCES generated_questions(id)
+);    
 END;
