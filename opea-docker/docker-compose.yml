@@ -37,8 +37,18 @@ services:
       - .:/app
     restart: unless-stopped
 
+  chromadb:
+    image: chromadb/chromadb:latest
+    container_name: chromadb
+    volumes:
+      - chroma_data:/data
+    ports:
+      - "8050:8050"
+    restart: unless-stopped  
+
 volumes:
   ollama_data:
+  chroma_data:
 
 networks:
   default:

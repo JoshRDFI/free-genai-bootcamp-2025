@@ -23,7 +23,7 @@ class AudioGenerator:
                 # Initialize Coqui TTS with Japanese model
                 self.tts = TTS(model_name="tts_models/ja/kokoro/tacotron2-DDC", 
                              progress_bar=False,
-                             gpu=False)
+                             gpu=True)
             except Exception as e:
                 print(f"Error initializing Coqui TTS: {str(e)}")
                 print("Make sure you have installed TTS with: pip install TTS")

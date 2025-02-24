@@ -20,21 +20,21 @@ class ChatInterface:
         prompt = {
             "messages": [{
                 "role": "system",
-                "content": "You are a JLPT test question generator. Create listening comprehension questions in Japanese."
+                "content": "You are a JLPT test question generator. Create listening comprehension questions in Japanese for JLPT5."
             }, {
                 "role": "user",
                 "content": f"""
-                Create {num_questions} JLPT-style listening comprehension questions from this transcript:
+Create {num_questions} JLPT-style listening comprehension questions from this transcript:
 
-                {transcript}
+{transcript}
 
-                Format each question as:
-                - Introduction (situation setup)
-                - Conversation (the dialogue)
-                - Question (what is being asked)
-                - Options (4 possible answers)
+Format each question as:
+- Introduction (situation setup)
+- Conversation (the dialogue)
+- Question (what is being asked)
+- Options (4 possible answers)
 
-                Use natural, conversational Japanese appropriate for the JLPT level.
+Use natural, conversational Japanese appropriate for the JLPT level.
                 """
             }]
         }
@@ -62,10 +62,10 @@ class ChatInterface:
             }, {
                 "role": "user",
                 "content": f"""
-                Question: {json.dumps(question, ensure_ascii=False)}
-                Selected Answer: {selected_answer}
+Question: {json.dumps(question, ensure_ascii=False)}
+Selected Answer: {selected_answer}
 
-                Evaluate if the answer is correct and provide feedback in Japanese.
+Evaluate if the answer is correct and provide feedback in Japanese.
                 """
             }]
         }
@@ -96,13 +96,13 @@ class ChatInterface:
             }, {
                 "role": "user",
                 "content": f"""
-                Analyze this conversation and identify:
-                - Each unique speaker
-                - Their role (student, teacher, etc.)
-                - Their gender (for voice selection)
+Analyze this conversation and identify:
+- Each unique speaker
+- Their role (student, teacher, etc.)
+- Their gender (for voice selection)
 
-                Conversation:
-                {conversation}
+Conversation:
+{conversation}
                 """
             }]
         }
@@ -118,3 +118,20 @@ class ChatInterface:
         except Exception as e:
             print(f"Error analyzing conversation: {str(e)}")
             return []
+
+    def generate_embedding(self, text: str) -> Optional[List[float]]:
+        """
+        Generate embedding from text via Ollama.
+        This is similar to the one in KnowledgeBase, but provided here for chat-specific use.
+        """
+        try:
+            response = requests.post(
+                f"{self.endpoint}/embed",
+                headers=self.headers,
+                json={"text": text}
+            )
+            response.raise_for_status()
+            return response.json()["embedding"]
+        except Exception as e:
+            print(f"Error generating embedding in chat: {str(e)}")
+            return None

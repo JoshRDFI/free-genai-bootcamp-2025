@@ -75,7 +75,7 @@ CREATE TABLE IF NOT EXISTS transcripts (
 );
 
 -- Generated Questions Table
-CREATE TABLE IF NOT EXISTS generated_questions (
+CREATE TABLE IF NOT EXISTS questions (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     transcript_id INTEGER NOT NULL,
     question TEXT NOT NULL,
@@ -83,6 +83,15 @@ CREATE TABLE IF NOT EXISTS generated_questions (
     correct_option INTEGER NOT NULL, -- Index of the correct option (1-4)
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (transcript_id) REFERENCES transcripts(id)
+);
+
+-- Embeddings Table
+CREATE TABLE IF NOT EXISTS embeddings (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    text TEXT NOT NULL,
+    language TEXT NOT NULL CHECK(language IN ('ja', 'en')),
+    embedding VECTOR, -- Use ChromaDB for vector storage
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
 -- User Feedback Table

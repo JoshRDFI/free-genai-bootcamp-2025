@@ -18,6 +18,9 @@ listening-speaking/
 │   │   └── question_generator.py  # Generates listening comprehension questions.
 │   ├── tts/
 |   |   ├── coqui_models/ # Place downloaded Coqui TTS models here -- not currently available; not sure what files are needed
+|   |   |   ├── voices/
+|   |   |   |   ├── male_voice.wav
+|   |   |   |   └── female_voice.wav
 │   │   │   ├── model.pth
 │   │   │   ├── config.json
 │   │   │   ├── speakers.pth (if multi-speaker)
