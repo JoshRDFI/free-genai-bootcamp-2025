@@ -1,0 +1,4 @@
+listening-speaking/backend/tts/tts_models--ja--kokoro--tacotron2-DDC/model.pth
+listening-speaking/backend/tts/tts_models--ja--kokoro--tacotron2-DDC/scale_stats.npy
+listening-speaking/backend/tts/vocoder_models--ja--kokoro--hifigan_v1/model.pth
+listening-speaking/backend/tts/vocoder_models--ja--kokoro--hifigan_v1/scale_stats.npy
