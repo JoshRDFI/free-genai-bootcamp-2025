@@ -101,9 +101,9 @@ def render_youtube_input():
                     st.success("Video processed successfully!")
                     with st.expander("Show Transcript"):
                         st.text_area("Transcript", transcript, height=200)
-        if st.button("Generate Questions from Transcript"):
-            with st.spinner("Generating questions..."):
-                st.info("Question generation will be implemented soon!")
+                    if st.button("Generate Questions from Transcript"):
+                        with st.spinner("Generating questions..."):
+                            st.info("Question generation will be implemented soon!")
 
 def render_interactive_practice():
     """Render the interactive practice section"""
@@ -123,6 +123,14 @@ def render_interactive_practice():
             st.write(st.session_state.current_question['Conversation'])
             st.write("**Question:**")
             st.write(st.session_state.current_question['Question'])
+
+            # Display the image if available
+            image_path = st.session_state.current_question.get('image_path')
+            if image_path:
+                st.image(image_path, caption="Select the correct option.")
+            else:
+                st.info("No image available for this question.")
+
             options = st.session_state.current_question['Options']
             selected = st.radio(
                 "Choose your answer:",

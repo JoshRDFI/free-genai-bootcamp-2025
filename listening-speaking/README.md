@@ -24,6 +24,7 @@ listening-speaking/
 |   ├── data/
 |   │   ├── questions/          # Stores question text files 
 |   │   ├── transcripts/        # Stores transcript text files
+|   │   ├── images/             # Stores generated images
 │   │   └── stored_questions.json  # JSON list of questions that is added to with each transcription
 │   ├── youtube/
 │   │   ├── __init__.py
@@ -35,16 +36,30 @@ listening-speaking/
 │   │   ├── __init__.py
 │   │   ├── chat.py           # LLM chat interface (API at port 9000).
 │   │   └── question_generator.py  # Generates listening comprehension questions.
+│   ├── images/
+│   │   ├── __init__.py
+│   │   ├── image_generator.py    # Handles image generation
+│   │   └── prompt_generator.py   # Creates image prompts from questions
 │   ├── tts/
-|   |   ├── coqui_models/ # Place downloaded Coqui TTS models here
+|   |   ├── tts_models--ja--kokoro--tacotron2-DDC
 │   │   │   ├── model.pth
 │   │   │   ├── config.json
 │   │   │   ├── speakers.pth (if multi-speaker)
 │   │   │   └── vocoder.pth
+|   |   ├── vocoder_models--ja--kokoro--hifigan_v1
+│   │   │   ├── model.pth
+│   │   │   ├── config.json
+│   │   │   ├── speakers.pth (if multi-speaker)
+│   │   │   └── vocoder.pth
+|   |   ├── voices/
+|   |   |   ├── male_voice.wav
+|   |   |   └── female_voice.wav
 │   │   ├── __init__.py
 │   │   ├── audio_generator.py   # Generates audio using Piper TTS or Coqui TTS.
 │   │   └── tts_engine.py        # Wrapper for TTS engines.
 │   ├── database/
+|   |   ├── migrations/
+│   │   │   └── add_image_links.sql
 │   │   ├── __init__.py
 │   │   └── knowledge_base.py    # SQLite3 integration for transcripts, questions, etc.
 │   ├── agent/
@@ -58,7 +73,7 @@ listening-speaking/
 │       └── helper.py            # Common helper functions.
 ├── frontend/
 │   └── streamlit_app.py         # Streamlit frontend (to be built later).
-├── Dockerfile                   # Backend Dockerfile. -- unused ATM, for future integration
-├── docker-compose.yml           # Coordinates LLM container and backend services. -- unused ATM, for future integration
+├── Dockerfile                   # Backend Dockerfile.
+├── docker-compose.yml           # Coordinates LLM container and backend services.
 ├── requirements.txt             # Python dependencies.
 └── README.md                    # Project overview and setup instructions.

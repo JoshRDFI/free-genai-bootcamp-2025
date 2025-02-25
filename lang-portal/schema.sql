@@ -104,4 +104,23 @@ CREATE TABLE IF NOT EXISTS user_feedback (
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (question_id) REFERENCES generated_questions(id)
 );    
+
+-- Add image_path column to questions table
+ALTER TABLE questions ADD COLUMN image_path TEXT;
+
+-- Create table for tracking image generation
+CREATE TABLE IF NOT EXISTS image_generation (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    question_id INTEGER NOT NULL,
+    prompt TEXT NOT NULL,
+    status TEXT CHECK(status IN ('pending', 'completed', 'failed')) NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    completed_at DATETIME,
+    error_message TEXT,
+    FOREIGN KEY (question_id) REFERENCES questions(id)
+);
+
+-- Create index for faster lookups
+CREATE INDEX IF NOT EXISTS idx_image_generation_question ON image_generation(question_id);
+
 END;

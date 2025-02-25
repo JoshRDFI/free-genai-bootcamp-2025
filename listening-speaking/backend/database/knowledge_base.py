@@ -167,6 +167,36 @@ class KnowledgeBase:
             logger.error(f"Error retrieving transcript: {str(e)}")
             return None
 
+def get_question_by_id(self, question_id: int) -> Optional[Dict]:
+    """Retrieve a question by its ID."""
+    with sqlite3.connect(self.db_path) as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM questions WHERE id = ?", (question_id,))
+        row = cursor.fetchone()
+        if row:
+            return {
+                "id": row[0],
+                "video_id": row[1],
+                "section_num": row[2],
+                "introduction": row[3],
+                "conversation": row[4],
+                "question": row[5],
+                "options": json.loads(row[6]),
+                "correct_answer": row[7],
+                "image_path": row[8],
+                "created_at": row[9],
+            }
+        return None
+
+def update_question_image_path(self, question_id: int, image_path: str) -> bool:
+    """Update the image path for a question."""
+    with sqlite3.connect(self.db_path) as conn:
+        cursor = conn.cursor()
+        cursor.execute(
+            "UPDATE questions SET image_path = ? WHERE id = ?", (image_path, question_id)
+        )
+        return cursor.rowcount > 0
+
     def get_questions(self, video_id: str) -> List[Dict]:
         """Retrieve questions for a video"""
         try:
