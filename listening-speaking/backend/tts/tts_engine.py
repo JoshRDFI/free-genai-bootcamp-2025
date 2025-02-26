@@ -14,12 +14,11 @@ class TTSEngine:
         self.model_path = model_path
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
 
-        # Initialize TTS
+        # Initialize TTS with XTTS-v2.0.3
         try:
-            self.tts = TTS(model_path=os.path.join(model_path, "model.pth"),
-                          config_path=os.path.join(model_path, "config.json"),
-                          progress_bar=False,
-                          gpu=torch.cuda.is_available())
+            self.tts = TTS("tts_models/multilingual/xtts_v2",
+                           progress_bar=False,
+                           gpu=torch.cuda.is_available())
         except Exception as e:
             print(f"Error initializing TTS: {str(e)}")
             self.tts = None
@@ -33,16 +32,16 @@ class TTSEngine:
         return {}
 
     def generate_audio(self, text: str, output_path: str,
-                      speaker_id: Optional[int] = None,
-                      speed: float = 1.0) -> bool:
+                       speaker_wav: Optional[str] = None,
+                       language: str = "ja") -> bool:
         """
         Generate audio from text using Coqui TTS.
 
         Args:
-            text: Japanese text to convert to speech
-            output_path: Path to save the audio file
-            speaker_id: Speaker ID for multi-speaker models
-            speed: Speech rate multiplier
+        text: Japanese text to convert to speech
+        output_path: Path to save the audio file
+        speaker_wav: Path to the speaker reference audio file
+        language: Language code (e.g., "ja" for Japanese)
         """
         if not self.tts:
             print("TTS engine not initialized")
@@ -56,8 +55,8 @@ class TTSEngine:
             self.tts.tts_to_file(
                 text=text,
                 file_path=output_path,
-                speaker_id=speaker_id,
-                speed=speed
+                speaker_wav=speaker_wav,
+                language=language
             )
 
             return os.path.exists(output_path)
@@ -70,8 +69,8 @@ class TTSEngine:
         Generate a silent audio segment.
 
         Args:
-            duration_ms: Duration in milliseconds
-            output_path: Path to save the audio file
+        duration_ms: Duration in milliseconds
+        output_path: Path to save the audio file
         """
         try:
             sample_rate = 22050  # Standard sample rate for Coqui TTS
@@ -92,8 +91,8 @@ class TTSEngine:
         Combine multiple audio files into one.
 
         Args:
-            audio_files: List of audio file paths
-            output_path: Path to save the combined audio
+        audio_files: List of audio file paths
+        output_path: Path to save the combined audio
         """
         try:
             import soundfile as sf
@@ -130,7 +129,7 @@ class TTSEngine:
         Validate text before TTS processing.
 
         Args:
-            text: Text to validate
+        text: Text to validate
         """
         if not text:
             return False

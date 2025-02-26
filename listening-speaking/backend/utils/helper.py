@@ -1,13 +1,16 @@
 # backend/utils/helper.py
 
 import os
+import sys
 import json
 from datetime import datetime
 from typing import Dict, Any, Optional
 
+sys.path.insert(0, '/home/sage/free-genai-bootcamp-2025/listening-speaking')
+
 def ensure_directories_exist():
     """Ensure all required directories exist"""
-    base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    base_dir = sys.path.dirname(sys.path.dirname(sys.path.abspath(__file__)))
     directories = [
         os.path.join(base_dir, "data", "questions"),
         os.path.join(base_dir, "data", "transcripts"),

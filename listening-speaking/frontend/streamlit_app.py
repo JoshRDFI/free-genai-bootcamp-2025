@@ -8,7 +8,12 @@ from datetime import datetime
 from typing import Optional
 
 # Ensure the backend modules are accessible
-sys.path.append(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "backend"))
+# sys.path.insert(0, '/home/sage/free-genai-bootcamp-2025/listening-speaking/backend')
+
+# Add backend directory to PYTHONPATH
+backend_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'backend'))
+sys.path.insert(0, backend_path)
+
 from youtube.get_transcript import YouTubeTranscriptDownloader
 from llm.question_generator import QuestionGenerator
 from tts.audio_generator import AudioGenerator

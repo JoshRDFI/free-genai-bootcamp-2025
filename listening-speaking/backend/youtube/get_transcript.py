@@ -2,7 +2,9 @@
 
 from youtube_transcript_api import YouTubeTranscriptApi
 from typing import Optional, List, Dict
-import os
+# import os
+import sys
+sys.path.insert(0, '/home/sage/free-genai-bootcamp-2025/listening-speaking/backend')
 from backend.utils.helper import get_file_path
 
 class YouTubeTranscriptDownloader:
