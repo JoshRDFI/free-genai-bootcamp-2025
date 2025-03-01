@@ -3,11 +3,10 @@
 import sqlite3
 import json
 import logging
-import os
 from typing import List, Dict, Optional, Any
 from datetime import datetime
-from chromadb.config import Settings
-from chromadb.client import Client
+from chromadb import Client, Settings
+from pydantic_settings import BaseSettings
 import requests
 
 # Configure logging
