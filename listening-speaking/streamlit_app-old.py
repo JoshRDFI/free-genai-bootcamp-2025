@@ -1,4 +1,4 @@
-# frontend/streamlit_app.py
+# streamlit_app.py
 
 import streamlit as st
 import sys
@@ -9,9 +9,14 @@ from typing import Optional
 
 # Fix path configuration - use relative path from current file
 current_dir = os.path.dirname(os.path.abspath(__file__))
-project_root = os.path.dirname(current_dir)
-backend_dir = os.path.join(project_root, "backend")
-sys.path.insert(0, project_root)
+backend_dir = os.path.join(current_dir, "backend")
+sys.path.insert(0, backend_dir)
+
+# Create necessary directories
+os.makedirs(os.path.join(current_dir, "backend", "data", "questions"), exist_ok=True)
+os.makedirs(os.path.join(current_dir, "backend", "data", "transcripts"), exist_ok=True)
+os.makedirs(os.path.join(current_dir, "backend", "data", "images"), exist_ok=True)
+os.makedirs(os.path.join(current_dir, "backend", "data", "audio"), exist_ok=True)
 
 # Import backend modules
 from backend.youtube.get_transcript import YouTubeTranscriptDownloader
@@ -19,13 +24,6 @@ from backend.llm.question_generator import QuestionGenerator
 from backend.tts.audio_generator import AudioGenerator
 from backend.guardrails.rules import ContentGuardrails
 from backend.database.knowledge_base import KnowledgeBase
-
-# Create necessary directories
-os.makedirs(os.path.join(project_root, "backend", "data", "questions"), exist_ok=True)
-os.makedirs(os.path.join(project_root, "backend", "data", "transcripts"), exist_ok=True)
-os.makedirs(os.path.join(project_root, "backend", "data", "images"), exist_ok=True)
-os.makedirs(os.path.join(project_root, "backend", "data", "audio"), exist_ok=True)
-os.makedirs(os.path.join(project_root, "backend", "logs"), exist_ok=True)
 
 # Page config
 st.set_page_config(
@@ -62,8 +60,7 @@ def initialize_session_state():
 def load_stored_questions():
     """Load previously stored questions from JSON file"""
     questions_file = os.path.join(
-        os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-        "backend", "data", "stored_questions.json"
+        current_dir, "backend", "data", "stored_questions.json"
     )
     if os.path.exists(questions_file):
         with open(questions_file, 'r', encoding='utf-8') as f:
@@ -91,7 +88,7 @@ def process_youtube_url(url: str) -> Optional[str]:
 
         st.session_state.transcript_downloader.save_transcript(transcript, video_id)
         # Also save into the knowledge base (which now saves to ChromaDB and SQLite)
-        st.session_state.knowledge_base.save_transcript(video_id, transcript_text)
+        st.session_state.knowledge_base.save_transcript(video_id, transcript_text, "ja")
         return transcript_text
     except Exception as e:
         st.error(f"Error processing video: {str(e)}")
@@ -138,7 +135,7 @@ def render_interactive_practice():
 
             # Display the image if available
             image_path = st.session_state.current_question.get('image_path')
-            if image_path:
+            if image_path and os.path.exists(image_path):
                 st.image(image_path, caption="Select the correct option.")
             else:
                 st.info("No image available for this question.")
@@ -151,24 +148,40 @@ def render_interactive_practice():
             )
             if selected and st.button("Submit Answer"):
                 selected_index = options.index(selected) + 1
-                st.session_state.feedback = st.session_state.question_generator.get_feedback(
-                    st.session_state.current_question,
-                    selected_index
-                )
+                # Use a simple feedback mechanism since get_feedback isn't implemented
+                correct_answer = st.session_state.current_question.get('correct_answer', 1)
+                if selected_index == correct_answer:
+                    st.session_state.feedback = "正解です！(Correct!)"
+                else:
+                    st.session_state.feedback = f"不正解です。正解は {correct_answer} です。(Incorrect. The correct answer is {correct_answer}.)"
                 st.experimental_rerun()
     with col2:
         st.write("**Audio Controls**")
-        if st.session_state.current_audio:
+        if st.session_state.current_audio and os.path.exists(st.session_state.current_audio):
             st.audio(st.session_state.current_audio)
         elif st.session_state.current_question:
             if st.button("Generate Audio"):
                 with st.spinner("Generating audio..."):
-                    audio_file = st.session_state.audio_generator.generate_audio(
-                        st.session_state.current_question
-                    )
-                    if audio_file:
-                        st.session_state.current_audio = audio_file
-                        st.experimental_rerun()
+                    # Modified to match the AudioGenerator implementation
+                    try:
+                        # Extract conversation text
+                        conversation_text = st.session_state.current_question.get('Conversation', '')
+                        # Generate a filename based on the question
+                        filename = f"question_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+                        output_file = os.path.join(current_dir, "backend", "data", "audio", f"{filename}.wav")
+                        os.makedirs(os.path.dirname(output_file), exist_ok=True)
+                        
+                        # Generate audio using the male voice
+                        audio_file = st.session_state.audio_generator.generate_audio_with_male_voice(
+                            conversation_text, output_file
+                        )
+                        if audio_file:
+                            st.session_state.current_audio = audio_file
+                            st.experimental_rerun()
+                        else:
+                            st.error("Failed to generate audio")
+                    except Exception as e:
+                        st.error(f"Error generating audio: {str(e)}")
 
 def render_sidebar():
     """Render sidebar with saved questions"""
@@ -177,11 +190,11 @@ def render_sidebar():
         stored_questions = load_stored_questions()
         if stored_questions:
             for qid, qdata in stored_questions.items():
-                button_label = f"{qdata['practice_type']} - {qdata['topic']}\n{qdata['created_at']}"
+                button_label = f"{qdata.get('practice_type', 'Practice')} - {qdata.get('topic', 'Topic')}\n{qdata.get('created_at', '')}"
                 if st.button(button_label, key=qid):
                     st.session_state.current_question = qdata['question']
-                    st.session_state.current_practice_type = qdata['practice_type']
-                    st.session_state.current_topic = qdata['topic']
+                    st.session_state.current_practice_type = qdata.get('practice_type')
+                    st.session_state.current_topic = qdata.get('topic')
                     st.session_state.current_audio = qdata.get('audio_file')
                     st.session_state.feedback = None
                     st.experimental_rerun()
@@ -198,14 +211,15 @@ def render_rag_visualization():
             results = kb.find_similar_transcripts(query)
             st.write("Similarity Results:")
             # Display the results nicely
-            if results and "documents" in results:
+            if results and "documents" in results and results["documents"]:
                 docs = results["documents"][0]
                 distances = results.get("distances", [[]])[0]
                 # Results are returned as a list of documents and their similarity scores
                 for i, doc in enumerate(docs):
                     st.markdown(f"**Result {i+1}:**")
                     st.write(f"Text: {doc}")
-                    st.write(f"Distance: {distances[i]}")
+                    if i < len(distances):
+                        st.write(f"Distance: {distances[i]}")
             else:
                 st.info("No similar transcripts found.")
         else:
@@ -214,6 +228,11 @@ def render_rag_visualization():
 def main():
     st.title("JLPT Listening Practice")
     initialize_session_state()
+    
+    # Display feedback if available
+    if st.session_state.feedback:
+        st.success(st.session_state.feedback)
+    
     render_sidebar()
     tab1, tab2, tab3 = st.tabs(["Process YouTube Video", "Practice Questions", "RAG Visualization"])
     with tab1:

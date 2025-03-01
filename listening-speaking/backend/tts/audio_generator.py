@@ -43,12 +43,48 @@ class AudioGenerator:
         os.makedirs(self.audio_dir, exist_ok=True)
 
     def generate_audio_with_male_voice(self, text: str, output_file: str) -> Optional[str]:
-        """Generate audio using the male voice reference"""
-        return self.generate_audio(text, output_file, speaker_wav=self.male_voice_path)
+        """
+        Generate audio using the male voice reference.
+
+        Args:
+            text (str): The text to convert to speech
+            output_file (str): Path to save the generated audio
+
+        Returns:
+            Optional[str]: Path to the generated audio file, or None if failed
+        """
+        try:
+            # Ensure the male voice reference file exists
+            if not os.path.exists(self.male_voice_path):
+                print(f"Male voice reference file not found: {self.male_voice_path}")
+                return None
+
+            return self.generate_audio(text, output_file, speaker_wav=self.male_voice_path)
+        except Exception as e:
+            print(f"Error generating audio with male voice: {str(e)}")
+            return None
 
     def generate_audio_with_female_voice(self, text: str, output_file: str) -> Optional[str]:
-        """Generate audio using the female voice reference"""
-        return self.generate_audio(text, output_file, speaker_wav=self.female_voice_path)
+        """
+        Generate audio using the female voice reference.
+
+        Args:
+            text (str): The text to convert to speech
+            output_file (str): Path to save the generated audio
+
+        Returns:
+            Optional[str]: Path to the generated audio file, or None if failed
+        """
+        try:
+            # Ensure the female voice reference file exists
+            if not os.path.exists(self.female_voice_path):
+                print(f"Female voice reference file not found: {self.female_voice_path}")
+                return None
+
+            return self.generate_audio(text, output_file, speaker_wav=self.female_voice_path)
+        except Exception as e:
+            print(f"Error generating audio with female voice: {str(e)}")
+            return None
 
     def sanitize_text(self, text: str) -> str:
         """

@@ -3,11 +3,11 @@
 import sqlite3
 import json
 import logging
+import os
 from typing import List, Dict, Optional, Any
 from datetime import datetime
-from chromadb import Client, Settings
-from pydantic_settings import BaseSettings
 import requests
+from chromadb import Client, Settings
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -17,12 +17,19 @@ class KnowledgeBase:
     def __init__(self, db_path: str = "backend/database/knowledge_base.db"):
         """Initialize the database connection and ChromaDB client"""
         self.db_path = db_path
+
+        # Create database directory if it doesn't exist
+        os.makedirs(os.path.dirname(self.db_path), exist_ok=True)
+
         self._create_tables()
 
         # Initialize ChromaDB
+        chroma_dir = os.path.join(os.path.dirname(self.db_path), "chroma")
+        os.makedirs(chroma_dir, exist_ok=True)
+
         self.chroma_client = Client(Settings(
             chroma_db_impl="duckdb+parquet",
-            persist_directory="backend/database/chroma"
+            persist_directory=chroma_dir
         ))
 
         # Create or get collections
@@ -36,28 +43,48 @@ class KnowledgeBase:
 
             # Create transcripts table
             cursor.execute("""
-                CREATE TABLE IF NOT EXISTS transcripts (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    video_id TEXT NOT NULL,
-                    content TEXT NOT NULL,
-                    language TEXT NOT NULL,
-                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-                )
+            CREATE TABLE IF NOT EXISTS transcripts (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                video_id TEXT NOT NULL UNIQUE,
+                content TEXT NOT NULL,
+                language TEXT NOT NULL DEFAULT 'ja',
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            )
             """)
 
             # Create questions table
             cursor.execute("""
-                CREATE TABLE IF NOT EXISTS questions (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    video_id TEXT NOT NULL,
-                    section_num INTEGER NOT NULL,
-                    introduction TEXT,
-                    conversation TEXT,
-                    question TEXT NOT NULL,
-                    options TEXT,
-                    correct_answer INTEGER,
-                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-                )
+            CREATE TABLE IF NOT EXISTS questions (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                video_id TEXT NOT NULL,
+                section_num INTEGER NOT NULL,
+                introduction TEXT,
+                conversation TEXT,
+                question TEXT NOT NULL,
+                options TEXT NOT NULL,
+                correct_answer INTEGER NOT NULL DEFAULT 1,
+                image_path TEXT,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            )
+            """)
+
+            # Create image_generation table if it doesn't exist
+            cursor.execute("""
+            CREATE TABLE IF NOT EXISTS image_generation (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                question_id INTEGER NOT NULL,
+                prompt TEXT NOT NULL,
+                status TEXT CHECK(status IN ('pending', 'completed', 'failed')) NOT NULL,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                completed_at DATETIME,
+                error_message TEXT,
+                FOREIGN KEY (question_id) REFERENCES questions(id)
+            )
+            """)
+
+            # Create index for faster lookups
+            cursor.execute("""
+            CREATE INDEX IF NOT EXISTS idx_image_generation_question ON image_generation(question_id)
             """)
 
             conn.commit()
@@ -83,15 +110,16 @@ class KnowledgeBase:
             return False
 
     def _save_transcript_sqlite(self, video_id: str, content: str, language: str) -> bool:
-        """Save transcript to SQLite (original implementation)"""
+        """Save transcript to SQLite"""
         try:
             with sqlite3.connect(self.db_path) as conn:
                 cursor = conn.cursor()
                 cursor.execute(
-                    "INSERT INTO transcripts (video_id, content, language) VALUES (?, ?, ?)",
+                    "INSERT OR REPLACE INTO transcripts (video_id, content, language) VALUES (?, ?, ?)",
                     (video_id, content, language)
                 )
-                return True
+                conn.commit()
+            return True
         except Exception as e:
             logger.error(f"Error saving transcript to SQLite: {str(e)}")
             return False
@@ -120,10 +148,18 @@ class KnowledgeBase:
             return False
 
     def _save_question_sqlite(self, question_data: Dict[str, Any]) -> bool:
-        """Save question to SQLite (original implementation)"""
+        """Save question to SQLite"""
         try:
             with sqlite3.connect(self.db_path) as conn:
                 cursor = conn.cursor()
+
+                # Ensure options is a JSON string
+                options = question_data.get("options", [])
+                if isinstance(options, list):
+                    options_json = json.dumps(options, ensure_ascii=False)
+                else:
+                    options_json = options
+
                 cursor.execute(
                     """
                     INSERT INTO questions
@@ -133,14 +169,15 @@ class KnowledgeBase:
                     (
                         question_data["video_id"],
                         question_data["section_num"],
-                        question_data.get("introduction"),
-                        question_data.get("conversation"),
+                        question_data.get("introduction", ""),
+                        question_data.get("conversation", ""),
                         question_data["question"],
-                        json.dumps(question_data.get("options", []), ensure_ascii=False),
+                        options_json,
                         question_data.get("correct_answer", 1)
                     )
                 )
-                return True
+                conn.commit()
+            return True
         except Exception as e:
             logger.error(f"Error saving question to SQLite: {str(e)}")
             return False
@@ -166,35 +203,45 @@ class KnowledgeBase:
             logger.error(f"Error retrieving transcript: {str(e)}")
             return None
 
-def get_question_by_id(self, question_id: int) -> Optional[Dict]:
-    """Retrieve a question by its ID."""
-    with sqlite3.connect(self.db_path) as conn:
-        cursor = conn.cursor()
-        cursor.execute("SELECT * FROM questions WHERE id = ?", (question_id,))
-        row = cursor.fetchone()
-        if row:
-            return {
-                "id": row[0],
-                "video_id": row[1],
-                "section_num": row[2],
-                "introduction": row[3],
-                "conversation": row[4],
-                "question": row[5],
-                "options": json.loads(row[6]),
-                "correct_answer": row[7],
-                "image_path": row[8],
-                "created_at": row[9],
-            }
-        return None
+    def get_question_by_id(self, question_id: int) -> Optional[Dict]:
+        """Retrieve a question by its ID."""
+        try:
+            with sqlite3.connect(self.db_path) as conn:
+                cursor = conn.cursor()
+                cursor.execute("SELECT * FROM questions WHERE id = ?", (question_id,))
+                row = cursor.fetchone()
+                if row:
+                    return {
+                        "id": row[0],
+                        "video_id": row[1],
+                        "section_num": row[2],
+                        "introduction": row[3],
+                        "conversation": row[4],
+                        "question": row[5],
+                        "options": json.loads(row[6]) if row[6] else [],
+                        "correct_answer": row[7],
+                        "image_path": row[8],
+                        "created_at": row[9],
+                    }
+                return None
+        except Exception as e:
+            logger.error(f"Error retrieving question by ID: {str(e)}")
+            return None
 
-def update_question_image_path(self, question_id: int, image_path: str) -> bool:
-    """Update the image path for a question."""
-    with sqlite3.connect(self.db_path) as conn:
-        cursor = conn.cursor()
-        cursor.execute(
-            "UPDATE questions SET image_path = ? WHERE id = ?", (image_path, question_id)
-        )
-        return cursor.rowcount > 0
+    def update_question_image_path(self, question_id: int, image_path: str) -> bool:
+        """Update the image path for a question."""
+        try:
+            with sqlite3.connect(self.db_path) as conn:
+                cursor = conn.cursor()
+                cursor.execute(
+                    "UPDATE questions SET image_path = ? WHERE id = ?",
+                    (image_path, question_id)
+                )
+                conn.commit()
+                return cursor.rowcount > 0
+        except Exception as e:
+            logger.error(f"Error updating question image path: {str(e)}")
+            return False
 
     def get_questions(self, video_id: str) -> List[Dict]:
         """Retrieve questions for a video"""
@@ -202,7 +249,7 @@ def update_question_image_path(self, question_id: int, image_path: str) -> bool:
             with sqlite3.connect(self.db_path) as conn:
                 cursor = conn.cursor()
                 cursor.execute(
-                    "SELECT * FROM questions WHERE video_id = ? ORDER BY created_at",
+                    "SELECT * FROM questions WHERE video_id = ? ORDER BY section_num",
                     (video_id,)
                 )
                 questions = []
@@ -216,7 +263,8 @@ def update_question_image_path(self, question_id: int, image_path: str) -> bool:
                         "question": row[5],
                         "options": json.loads(row[6]) if row[6] else [],
                         "correct_answer": row[7],
-                        "created_at": row[8]
+                        "image_path": row[8],
+                        "created_at": row[9]
                     })
                 return questions
         except Exception as e:
@@ -226,8 +274,9 @@ def update_question_image_path(self, question_id: int, image_path: str) -> bool:
     def generate_embedding(self, text: str) -> Optional[List[float]]:
         """Generate embedding using Ollama API"""
         try:
+            # Use the Docker service name instead of localhost
             response = requests.post(
-                "http://localhost:11434/api/embed",
+                "http://ollama-server:11434/api/embed",
                 json={"model": "llama-3.2", "prompt": text}
             )
             response.raise_for_status()
@@ -279,3 +328,89 @@ def update_question_image_path(self, question_id: int, image_path: str) -> bool:
     def find_similar_transcripts(self, query_text: str, top_k: int = 5) -> List[Dict]:
         """Find similar transcripts using ChromaDB"""
         return self.query_similar(query_text, "transcripts", top_k)
+
+    def log_image_generation_request(self, question_id: int, prompt: str) -> Optional[int]:
+        """Log an image generation request"""
+        try:
+            with sqlite3.connect(self.db_path) as conn:
+                cursor = conn.cursor()
+                cursor.execute(
+                    """
+                    INSERT INTO image_generation
+                    (question_id, prompt, status)
+                    VALUES (?, ?, 'pending')
+                    """,
+                    (question_id, prompt)
+                )
+                conn.commit()
+                return cursor.lastrowid
+        except Exception as e:
+            logger.error(f"Error logging image generation request: {str(e)}")
+            return None
+
+    def update_image_generation_status(self, request_id: int, status: str,
+                                      error_message: Optional[str] = None) -> bool:
+        """Update the status of an image generation request"""
+        try:
+            with sqlite3.connect(self.db_path) as conn:
+                cursor = conn.cursor()
+                if status == 'completed':
+                    cursor.execute(
+                        """
+                        UPDATE image_generation
+                        SET status = ?, completed_at = CURRENT_TIMESTAMP
+                        WHERE id = ?
+                        """,
+                        (status, request_id)
+                    )
+                elif status == 'failed':
+                    cursor.execute(
+                        """
+                        UPDATE image_generation
+                        SET status = ?, completed_at = CURRENT_TIMESTAMP, error_message = ?
+                        WHERE id = ?
+                        """,
+                        (status, error_message, request_id)
+                    )
+                else:
+                    cursor.execute(
+                        """
+                        UPDATE image_generation
+                        SET status = ?
+                        WHERE id = ?
+                        """,
+                        (status, request_id)
+                    )
+                conn.commit()
+                return cursor.rowcount > 0
+        except Exception as e:
+            logger.error(f"Error updating image generation status: {str(e)}")
+            return False
+
+    def get_pending_image_requests(self) -> List[Dict]:
+        """Get all pending image generation requests"""
+        try:
+            with sqlite3.connect(self.db_path) as conn:
+                cursor = conn.cursor()
+                cursor.execute(
+                    """
+                    SELECT ig.id, ig.question_id, ig.prompt, q.video_id, q.section_num
+                    FROM image_generation ig
+                    JOIN questions q ON ig.question_id = q.id
+                    WHERE ig.status = 'pending'
+                    ORDER BY ig.created_at
+                    """
+                )
+                requests = []
+                for row in cursor.fetchall():
+                    requests.append({
+                        "id": row[0],
+                        "question_id": row[1],
+                        "prompt": row[2],
+                        "video_id": row[3],
+                        "section_num": row[4]
+                    })
+                return requests
+        except Exception as e:
+            logger.error(f"Error getting pending image requests: {str(e)}")
+            return []

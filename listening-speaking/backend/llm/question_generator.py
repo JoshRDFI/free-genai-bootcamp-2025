@@ -1,15 +1,36 @@
 # backend/llm/question_generator.py
 
-import json
-import os
-from typing import Dict, List, Optional
+import requests
+import logging
+from typing import Dict, List, Optional, Any
 from datetime import datetime
+import os
+import json
+from backend.llm.chat import ChatInterface
 from backend.utils.helper import (
     generate_timestamp,
     get_file_path,
     load_json_file,
     save_json_file
 )
+
+# Get the absolute path to the logs directory
+logs_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "logs")
+# Create logs directory if it doesn't exist
+os.makedirs(logs_dir, exist_ok=True)
+# Create the log file path
+log_file = os.path.join(logs_dir, "question_generator.log")
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.FileHandler("backend/logs/question_generator.log"),
+        logging.StreamHandler()
+    ]
+)
+logger = logging.getLogger(__name__)
 
 class QuestionGenerator:
     def __init__(self):
@@ -103,9 +124,149 @@ class QuestionGenerator:
             print(f"Error saving question: {str(e)}")
             return False
 
-    def generate_questions(self, transcript: List[Dict], video_id: str) -> List[Dict]:
-        """Generate questions from transcript"""
-        # This is a placeholder - actual implementation would use LLM
-        questions = []
-        # Add implementation for question generation using LLM
-        return questions
+    def generate_questions(self, transcript: List[Dict], video_id: str, num_questions: int = 3) -> List[Dict]:
+        """
+        Generate questions from transcript using LLM.
+
+        Args:
+            transcript (List[Dict]): The transcript data
+            video_id (str): The YouTube video ID
+            num_questions (int): Number of questions to generate
+
+        Returns:
+            List[Dict]: List of generated questions
+        """
+        try:
+            # Create logs directory if it doesn't exist
+            os.makedirs("backend/logs", exist_ok=True)
+
+            # Extract text from transcript
+            transcript_text = "\n".join(item["text"] for item in transcript)
+
+            # Initialize chat interface
+            chat = ChatInterface()
+
+            # Generate questions using the chat interface
+            logger.info(f"Generating {num_questions} questions for video {video_id}")
+            raw_questions = chat.generate_questions(transcript_text, num_questions)
+
+            if not raw_questions:
+                logger.error("Failed to generate questions")
+                self._log_error("generate_questions", "Failed to generate questions", video_id)
+                return []
+
+            # Process and format each question
+            processed_questions = []
+            for i, raw_question in enumerate(raw_questions, 1):
+                try:
+                    # Format the question
+                    question = self._process_raw_question(raw_question, video_id, i)
+                    if question:
+                        # Save the question
+                        if self.save_question(question, video_id, i):
+                            processed_questions.append(question)
+                        else:
+                            logger.error(f"Failed to save question {i}")
+                except Exception as e:
+                    logger.error(f"Error processing question {i}: {str(e)}")
+                    self._log_error("process_question", str(e), video_id, section_num=i)
+
+            logger.info(f"Generated {len(processed_questions)} questions for video {video_id}")
+            return processed_questions
+        except Exception as e:
+            logger.error(f"Error generating questions: {str(e)}")
+            self._log_error("generate_questions", str(e), video_id)
+            return []
+
+    def _process_raw_question(self, raw_question: Dict, video_id: str, section_num: int) -> Optional[Dict]:
+        """
+        Process a raw question from the LLM into the required format.
+
+        Args:
+            raw_question (Dict): The raw question data from LLM
+            video_id (str): The YouTube video ID
+            section_num (int): The section number
+
+        Returns:
+            Optional[Dict]: Processed question or None if failed
+        """
+        try:
+            # Extract fields from raw question
+            question_data = {
+                "video_id": video_id,
+                "section_num": section_num,
+                "introduction": raw_question.get("introduction", ""),
+                "conversation": raw_question.get("conversation", ""),
+                "question": raw_question.get("question", ""),
+                "options": raw_question.get("options", []),
+                "correct_answer": raw_question.get("correct_answer", 1)
+            }
+
+            # Validate question data
+            if not question_data["question"] or not question_data["options"]:
+                logger.error(f"Invalid question data for section {section_num}")
+                return None
+
+            return question_data
+        except Exception as e:
+            logger.error(f"Error processing raw question: {str(e)}")
+            return None
+
+    def _log_error(self, function_name: str, error_message: str, video_id: str = "", section_num: int = 0):
+        """
+        Log error to a JSON file.
+
+        Args:
+            function_name (str): The function where the error occurred
+            error_message (str): The error message
+            video_id (str): The YouTube video ID
+            section_num (int): The section number
+        """
+        try:
+            error_log_file = "backend/logs/errors.json"
+
+            # Create directory if it doesn't exist
+            os.makedirs(os.path.dirname(error_log_file), exist_ok=True)
+
+            # Load existing errors
+            errors = []
+            if os.path.exists(error_log_file):
+                with open(error_log_file, 'r', encoding='utf-8') as f:
+                    errors = json.load(f)
+
+            # Add new error
+            errors.append({
+                "timestamp": datetime.now().isoformat(),
+                "function": function_name,
+                "error": error_message,
+                "video_id": video_id,
+                "section_num": section_num
+            })
+
+            # Save errors
+            with open(error_log_file, 'w', encoding='utf-8') as f:
+                json.dump(errors, f, ensure_ascii=False, indent=2)
+        except Exception as e:
+            logger.error(f"Error logging error: {str(e)}")
+
+    def get_feedback(self, question: Dict, selected_answer: int) -> str:
+        """
+        Get feedback for a selected answer.
+
+        Args:
+            question (Dict): The question dictionary
+            selected_answer (int): The selected answer index (1-based)
+
+        Returns:
+            str: Feedback message
+        """
+        try:
+            correct_answer = question.get('correct_answer', 1)
+            if selected_answer == correct_answer:
+                return "正解です！(Correct!)"
+            else:
+                return f"不正解です。正解は {correct_answer} です。(Incorrect. The correct answer is {correct_answer}.)"
+        except Exception as e:
+            logger.error(f"Error generating feedback: {str(e)}")
+            return "エラーが発生しました。(An error occurred.)"
+    

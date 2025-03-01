@@ -9,7 +9,11 @@ listening-speaking/
 |   │   ├── questions/          # Stores question text files 
 |   │   ├── transcripts/        # Stores transcript text files
 |   │   ├── images/             # Stores generated images
+|   │   ├── audio/              # Stores generated audio
 │   │   └── stored_questions.json  # JSON list of questions that is added to with each transcription
+│   ├── logs/
+│   │   ├── question_generator.log
+│   │   └── errors.json
 │   ├── youtube/
 │   │   ├── __init__.py
 │   │   └── get_transcript.py # Handles YouTube transcript extraction.
@@ -34,7 +38,7 @@ listening-speaking/
 │   │   ├── test_tts.py          # Tests to make sure Coqui TTS with XTTS is working.
 │   │   └── tts_engine.py        # Wrapper for TTS engines.
 │   ├── database/
-|   |   ├── migrations/
+|   |   ├── migrations/         # possibly unneeded
 │   │   │   └── add_image_links.sql 
 │   │   ├── __init__.py
 │   │   └── knowledge_base.py    # SQLite3 integration for transcripts, questions, etc.
@@ -47,7 +51,7 @@ listening-speaking/
 │   └── utils/
 │       ├── __init__.py
 │       └── helper.py            # Common helper functions.
-├── streamlit_app.py             # Streamlit frontend (to be built later).
+├── run.py                       # run frontend.
 └── README.md                    # Project overview and setup instructions.
 
 writing-practice/
