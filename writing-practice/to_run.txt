@@ -1,0 +1,11 @@
+Installation and Setup Instructions:
+Install the required packages:
+pip install -r requirements.txt
+
+Make sure your Ollama Docker container is running and accessible at http://localhost:11434
+
+Run the Streamlit app:
+streamlit run app.py
+
+Access the app with a group_id parameter:
+http://localhost:8501/?group_id=your_group_id
