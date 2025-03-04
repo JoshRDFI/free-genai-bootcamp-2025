@@ -1,3 +1,6 @@
+Free GenAI BootCamp 2025
+JPLT Language Tutor Project
+
 listening-speaking/
 ├── backend/
 │   ├── __init__.py
@@ -6,7 +9,11 @@ listening-speaking/
 |   │   ├── questions/          # Stores question text files 
 |   │   ├── transcripts/        # Stores transcript text files
 |   │   ├── images/             # Stores generated images
+|   │   ├── audio/              # Stores generated audio
 │   │   └── stored_questions.json  # JSON list of questions that is added to with each transcription
+│   ├── logs/
+│   │   ├── question_generator.log
+│   │   └── errors.json
 │   ├── youtube/
 │   │   ├── __init__.py
 │   │   └── get_transcript.py # Handles YouTube transcript extraction.
@@ -22,25 +29,17 @@ listening-speaking/
 │   │   ├── image_generator.py    # Handles image generation
 │   │   └── prompt_generator.py   # Creates image prompts from questions
 │   ├── tts/
-|   |   ├── tts_models--ja--kokoro--tacotron2-DDC
-│   │   │   ├── model.pth
-│   │   │   ├── config.json
-│   │   │   ├── speakers.pth (if multi-speaker)
-│   │   │   └── vocoder.pth
-|   |   ├── vocoder_models--ja--kokoro--hifigan_v1
-│   │   │   ├── model.pth
-│   │   │   ├── config.json
-│   │   │   ├── speakers.pth (if multi-speaker)
-│   │   │   └── vocoder.pth
+|   |   ├── XTTS/
 |   |   ├── voices/
 |   |   |   ├── male_voice.wav
 |   |   |   └── female_voice.wav
 │   │   ├── __init__.py
-│   │   ├── audio_generator.py   # Generates audio using Piper TTS or Coqui TTS.
+│   │   ├── audio_generator.py   # Generates audio using Coqui TTS.
+│   │   ├── test_tts.py          # Tests to make sure Coqui TTS with XTTS is working.
 │   │   └── tts_engine.py        # Wrapper for TTS engines.
 │   ├── database/
-|   |   ├── migrations/
-│   │   │   └── add_image_links.sql
+|   |   ├── migrations/         # possibly unneeded
+│   │   │   └── add_image_links.sql 
 │   │   ├── __init__.py
 │   │   └── knowledge_base.py    # SQLite3 integration for transcripts, questions, etc.
 │   ├── agent/
@@ -52,9 +51,87 @@ listening-speaking/
 │   └── utils/
 │       ├── __init__.py
 │       └── helper.py            # Common helper functions.
-├── frontend/
-│   └── streamlit_app.py         # Streamlit frontend (to be built later).
-├── Dockerfile                   # Backend Dockerfile.
-├── docker-compose.yml           # Coordinates LLM container and backend services.
-├── requirements.txt             # Python dependencies.
+├── run.py                       # run frontend.
 └── README.md                    # Project overview and setup instructions.
+
+writing-practice/
+├── data/
+│   ├── vocabulary/
+│   │   ├── basic_greetings.json
+│   │   ├── food_dining.json
+│   │   ├── travel_phrases.json
+│   │   ├── daily_activities.json
+│   │   └── numbers_time.json
+│   └── cache/
+│       ├── sentences.json  # Cache for generated sentences
+│       └── translations.json  # Cache for translations
+├── app.py                       # Main application script
+└── requirements.txt            # Add into main requirements
+
+opea-docker/
+|   ├── Dockerfile                   # Dockerfile.
+|   ├── docker-compose.yml           # Coordinates LLM container and backend services.
+|   ├── requirements.txt             # Python dependencies.
+|   ├── app.py                       # Startup and connections
+|   └── .env                         # environment files
+
+vocabulary_generator/
+|   ├── config/
+│   │   └── config.json
+|   ├── data/
+│   │   └── imports/
+│   │   └── json_output/
+|   ├── src/
+|   |   ├── converter.py
+|   |   ├── database.py
+|   |   ├── generator.py
+|   |   ├── sentence_gen.py
+|   |   └── validator.py
+|   ├── tests/
+|   |   ├── test_database.py
+|   |   ├── test_generator.py
+|   |   └── test_validator.py
+|   ├── main.py
+|   ├── requirements.txt            # Combined into main requirements.txt file
+|   └── readme.md                   # Description file
+
+lang-portal/
+|   ├── backend/
+|   |   ├── api/
+|   │   │   └── main.py
+|   |   ├── db/
+|   |   |   ├── models.py
+|   │   │   └── populate_db.py
+│   │   └── prompt-backend.md
+|   ├── frontend/
+|   |   ├── src/
+|   |   |   ├── components/
+|   |   |   |   ├── Breadcrumbs.tsx
+|   |   |   |   ├── Layout.tsx
+|   |   |   |   ├── Navigation.tsx
+|   |   |   |   ├── PaginationControls.tsx
+|   |   |   |   ├── StudyActivityCard.tsx
+|   |   |   |   └── WordsTable.tsx
+|   |   |   ├── pages/
+|   |   |   |   ├── Dashboard.tsx
+|   |   |   |   ├── SessionShowPage.tsx
+|   |   |   |   ├── SessionsPage.tsx
+|   |   |   |   ├── StudyActivitiesPage.tsx
+|   |   |   |   ├── StudyActivityShowPage.tsx
+|   |   |   |   ├── WordGroupShowPage.tsx
+|   |   |   |   ├── WordGroupsPage.tsx
+|   |   |   |   ├── WordShowPage.tsx
+|   |   |   |   ├── WordsIndex.tsx
+|   |   |   |   └── WordsPage.py
+|   |   |   ├── services/
+|   |   |   |   └── api.ts
+|   |   |   ├── types/
+|   |   |   |   └── sessions.ts
+|   |   |   ├── utils/
+|   |   |   |   └── index.ts
+|   ├── app.tsx
+|   ├── langportal.db               # SQLite3 DB
+|   ├── main.py
+|   ├── schema.sql
+|   ├── prompt-frontend.md          # Prompt used to generate much of this part of the program
+|   └── readme.md                   # Description file
