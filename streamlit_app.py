@@ -1,4 +1,4 @@
-# frontend/streamlit_app.py
+# streamlit_app.py
 
 import streamlit as st
 import sys
@@ -7,25 +7,19 @@ import json
 from datetime import datetime
 from typing import Optional
 
-# Ensure the backend modules are accessible
-backend_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'backend'))
-sys.path.insert(0, backend_path)
-
-# Add writing-practice to path
-writing_practice_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'writing-practice'))
-sys.path.insert(0, writing_practice_path)
+# Ensure the project root is in the path
+project_root = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, project_root)
 
 # Import backend modules
-from youtube.get_transcript import YouTubeTranscriptDownloader
-from llm.question_generator import QuestionGenerator
-from tts.audio_generator import AudioGenerator
-from guardrails.rules import ContentGuardrails
+from listening_speaking.backend.youtube.get_transcript import YouTubeTranscriptDownloader
+from listening_speaking.backend.llm.question_generator import QuestionGenerator
+from listening_speaking.backend.tts.audio_generator import AudioGenerator
+from listening_speaking.backend.guardrails.rules import ContentGuardrails
 from database.knowledge_base import KnowledgeBase
 
-# Import writing practice modules
-# Assuming these exist in your writing-practice/app.py
-from writing_practice.vocabulary import VocabularyManager
-from writing_practice.sentence_generator import SentenceGenerator
+# Import writing practice module
+from writing_practice.interface import WritingPractice
 
 # Page config
 st.set_page_config(
@@ -46,6 +40,8 @@ def initialize_session_state():
         st.session_state.guardrails = ContentGuardrails()
     if 'knowledge_base' not in st.session_state:
         st.session_state.knowledge_base = KnowledgeBase()
+    if 'writing_practice' not in st.session_state:
+        st.session_state.writing_practice = WritingPractice()
     if 'current_question' not in st.session_state:
         st.session_state.current_question = None
     if 'feedback' not in st.session_state:
@@ -58,11 +54,6 @@ def initialize_session_state():
         st.session_state.current_audio = None
     if 'current_transcript' not in st.session_state:
         st.session_state.current_transcript = None
-    # Initialize writing practice components
-    if 'vocabulary_manager' not in st.session_state:
-        st.session_state.vocabulary_manager = VocabularyManager()
-    if 'sentence_generator' not in st.session_state:
-        st.session_state.sentence_generator = SentenceGenerator()
 
 # [Keep your existing functions: load_stored_questions, process_youtube_url,
 #  render_youtube_input, render_interactive_practice, render_sidebar, render_rag_visualization]
@@ -72,11 +63,11 @@ def render_writing_practice():
     st.subheader("Writing Practice")
 
     # Category selection
-    categories = ["Basic Greetings", "Food & Dining", "Travel Phrases", "Daily Activities", "Numbers & Time"]
+    categories = st.session_state.writing_practice.get_vocabulary_categories()
     selected_category = st.selectbox("Select Vocabulary Category", categories)
 
     # Get vocabulary for selected category
-    vocabulary = st.session_state.vocabulary_manager.get_vocabulary(selected_category.lower().replace(" & ", "_").replace(" ", "_"))
+    vocabulary = st.session_state.writing_practice.get_vocabulary(selected_category)
 
     # Display vocabulary section
     with st.expander("Vocabulary List", expanded=True):
@@ -101,7 +92,7 @@ def render_writing_practice():
     if practice_type == "Sentence Completion":
         # Sentence completion exercise
         if "current_sentence" not in st.session_state:
-            st.session_state.current_sentence = st.session_state.sentence_generator.generate_sentence(selected_category)
+            st.session_state.current_sentence = st.session_state.writing_practice.generate_sentence_completion(selected_category)
 
         sentence = st.session_state.current_sentence
         blank_word = sentence["blank_word"]
@@ -119,12 +110,12 @@ def render_writing_practice():
                 st.error(f"Not quite. The correct answer is '{blank_word['kanji']}' ({blank_word['romaji']})")
 
         if st.button("New Sentence"):
-            st.session_state.current_sentence = st.session_state.sentence_generator.generate_sentence(selected_category)
+            st.session_state.current_sentence = st.session_state.writing_practice.generate_sentence_completion(selected_category)
             st.experimental_rerun()
 
     else:  # Translation Exercise
         if "current_translation" not in st.session_state:
-            st.session_state.current_translation = st.session_state.sentence_generator.generate_translation_exercise(selected_category)
+            st.session_state.current_translation = st.session_state.writing_practice.generate_translation_exercise(selected_category)
 
         translation = st.session_state.current_translation
         japanese_sentence = translation["japanese"]
@@ -136,8 +127,7 @@ def render_writing_practice():
         user_translation = st.text_area("Your translation:")
 
         if st.button("Check Translation"):
-            # Simple check - in a real app you'd want more sophisticated comparison
-            similarity = st.session_state.sentence_generator.check_translation_similarity(
+            similarity = st.session_state.writing_practice.check_translation_similarity(
                 user_translation, english_translation
             )
             if similarity > 0.7:
@@ -146,7 +136,7 @@ def render_writing_practice():
                 st.warning(f"Your translation differs from the reference. Consider: '{english_translation}'")
 
         if st.button("New Translation"):
-            st.session_state.current_translation = st.session_state.sentence_generator.generate_translation_exercise(selected_category)
+            st.session_state.current_translation = st.session_state.writing_practice.generate_translation_exercise(selected_category)
             st.experimental_rerun()
 
 def main():
