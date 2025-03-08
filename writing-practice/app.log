@@ -1,0 +1,59 @@
+2025-03-07 23:40:14,122 - writing_practice - INFO - Initializing Writing Practice App...
+2025-03-07 23:40:14,123 - writing_practice - INFO - Prompts loaded successfully
+2025-03-07 23:40:14,124 - writing_practice - WARNING - Database file not found at /home/sage/free-genai-bootcamp-2025/writing-practice/data/db.sqlite3. Creating new database.
+2025-03-07 23:40:14,132 - writing_practice - INFO - Created new database with basic schema
+2025-03-07 23:40:14,132 - writing_practice - INFO - Database connection successful. Required tables found or created.
+2025-03-07 23:40:14,133 - writing_practice - INFO - Created sample words for group 1
+2025-03-07 23:40:14,133 - writing_practice - INFO - Created sample words for group 2
+2025-03-07 23:40:14,133 - writing_practice - INFO - Created sample words for group 3
+2025-03-07 23:40:14,134 - writing_practice - INFO - Created sample words for group 4
+2025-03-07 23:40:14,134 - writing_practice - INFO - Created sample words for group 5
+2025-03-07 23:40:14,136 - writing_practice - INFO - Created default vocabulary groups and sample words
+2025-03-07 23:40:14,136 - writing_practice - INFO - Loaded 5 vocabulary groups
+2025-03-07 23:40:14,179 - writing_practice - INFO - Fetching vocabulary for group 1...
+2025-03-07 23:40:14,179 - writing_practice - INFO - Attempting to fetch from API at http://localhost:5000/api/groups/1/raw
+2025-03-07 23:40:14,181 - writing_practice - WARNING - Failed to fetch from API: HTTPConnectionPool(host='localhost', port=5000): Max retries exceeded with url: /api/groups/1/raw (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x7f0e301fc310>: Failed to establish a new connection: [Errno 111] Connection refused')). Falling back to database.
+2025-03-07 23:40:14,181 - writing_practice - INFO - Fetching vocabulary from database for group 1
+2025-03-07 23:40:14,182 - writing_practice - INFO - Loaded 5 words from database for group 1
+2025-03-07 23:40:14,182 - writing_practice - INFO - Current group ID: 1
+2025-03-07 23:40:14,182 - writing_practice - INFO - Vocabulary count: 5
+2025-03-07 23:40:25,425 - writing_practice - INFO - Initializing Writing Practice App...
+2025-03-07 23:40:25,427 - writing_practice - INFO - Prompts loaded successfully
+2025-03-07 23:40:25,427 - writing_practice - INFO - Database connection successful. Required tables found or created.
+2025-03-07 23:40:25,428 - writing_practice - INFO - Loaded 5 vocabulary groups
+2025-03-07 23:40:25,428 - writing_practice - INFO - Fetching vocabulary for group 1...
+2025-03-07 23:40:25,428 - writing_practice - INFO - Attempting to fetch from API at http://localhost:5000/api/groups/1/raw
+2025-03-07 23:40:25,429 - writing_practice - WARNING - Failed to fetch from API: HTTPConnectionPool(host='localhost', port=5000): Max retries exceeded with url: /api/groups/1/raw (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x7f0e301fc730>: Failed to establish a new connection: [Errno 111] Connection refused')). Falling back to database.
+2025-03-07 23:40:25,429 - writing_practice - INFO - Fetching vocabulary from database for group 1
+2025-03-07 23:40:25,429 - writing_practice - INFO - Loaded 5 words from database for group 1
+2025-03-07 23:40:25,430 - writing_practice - INFO - Current group ID: 1
+2025-03-07 23:40:25,430 - writing_practice - INFO - Vocabulary count: 5
+2025-03-07 23:40:30,841 - writing_practice - INFO - Initializing Writing Practice App...
+2025-03-07 23:40:30,842 - writing_practice - INFO - Fetching vocabulary for group 1...
+2025-03-07 23:40:30,842 - writing_practice - INFO - Attempting to fetch from API at http://localhost:5000/api/groups/1/raw
+2025-03-07 23:40:30,843 - writing_practice - WARNING - Failed to fetch from API: HTTPConnectionPool(host='localhost', port=5000): Max retries exceeded with url: /api/groups/1/raw (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x7f0e301fd4e0>: Failed to establish a new connection: [Errno 111] Connection refused')). Falling back to database.
+2025-03-07 23:40:30,843 - writing_practice - INFO - Fetching vocabulary from database for group 1
+2025-03-07 23:40:30,844 - writing_practice - INFO - Loaded 5 words from database for group 1
+2025-03-07 23:40:30,844 - writing_practice - INFO - Current group ID: 1
+2025-03-07 23:40:30,844 - writing_practice - INFO - Vocabulary count: 5
+2025-03-07 23:40:30,846 - writing_practice - INFO - Prompts loaded successfully
+2025-03-07 23:40:30,846 - writing_practice - INFO - Database connection successful. Required tables found or created.
+2025-03-07 23:40:30,846 - writing_practice - INFO - Loaded 5 vocabulary groups
+2025-03-07 23:40:30,846 - writing_practice - INFO - Fetching vocabulary for group 1...
+2025-03-07 23:40:30,847 - writing_practice - INFO - Attempting to fetch from API at http://localhost:5000/api/groups/1/raw
+2025-03-07 23:40:30,848 - writing_practice - WARNING - Failed to fetch from API: HTTPConnectionPool(host='localhost', port=5000): Max retries exceeded with url: /api/groups/1/raw (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x7f0e301fd780>: Failed to establish a new connection: [Errno 111] Connection refused')). Falling back to database.
+2025-03-07 23:40:30,848 - writing_practice - INFO - Fetching vocabulary from database for group 1
+2025-03-07 23:40:30,848 - writing_practice - INFO - Loaded 5 words from database for group 1
+2025-03-07 23:40:30,848 - writing_practice - INFO - Current group ID: 1
+2025-03-07 23:40:30,849 - writing_practice - INFO - Vocabulary count: 5
+2025-03-07 23:40:33,555 - writing_practice - INFO - Initializing Writing Practice App...
+2025-03-07 23:40:33,557 - writing_practice - INFO - Prompts loaded successfully
+2025-03-07 23:40:33,557 - writing_practice - INFO - Database connection successful. Required tables found or created.
+2025-03-07 23:40:33,558 - writing_practice - INFO - Loaded 5 vocabulary groups
+2025-03-07 23:40:33,558 - writing_practice - INFO - Fetching vocabulary for group 1...
+2025-03-07 23:40:33,558 - writing_practice - INFO - Attempting to fetch from API at http://localhost:5000/api/groups/1/raw
+2025-03-07 23:40:33,560 - writing_practice - WARNING - Failed to fetch from API: HTTPConnectionPool(host='localhost', port=5000): Max retries exceeded with url: /api/groups/1/raw (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x7f0e301fdf30>: Failed to establish a new connection: [Errno 111] Connection refused')). Falling back to database.
+2025-03-07 23:40:33,560 - writing_practice - INFO - Fetching vocabulary from database for group 1
+2025-03-07 23:40:33,560 - writing_practice - INFO - Loaded 5 words from database for group 1
+2025-03-07 23:40:33,561 - writing_practice - INFO - Current group ID: 1
+2025-03-07 23:40:33,561 - writing_practice - INFO - Vocabulary count: 5

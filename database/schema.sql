@@ -65,6 +65,34 @@ BEGIN
     correct_count = correct_count + CASE WHEN NEW.correct THEN 1 ELSE 0 END,
     wrong_count = wrong_count + CASE WHEN NEW.correct THEN 0 ELSE 1 END
     WHERE id = NEW.word_id;
+END;
+
+-- Sentences Table for Writing Practice
+CREATE TABLE IF NOT EXISTS sentences (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    word_id INTEGER NOT NULL,
+    japanese TEXT NOT NULL,
+    english TEXT NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (word_id) REFERENCES words(id)
+);
+
+-- Writing Practice Submissions Table
+CREATE TABLE IF NOT EXISTS writing_submissions (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    sentence_id INTEGER NOT NULL,
+    transcription TEXT NOT NULL,
+    translation TEXT NOT NULL,
+    grade TEXT CHECK(grade IN ('S', 'A', 'B', 'C', 'N/A')) NOT NULL,
+    feedback TEXT NOT NULL,
+    submitted_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (sentence_id) REFERENCES sentences(id)
+);
+
+-- Create indexes for faster lookups
+CREATE INDEX IF NOT EXISTS idx_sentences_word ON sentences(word_id);
+CREATE INDEX IF NOT EXISTS idx_submissions_sentence ON writing_submissions(sentence_id);
+CREATE INDEX IF NOT EXISTS idx_submissions_grade ON writing_submissions(grade);
 
 -- Transcripts Table
 CREATE TABLE IF NOT EXISTS transcripts (
@@ -81,16 +109,22 @@ CREATE TABLE IF NOT EXISTS questions (
     question TEXT NOT NULL,
     options TEXT NOT NULL, -- JSON array of options
     correct_option INTEGER NOT NULL, -- Index of the correct option (1-4)
+    image_path TEXT, -- Path to associated image
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (transcript_id) REFERENCES transcripts(id)
 );
 
 -- Embeddings Table
+-- Note: SQLite doesn't have a native Vector type, so we store embeddings as BLOBs
+-- When using this table, the application should:
+-- 1. For storing: Serialize vectors to binary (e.g., using numpy.ndarray.tobytes())
+-- 2. For retrieval: Deserialize from binary (e.g., using numpy.frombuffer())
 CREATE TABLE IF NOT EXISTS embeddings (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     text TEXT NOT NULL,
     language TEXT NOT NULL CHECK(language IN ('ja', 'en')),
-    embedding VECTOR, -- Use ChromaDB for vector storage
+    embedding BLOB NOT NULL, -- Serialized vector data
+    vector_dimensions INTEGER NOT NULL, -- Store the dimensions for proper deserialization
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -102,11 +136,8 @@ CREATE TABLE IF NOT EXISTS user_feedback (
     correct BOOLEAN NOT NULL,
     feedback TEXT,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (question_id) REFERENCES generated_questions(id)
+    FOREIGN KEY (question_id) REFERENCES questions(id)
 );    
-
--- Add image_path column to questions table
-ALTER TABLE questions ADD COLUMN image_path TEXT;
 
 -- Create table for tracking image generation
 CREATE TABLE IF NOT EXISTS image_generation (
@@ -122,5 +153,3 @@ CREATE TABLE IF NOT EXISTS image_generation (
 
 -- Create index for faster lookups
 CREATE INDEX IF NOT EXISTS idx_image_generation_question ON image_generation(question_id);
-
-END;
