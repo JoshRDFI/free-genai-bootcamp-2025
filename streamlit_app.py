@@ -1,4 +1,4 @@
-# frontend/streamlit_app.py
+# streamlit_app.py
 
 import streamlit as st
 import sys
@@ -7,22 +7,23 @@ import json
 from datetime import datetime
 from typing import Optional
 
-# Ensure the backend modules are accessible
-# sys.path.insert(0, '/home/sage/free-genai-bootcamp-2025/listening-speaking/backend')
+# Ensure the project root is in the path
+project_root = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, project_root)
 
-# Add backend directory to PYTHONPATH
-backend_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'backend'))
-sys.path.insert(0, backend_path)
-
-from youtube.get_transcript import YouTubeTranscriptDownloader
-from llm.question_generator import QuestionGenerator
-from tts.audio_generator import AudioGenerator
-from guardrails.rules import ContentGuardrails
+# Import backend modules
+from listening_speaking.backend.youtube.get_transcript import YouTubeTranscriptDownloader
+from listening_speaking.backend.llm.question_generator import QuestionGenerator
+from listening_speaking.backend.tts.audio_generator import AudioGenerator
+from listening_speaking.backend.guardrails.rules import ContentGuardrails
 from database.knowledge_base import KnowledgeBase
+
+# Import writing practice module
+from writing_practice.interface import WritingPractice
 
 # Page config
 st.set_page_config(
-    page_title="JLPT Listening Practice",
+    page_title="JLPT Language Practice",
     page_icon="🎧",
     layout="wide"
 )
@@ -39,6 +40,8 @@ def initialize_session_state():
         st.session_state.guardrails = ContentGuardrails()
     if 'knowledge_base' not in st.session_state:
         st.session_state.knowledge_base = KnowledgeBase()
+    if 'writing_practice' not in st.session_state:
+        st.session_state.writing_practice = WritingPractice()
     if 'current_question' not in st.session_state:
         st.session_state.current_question = None
     if 'feedback' not in st.session_state:
@@ -52,169 +55,110 @@ def initialize_session_state():
     if 'current_transcript' not in st.session_state:
         st.session_state.current_transcript = None
 
-def load_stored_questions():
-    """Load previously stored questions from JSON file"""
-    questions_file = os.path.join(
-        os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-        "backend", "data", "stored_questions.json"
-    )
-    if os.path.exists(questions_file):
-        with open(questions_file, 'r', encoding='utf-8') as f:
-            return json.load(f)
-    return {}
+# [Keep your existing functions: load_stored_questions, process_youtube_url,
+#  render_youtube_input, render_interactive_practice, render_sidebar, render_rag_visualization]
 
-def process_youtube_url(url: str) -> Optional[str]:
-    """Process YouTube URL and return transcript"""
-    try:
-        transcript = st.session_state.transcript_downloader.get_transcript(url)
-        if not transcript:
-            st.error("Failed to download transcript")
-            return None
+def render_writing_practice():
+    """Render the writing practice section"""
+    st.subheader("Writing Practice")
 
-        video_id = st.session_state.transcript_downloader.extract_video_id(url)
-        if not video_id:
-            st.error("Invalid YouTube URL")
-            return None
+    # Category selection
+    categories = st.session_state.writing_practice.get_vocabulary_categories()
+    selected_category = st.selectbox("Select Vocabulary Category", categories)
 
-        transcript_text = "\n".join(item["text"] for item in transcript)
-        is_valid, reason = st.session_state.guardrails.validate_transcript(transcript_text)
-        if not is_valid:
-            st.error(f"Content validation failed: {reason}")
-            return None
+    # Get vocabulary for selected category
+    vocabulary = st.session_state.writing_practice.get_vocabulary(selected_category)
 
-        st.session_state.transcript_downloader.save_transcript(transcript, video_id)
-        # Also save into the knowledge base (which now saves to ChromaDB and SQLite)
-        st.session_state.knowledge_base.save_transcript(video_id, transcript_text)
-        return transcript_text
-    except Exception as e:
-        st.error(f"Error processing video: {str(e)}")
-        return None
+    # Display vocabulary section
+    with st.expander("Vocabulary List", expanded=True):
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            st.write("**Kanji**")
+            for word in vocabulary:
+                st.write(word["kanji"])
+        with col2:
+            st.write("**Romaji**")
+            for word in vocabulary:
+                st.write(word["romaji"])
+        with col3:
+            st.write("**English**")
+            for word in vocabulary:
+                st.write(word["english"])
 
-def render_youtube_input():
-    """Render YouTube URL input section"""
-    st.subheader("Process YouTube Video")
-    youtube_url = st.text_input(
-        "Enter YouTube Video URL",
-        placeholder="https://www.youtube.com/watch?v=..."
-    )
-    if youtube_url:
-        if st.button("Process Video"):
-            with st.spinner("Processing video..."):
-                transcript = process_youtube_url(youtube_url)
-                if transcript:
-                    st.session_state.current_transcript = transcript
-                    st.success("Video processed successfully!")
-                    with st.expander("Show Transcript"):
-                        st.text_area("Transcript", transcript, height=200)
-                    if st.button("Generate Questions from Transcript"):
-                        with st.spinner("Generating questions..."):
-                            st.info("Question generation will be implemented soon!")
+    # Practice section
+    st.subheader("Practice Writing")
+    practice_type = st.radio("Select Practice Type", ["Sentence Completion", "Translation Exercise"])
 
-def render_interactive_practice():
-    """Render the interactive practice section"""
-    st.subheader("Practice Questions")
-    practice_type = st.selectbox("Select Practice Type", ["Dialogue Practice", "Phrase Matching"])
-    topics = {
-        "Dialogue Practice": ["Daily Conversation", "Shopping", "Restaurant", "Travel", "School/Work"],
-        "Phrase Matching": ["Announcements", "Instructions", "Weather Reports", "News Updates"]
-    }
-    topic = st.selectbox("Select Topic", topics[practice_type])
-    col1, col2 = st.columns([2, 1])
-    with col1:
-        if st.session_state.current_question:
-            st.write("**Introduction:**")
-            st.write(st.session_state.current_question['Introduction'])
-            st.write("**Conversation:**")
-            st.write(st.session_state.current_question['Conversation'])
-            st.write("**Question:**")
-            st.write(st.session_state.current_question['Question'])
+    if practice_type == "Sentence Completion":
+        # Sentence completion exercise
+        if "current_sentence" not in st.session_state:
+            st.session_state.current_sentence = st.session_state.writing_practice.generate_sentence_completion(selected_category)
 
-            # Display the image if available
-            image_path = st.session_state.current_question.get('image_path')
-            if image_path:
-                st.image(image_path, caption="Select the correct option.")
+        sentence = st.session_state.current_sentence
+        blank_word = sentence["blank_word"]
+        sentence_with_blank = sentence["sentence_with_blank"]
+
+        st.write(f"**Complete the sentence by filling in the blank:**")
+        st.write(sentence_with_blank)
+
+        user_answer = st.text_input("Your answer:")
+
+        if st.button("Check Answer"):
+            if user_answer.lower() == blank_word["romaji"].lower():
+                st.success(f"Correct! '{blank_word['kanji']}' ({blank_word['romaji']}) means '{blank_word['english']}'")
             else:
-                st.info("No image available for this question.")
+                st.error(f"Not quite. The correct answer is '{blank_word['kanji']}' ({blank_word['romaji']})")
 
-            options = st.session_state.current_question['Options']
-            selected = st.radio(
-                "Choose your answer:",
-                options,
-                format_func=lambda x: f"{options.index(x) + 1}. {x}"
+        if st.button("New Sentence"):
+            st.session_state.current_sentence = st.session_state.writing_practice.generate_sentence_completion(selected_category)
+            st.experimental_rerun()
+
+    else:  # Translation Exercise
+        if "current_translation" not in st.session_state:
+            st.session_state.current_translation = st.session_state.writing_practice.generate_translation_exercise(selected_category)
+
+        translation = st.session_state.current_translation
+        japanese_sentence = translation["japanese"]
+        english_translation = translation["english"]
+
+        st.write(f"**Translate the following sentence to English:**")
+        st.write(japanese_sentence)
+
+        user_translation = st.text_area("Your translation:")
+
+        if st.button("Check Translation"):
+            similarity = st.session_state.writing_practice.check_translation_similarity(
+                user_translation, english_translation
             )
-            if selected and st.button("Submit Answer"):
-                selected_index = options.index(selected) + 1
-                st.session_state.feedback = st.session_state.question_generator.get_feedback(
-                    st.session_state.current_question,
-                    selected_index
-                )
-                st.experimental_rerun()
-    with col2:
-        st.write("**Audio Controls**")
-        if st.session_state.current_audio:
-            st.audio(st.session_state.current_audio)
-        elif st.session_state.current_question:
-            if st.button("Generate Audio"):
-                with st.spinner("Generating audio..."):
-                    audio_file = st.session_state.audio_generator.generate_audio(
-                        st.session_state.current_question
-                    )
-                    if audio_file:
-                        st.session_state.current_audio = audio_file
-                        st.experimental_rerun()
-
-def render_sidebar():
-    """Render sidebar with saved questions"""
-    with st.sidebar:
-        st.header("Saved Questions")
-        stored_questions = load_stored_questions()
-        if stored_questions:
-            for qid, qdata in stored_questions.items():
-                button_label = f"{qdata['practice_type']} - {qdata['topic']}\n{qdata['created_at']}"
-                if st.button(button_label, key=qid):
-                    st.session_state.current_question = qdata['question']
-                    st.session_state.current_practice_type = qdata['practice_type']
-                    st.session_state.current_topic = qdata['topic']
-                    st.session_state.current_audio = qdata.get('audio_file')
-                    st.session_state.feedback = None
-                    st.experimental_rerun()
-        else:
-            st.info("No saved questions yet. Process a video or generate questions to see them here!")
-
-def render_rag_visualization():
-    """New tab: Visualize the RAG process via similarity queries"""
-    st.subheader("RAG Visualization: Embedding Similarity")
-    query = st.text_input("Enter a query to find similar transcripts:", "")
-    if st.button("Find Similar Transcripts"):
-        if query:
-            kb = st.session_state.knowledge_base
-            results = kb.find_similar_transcripts(query)
-            st.write("Similarity Results:")
-            # Display the results nicely
-            if results and "documents" in results:
-                docs = results["documents"][0]
-                distances = results.get("distances", [[]])[0]
-                # Results are returned as a list of documents and their similarity scores
-                for i, doc in enumerate(docs):
-                    st.markdown(f"**Result {i+1}:**")
-                    st.write(f"Text: {doc}")
-                    st.write(f"Distance: {distances[i]}")
+            if similarity > 0.7:
+                st.success(f"Good translation! Reference: '{english_translation}'")
             else:
-                st.info("No similar transcripts found.")
-        else:
-            st.error("Please enter a query.")
+                st.warning(f"Your translation differs from the reference. Consider: '{english_translation}'")
+
+        if st.button("New Translation"):
+            st.session_state.current_translation = st.session_state.writing_practice.generate_translation_exercise(selected_category)
+            st.experimental_rerun()
 
 def main():
-    st.title("JLPT Listening Practice")
+    st.title("JLPT Language Practice")
     initialize_session_state()
     render_sidebar()
-    tab1, tab2, tab3 = st.tabs(["Process YouTube Video", "Practice Questions", "RAG Visualization"])
+
+    tab1, tab2, tab3, tab4 = st.tabs([
+        "Process YouTube Video",
+        "Practice Questions",
+        "RAG Visualization",
+        "Writing Practice"
+    ])
+
     with tab1:
         render_youtube_input()
     with tab2:
         render_interactive_practice()
     with tab3:
         render_rag_visualization()
+    with tab4:
+        render_writing_practice()
 
 if __name__ == "__main__":
     main()

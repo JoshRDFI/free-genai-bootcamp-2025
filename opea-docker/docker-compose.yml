@@ -12,7 +12,6 @@ services:
       - http_proxy=${http_proxy}
       - https_proxy=${https_proxy}
       - LLM_MODEL_ID=${LLM_MODEL_ID}
-    runtime: nvidia  # Enable NVIDIA runtime for GPU support
     deploy:
       resources:
         reservations:
@@ -38,7 +37,7 @@ services:
     restart: unless-stopped
 
   chromadb:
-    image: chromadb/chromadb:latest
+    image: ghcr.io/chroma-core/chroma:latest
     container_name: chromadb
     volumes:
       - chroma_data:/data
