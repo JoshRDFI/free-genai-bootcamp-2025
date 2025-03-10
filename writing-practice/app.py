@@ -1,3 +1,4 @@
+# writing-practice/app.py
 import streamlit as st
 import requests
 import json
@@ -19,31 +20,38 @@ import threading
 import numpy as np
 from streamlit_drawable_canvas import st_canvas
 
-# Setup paths
-BASE_DIR = Path(__file__).parent.absolute()
-ROOT_DIR = BASE_DIR.parent
-DATA_DIR = ROOT_DIR / "data"
-CACHE_DIR = DATA_DIR / "cache"
-
-# Create directories if they don't exist
-DATA_DIR.mkdir(exist_ok=True, parents=True)
-CACHE_DIR.mkdir(exist_ok=True, parents=True)
-
-# Database path
+# ---------- Path Configuration ----------
+# Corrected based on project layout and your feedback
+BASE_DIR = Path(__file__).parent.absolute()  # writing-practice directory
+PROJECT_ROOT = BASE_DIR.parent        # free-genai-bootcamp-2025 directory
+DATA_DIR = PROJECT_ROOT / "data"
 DB_PATH = DATA_DIR / "db.sqlite3"
+IMAGES_DIR = BASE_DIR / "images"
 
-# Setup logging
+# ---------- Database Schema Constants ----------
+REQUIRED_TABLES = {
+    'word_groups': ['id', 'name', 'level'],
+    'words': ['id', 'kanji', 'romaji', 'english', 'group_id', 'correct_count', 'wrong_count'],
+    'sentences': ['id', 'japanese', 'english', 'level', 'category'],  # Now matches actual schema
+    'writing_submissions': ['id', 'sentence_id', 'transcription', 'translation', 'grade', 'feedback']  # Add this line
+}
+
+# ---------- Logging Configuration ----------
 LOG_FILE = BASE_DIR / "app.log"
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     handlers=[
         logging.FileHandler(LOG_FILE),
-    ]
+        logging.StreamHandler()
+    ],
 )
-logger = logging.getLogger('writing_practice')
+logging.getLogger('watchdog').setLevel(logging.WARNING)
+logging.getLogger('sqlalchemy').setLevel(logging.WARNING)
+logging.getLogger('PIL').setLevel(logging.WARNING)
+logger = logging.getLogger(__name__)
 
-# State Management
+# ---------- Application States ----------
 class AppState(Enum):
     SETUP = "setup"
     PRACTICE = "practice"
@@ -51,382 +59,418 @@ class AppState(Enum):
 
 class WritingPracticeApp:
     def __init__(self):
-        logger.info("Initializing Writing Practice App...")
         self.initialize_session_state()
         self.load_prompts()
-        self.initialize_database()
+        self.validate_database()
         self.load_vocabulary_groups()
-        self.mocr = None  # Initialize MangaOCR on demand
+        self.mocr = None
+        self.start_api_server_if_needed()
 
-        # Start the API server only if it's not already running
+    # ---------- Core Initialization Methods ----------
+    def initialize_session_state(self):
+        """Initialize all session state variables"""
+        defaults = {
+            'app_state': AppState.SETUP,
+            'current_sentence': None,
+            'current_english': "",
+            'review_data': None,
+            'current_group_id': None,
+            'vocabulary': [],
+            'error_log': []
+        }
+
+        for key, val in defaults.items():
+            if key not in st.session_state:
+                st.session_state[key] = val
+
+    def validate_database(self):
+        """Validate database structure against schema.sql"""
         try:
-            response = requests.get("http://localhost:5000/api/groups/1/raw")
-            if response.status_code != 200:
-                self.start_api_server()
-        except requests.exceptions.ConnectionError:
+            # Verify database file existence
+            if not DB_PATH.exists():
+                raise FileNotFoundError(f"Database file not found at {DB_PATH}")
+
+            with sqlite3.connect(DB_PATH) as conn:
+                cursor = conn.cursor()
+
+                # Verify table existence
+                cursor.execute("SELECT name FROM sqlite_master WHERE type='table'")
+                existing_tables = {row[0] for row in cursor.fetchall()}
+
+                missing_tables = set(REQUIRED_TABLES.keys()) - existing_tables
+                if missing_tables:
+                    raise ValueError(f"Missing tables: {', '.join(missing_tables)}")
+
+                # Verify table columns
+                for table, expected_columns in REQUIRED_TABLES.items():
+                    cursor.execute(f"PRAGMA table_info({table})")
+                    existing_columns = {row[1] for row in cursor.fetchall()}
+                    missing_columns = set(expected_columns) - existing_columns
+
+                    if missing_columns:
+                        raise ValueError(
+                            f"Table '{table}' missing columns: {', '.join(missing_columns)}"
+                        )
+
+                logger.info("Database schema validation passed")
+
+        except Exception as e:
+            logger.critical(f"Database validation failed: {str(e)}")
+            st.error("Critical database error - check logs")
+            st.stop()
+
+    # ---------- API Server Methods ----------
+    def start_api_server_if_needed(self):
+        """Check if API server is running, start if not"""
+        try:
+            requests.get("http://localhost:5000/api/health", timeout=2)
+        except (requests.exceptions.ConnectionError, requests.exceptions.Timeout):
             self.start_api_server()
 
     def start_api_server(self):
-        """Start the API server on port 5000"""
+        """Start Flask API server with proper endpoints"""
         app = Flask(__name__)
+
+        @app.route('/api/health')
+        def health_check():
+            return jsonify({"status": "ok"})
 
         @app.route('/api/groups/<int:group_id>/raw')
         def get_group_words(group_id):
             try:
-                words = self.execute_query(
-                    "SELECT id, kanji, romaji, english FROM words WHERE group_id = ?",
-                    (group_id,)
-                )
-                return jsonify(words)
+                with sqlite3.connect(DB_PATH) as conn:
+                    conn.row_factory = sqlite3.Row
+                    cursor = conn.cursor()
+                    cursor.execute("""
+                        SELECT id, kanji, romaji, english
+                        FROM words
+                        WHERE group_id = ?
+                    """, (group_id,))
+                    return jsonify([dict(row) for row in cursor.fetchall()])
             except Exception as e:
                 logger.error(f"API error: {e}")
                 return jsonify({"error": str(e)}), 500
 
-        def run_flask():
-            try:
-                app.run(port=5000)
-            except OSError as e:
-                logger.warning(f"Could not start API server: {e}")
+        threading.Thread(
+            target=app.run,
+            kwargs={'port': 5000, 'use_reloader': False},
+            daemon=True
+        ).start()
+        logger.info("Started background API server on port 5000")
 
-        # Start Flask in a separate thread
-        threading.Thread(target=run_flask, daemon=True).start()
-        logger.info("API server started on port 5000")
-
-    def initialize_session_state(self):
-        """Initialize or get session state variables"""
-        if 'app_state' not in st.session_state:
-            st.session_state['app_state'] = AppState.SETUP
-        if 'current_sentence' not in st.session_state:
-            st.session_state['current_sentence'] = ""
-        if 'current_english' not in st.session_state:
-            st.session_state['current_english'] = ""
-        if 'review_data' not in st.session_state:
-            st.session_state['review_data'] = None
-        if 'current_group_id' not in st.session_state:
-            st.session_state['current_group_id'] = None
-        if 'current_word' not in st.session_state:
-            st.session_state['current_word'] = None
-        if 'vocabulary' not in st.session_state:
-            st.session_state['vocabulary'] = []
-
-    def load_prompts(self):
-        """Load prompts from YAML file"""
-        prompts_file = BASE_DIR / "prompts.yaml"
+    # ---------- UI Rendering Methods ----------
+    def set_background(self, image_name: str):
+        """Set background image with validation"""
         try:
-            if prompts_file.exists():
-                with open(prompts_file, 'r') as file:
-                    self.prompts = yaml.safe_load(file)
+            bg_path = IMAGES_DIR / image_name
+            if not bg_path.exists():
+                raise FileNotFoundError(f"Background image missing: {bg_path.name}")
+
+            st.markdown(
+                f"""
+                <style>
+                .stApp {{
+                    background: url('{bg_path}') no-repeat center center fixed;
+                    background-size: cover;
+                }}
+                .main .block-container {{
+                    background-color: rgba(255, 255, 255, 0.95);
+                    border-radius: 10px;
+                    padding: 2rem;
+                    margin: 2rem auto;
+                    max-width: 90%;
+                }}
+                </style>
+                """,
+                unsafe_allow_html=True
+            )
+        except Exception as e:
+            logger.error(f"Background error: {e}")
+            st.markdown("""<style>.stApp { background-color: #f0f2f6; }</style>""",
+                       unsafe_allow_html=True)
+
+    def render_setup_state(self):
+        """Render category selection interface"""
+        self.set_background("1240417.png")
+        st.title("Japanese Writing Practice")
+
+        if not self.vocabulary_groups:
+            st.error("No vocabulary categories found in database")
+            return
+
+        # Category selection grid
+        cols = st.columns(3)
+        for idx, group in enumerate(self.vocabulary_groups):
+            with cols[idx % 3]:
+                if st.button(
+                    f"{group['name']}\n({group['level']})",
+                    key=f"group_{group['id']}",
+                    use_container_width=True
+                ):
+                    st.session_state.current_group_id = group['id']
+                    self.load_vocabulary(group['id'])
+                    st.rerun()
+
+        # Generate button section
+        if group_id := st.session_state.current_group_id:
+            selected = next((g for g in self.vocabulary_groups if g['id'] == group_id), None)
+            if not selected:
+                st.error("Invalid category selection")
+                return
+
+            st.markdown("---")
+            st.markdown(f"**Selected Category:** {selected['name']}")
+
+            if st.button(
+                "Generate Practice Sentence 🎯",
+                type="primary",
+                use_container_width=True,
+                key="generate-btn"
+            ):
+                with st.spinner("Generating sentence..."):
+                    if sentence := self.generate_sentence():
+                        self.cache_sentence(sentence)
+                        st.session_state.update({
+                            'current_sentence': sentence,
+                            'app_state': AppState.PRACTICE
+                        })
+                        st.rerun()
+
+    def render_practice_state(self):
+        """Render the practice writing interface"""
+        self.set_background("1371442.png")
+        st.title("Practice Writing")
+
+        if not st.session_state.current_sentence:
+            st.error("No active practice session")
+            st.session_state.app_state = AppState.SETUP
+            st.rerun()
+            return
+
+        col1, col2 = st.columns([3, 2])
+        with col1:
+            st.subheader("Current Sentence")
+            st.markdown(f"""
+                **Japanese:**
+                {st.session_state.current_sentence['japanese']}
+                **English:**
+                {st.session_state.current_sentence['english']}
+            """)
+
+        with col2:
+            st.subheader("Write Your Response")
+            canvas_result = st_canvas(
+                fill_color="rgba(255, 255, 255, 0.0)",
+                stroke_width=2,
+                stroke_color='#000',
+                background_color="#ffffff",
+                height=300,
+                width=400,
+                drawing_mode="freedraw",
+                key="canvas"
+            )
+
+        if st.button("Submit for Review"):
+            if canvas_result.image_data is not None:
+                img = Image.fromarray(canvas_result.image_data.astype('uint8'))
+                recognized_text = self.recognize_text(img)
+                self.process_submission(recognized_text)
+
+        if st.button("Back to Categories"):
+            st.session_state.app_state = AppState.SETUP
+            st.rerun()
+
+    def render_review_state(self):
+        """Render the submission review interface"""
+        self.set_background("1371443.png")
+        st.title("Submission Review")
+
+        if not st.session_state.review_data:
+            st.error("No review data available")
+            st.session_state.app_state = AppState.SETUP
+            st.rerun()
+            return
+
+        review = st.session_state.review_data
+        grade_color = {
+            'S': '#4CAF50',
+            'A': '#8BC34A',
+            'B': '#FFC107',
+            'C': '#F44336'
+        }.get(review['grade'], '#607D8B')
+
+        st.markdown(f"""
+            <style>
+            .grade-box {{
+                background-color: {grade_color};
+                padding: 1rem;
+                border-radius: 10px;
+                text-align: center;
+                margin: 1rem 0;
+            }}
+            </style>
+        """, unsafe_allow_html=True)
+
+        st.markdown(f"""
+            <div class="grade-box">
+                <h2>Grade: {review['grade']}</h2>
+                <p>{review['feedback']}</p>
+            </div>
+        """, unsafe_allow_html=True)
+
+        col1, col2 = st.columns(2)
+        with col1:
+            st.subheader("Your Submission")
+            st.text_area("", value=review['submitted_text'], disabled=True)
+
+        with col2:
+            st.subheader("Correct Answer")
+            st.text_area("", value=review['correct_text'], disabled=True)
+
+        if st.button("Try Again"):
+            st.session_state.app_state = AppState.PRACTICE
+            st.rerun()
+
+        if st.button("New Sentence"):
+            st.session_state.app_state = AppState.SETUP
+            st.rerun()
+
+    # ---------- Core Functionality Methods ----------
+    def load_prompts(self):
+        """Load generation prompts from YAML file"""
+        try:
+            with open(BASE_DIR / "prompts.yaml", "r") as f:
+                self.prompts = yaml.safe_load(f)
                 logger.info("Prompts loaded successfully")
-            else:
-                logger.warning("Prompts file not found, using defaults")
-                self.prompts = {
-                    "sentence_generation": {
-                        "system": "You are a Japanese language teacher...",
-                        "user": "Generate a simple sentence using..."
-                    }
-                }
         except Exception as e:
             logger.error(f"Error loading prompts: {e}")
             self.prompts = {}
-
-    def initialize_database(self):
-        """Initialize database connection"""
-        try:
-            self.conn = sqlite3.connect(DB_PATH)
-            self.cursor = self.conn.cursor()
-            logger.info("Database connection established")
-
-            # Check if database is empty
-            self.cursor.execute("SELECT COUNT(*) FROM word_groups")
-            if self.cursor.fetchone()[0] == 0:
-                self.load_sample_data()
-
-        except sqlite3.Error as e:
-            logger.error(f"Database connection failed: {e}")
-            st.error("Failed to connect to database")
-
-    def load_sample_data(self):
-        """Load sample data if database is empty"""
-        try:
-            logger.info("Loading sample data...")
-
-            # Insert sample group
-            self.cursor.execute(
-                "INSERT INTO word_groups (name, level) VALUES (?, ?)",
-                ("Basic Starter Words", "N5")
-            )
-
-            # Insert sample words
-            sample_words = [
-                ("こんにちは", "konnichiwa", "Hello", 1),
-                ("ありがとう", "arigatou", "Thank you", 1),
-                ("さようなら", "sayounara", "Goodbye", 1)
-            ]
-            self.cursor.executemany(
-                "INSERT INTO words (kanji, romaji, english, group_id) VALUES (?, ?, ?, ?)",
-                sample_words
-            )
-
-            self.conn.commit()
-            logger.info("Sample data loaded successfully")
-
-        except sqlite3.Error as e:
-            logger.error(f"Failed to load sample data: {e}")
-            st.error("Failed to initialize sample data")
+            st.error("Failed to load prompt configurations")
 
     def load_vocabulary_groups(self):
         """Load vocabulary groups from database"""
         try:
-            self.vocabulary_groups = self.execute_query(
-                "SELECT id, name, level FROM word_groups ORDER BY level"
-            )
-            logger.info(f"Loaded {len(self.vocabulary_groups)} vocabulary groups")
-            return True
+            with sqlite3.connect(DB_PATH) as conn:
+                conn.row_factory = sqlite3.Row
+                cursor = conn.cursor()
+                cursor.execute("""
+                    SELECT id, name, level
+                    FROM word_groups
+                    ORDER BY level
+                """)
+                self.vocabulary_groups = [dict(row) for row in cursor.fetchall()]
+                logger.info(f"Loaded {len(self.vocabulary_groups)} vocabulary groups")
         except Exception as e:
             logger.error(f"Error loading vocabulary groups: {e}")
-            return False
+            self.vocabulary_groups = []
+            st.error("Failed to load vocabulary categories")
 
-    def execute_query(self, query, params=()):
-        """Execute a database query"""
+    def load_vocabulary(self, group_id: int):
+        """Load vocabulary for selected group"""
         try:
-            self.cursor.execute(query, params)
-            if query.strip().upper().startswith("SELECT"):
-                columns = [col[0] for col in self.cursor.description]
-                return [dict(zip(columns, row)) for row in self.cursor.fetchall()]
-            self.conn.commit()
-            return True
-        except sqlite3.Error as e:
-            logger.error(f"Database error: {e}")
-            return False
-
-    def fetch_vocabulary_for_group(self, group_id):
-        """Fetch vocabulary for a specific group"""
-        try:
-            st.session_state.vocabulary = self.execute_query(
-                "SELECT id, kanji, romaji, english FROM words WHERE group_id = ?",
-                (group_id,)
+            response = requests.get(
+                f"http://localhost:5000/api/groups/{group_id}/raw",
+                timeout=5
             )
-            logger.info(f"Loaded {len(st.session_state.vocabulary)} vocabulary items")
+            if response.ok:
+                st.session_state.vocabulary = response.json()
+                logger.info(f"Loaded {len(st.session_state.vocabulary)} words via API")
+                return
         except Exception as e:
-            logger.error(f"Error fetching vocabulary: {e}")
+            logger.warning(f"API load failed: {e}, falling back to direct DB access")
+
+        try:
+            with sqlite3.connect(DB_PATH) as conn:
+                conn.row_factory = sqlite3.Row
+                cursor = conn.cursor()
+                cursor.execute("""
+                    SELECT id, kanji, romaji, english
+                    FROM words
+                    WHERE group_id = ?
+                """, (group_id,))
+                st.session_state.vocabulary = [dict(row) for row in cursor.fetchall()]
+                logger.info(f"Loaded {len(st.session_state.vocabulary)} words from DB")
+        except Exception as e:
+            logger.error(f"Vocabulary load failed: {e}")
             st.error("Failed to load vocabulary")
 
-    def render_setup_state(self):
-        """Render the setup state UI"""
-        st.sidebar.markdown("### Current Page: Setup")
-
-        st.title("Japanese Writing Practice")
-        st.write("Welcome to the Japanese Writing Practice app. Select a category to begin.")
-
-        # Load vocabulary groups if not already loaded
-        if not hasattr(self, 'vocabulary_groups') or not self.vocabulary_groups:
-            groups_loaded = self.load_vocabulary_groups()
-            if not groups_loaded:
-                st.warning("Could not load vocabulary categories. Please ensure the main system setup has been completed.")
-                return
-
-        # Create columns for buttons
-        cols = st.columns(3)
-
-        # Display category buttons in a grid
-        if self.vocabulary_groups and len(self.vocabulary_groups) > 0:
-            for idx, group in enumerate(self.vocabulary_groups):
-                col_idx = idx % 3
-                with cols[col_idx]:
-                    # Determine if this button is selected
-                    is_selected = st.session_state.get('current_group_id') == group['id']
-
-                    # Style for the category button
-                    button_style = f"""
-                    <style>
-                    div[data-testid="stButton"] button[data-testid="baseButton-secondary"] {{
-                    background-color: {'#1f77b4' if is_selected else 'white'} !important;
-                    color: {'white' if is_selected else 'black'} !important;
-                    border: 2px solid #1f77b4 !important;
-                    margin: 5px 0 !important;
-                    min-height: 60px !important;
-                    }}
-                    </style>
-                    """
-                    st.markdown(button_style, unsafe_allow_html=True)
-
-                    if st.button(
-                        f"{group['name']}\n({group.get('level', 'N/A')})",
-                        key=f"group_{group['id']}",
-                        use_container_width=True,
-                    ):
-                        # Update selected group and fetch vocabulary
-                        st.session_state['current_group_id'] = group['id']
-                        self.fetch_vocabulary_for_group(group['id'])
-        else:
-            st.info("No vocabulary categories found. The system may still be initializing.")
-            return
-
-        # Display current category info and generate button
-        if st.session_state.get('current_group_id'):
-            current_group = next((g for g in self.vocabulary_groups if g['id'] == st.session_state.current_group_id), None)
-            if current_group:
-                st.markdown("---")
-                # Create two columns for the category info and generate button
-                info_col, btn_col = st.columns([2, 1])
-
-                with info_col:
-                    st.info(f"Selected: {current_group['name']} (JLPT Level: {current_group.get('level', 'N/A')})")
-                    vocab_count = len(st.session_state.get('vocabulary', []))
-                    st.write(f"This category contains {vocab_count} vocabulary items.")
-
-                with btn_col:
-                    # Style for the generate button
-                    st.markdown("""
-                    <style>
-                    div[data-testid="stButton"] button#generate-btn {
-                    background-color: #00cc00 !important;
-                    color: white !important;
-                    border: none !important;
-                    font-weight: bold !important;
-                    min-height: 60px !important;
-                    margin-top: 20px !important;
-                    }
-                    </style>
-                    """, unsafe_allow_html=True)
-
-                    # Generate button
-                    if st.button("Generate Sentence", key="generate-btn", use_container_width=True):
-                        with st.spinner("Generating sentence..."):
-                            try:
-                                sentence_data = self.generate_sentence()
-                                if sentence_data:
-                                    self.cache_sentence(sentence_data)
-                                    st.session_state['current_sentence'] = sentence_data
-                                    st.session_state['current_english'] = sentence_data.get('english', '')
-                                    st.session_state['app_state'] = AppState.PRACTICE
-                            except Exception as e:
-                                logger.error(f"Error generating sentence: {e}")
-                                st.error("Failed to generate sentence. Please try again.")
-
     def generate_sentence(self):
-        """Generate a simple JLPT N5 level sentence using the Ollama LLM"""
-        if not hasattr(self, 'prompts') or 'sentence_generation' not in self.prompts:
-            logger.error("Sentence generation prompts not loaded")
+        """Generate practice sentence using vocabulary"""
+        if not st.session_state.vocabulary:
+            st.error("No vocabulary loaded for selected category")
             return None
 
-        current_group = next((g for g in self.vocabulary_groups if g['id'] == st.session_state.current_group_id), None)
-        if not current_group:
-            logger.error("No current group selected")
-            return None
-
-        # Prepare the prompt for the LLM
-        system_prompt = self.prompts['sentence_generation']['system']
-        user_prompt = self.prompts['sentence_generation']['user'].format(category=current_group['name'])
-
-        # Send request to Ollama LLM
         try:
-            response = requests.post(
-                "http://localhost:11434/api/generate",
-                json={
-                    "model": "llama3.2",
-                    "prompt": f"{system_prompt}\n\n{user_prompt}",
-                    "stream": False,
-                    "max_tokens": 50  # Limit to short sentences
-                },
-                timeout=10
-            )
-            response.raise_for_status()
-            generated_text = response.json()['response']
-
-            # Extract Japanese sentence and English translation
-            japanese_sentence = generated_text.split('\n')[0].strip()
-            english_translation = generated_text.split('\n')[1].strip() if len(generated_text.split('\n')) > 1 else ""
+            # Example generation logic - replace with your actual implementation
+            selected_words = random.sample(st.session_state.vocabulary, 3)
+            sentence_jp = " ".join(word['kanji'] for word in selected_words) + "。"
+            sentence_en = " ".join(word['english'] for word in selected_words) + "."
 
             return {
-                "japanese": japanese_sentence,
-                "english": english_translation,
-                "level": current_group['level'],
-                "category": current_group['name']
+                "japanese": sentence_jp,
+                "english": sentence_en,
+                "level": "N5",  # Get from group
+                "category": "Sample"  # Get from group
             }
-        except requests.RequestException as e:
-            logger.error(f"Failed to generate sentence: {e}")
+        except Exception as e:
+            logger.error(f"Sentence generation failed: {e}")
             return None
 
     def cache_sentence(self, sentence_data):
-        """Cache the generated sentence in the database"""
+        """Store generated sentence in database"""
         try:
-            self.execute_query(
-                "INSERT INTO sentences (japanese, english, level, category) VALUES (?, ?, ?, ?)",
-                (sentence_data['japanese'], sentence_data['english'], sentence_data['level'], sentence_data['category'])
-            )
-            logger.info(f"Cached sentence: {sentence_data['japanese']}")
-        except sqlite3.Error as e:
+            with sqlite3.connect(DB_PATH) as conn:
+                cursor = conn.cursor()
+                cursor.execute("""
+                    INSERT INTO sentences (japanese, english, level, category)
+                    VALUES (?, ?, ?, ?)
+                """, (
+                    sentence_data['japanese'],
+                    sentence_data['english'],
+                    sentence_data['level'],
+                    sentence_data['category']
+                ))
+                conn.commit()
+                logger.info("Cached generated sentence")
+        except Exception as e:
             logger.error(f"Failed to cache sentence: {e}")
 
     def recognize_text(self, image):
-        """Recognize text from an image using Manga OCR"""
+        """Perform OCR on handwritten text"""
         if self.mocr is None:
             self.mocr = MangaOcr()
         return self.mocr(image)
 
-    def render_practice_state(self):
-        """Render the practice state UI with drawing and webcam capture"""
-        st.sidebar.markdown("### Current Page: Practice")
+    def process_submission(self, recognized_text):
+        """Process user submission and grade it"""
+        correct_text = st.session_state.current_sentence['japanese']
 
-        st.title("Japanese Writing Practice")
-        st.write("Practice writing the sentence below:")
+        # Simple grading logic - enhance as needed
+        if recognized_text.strip() == correct_text.strip():
+            grade = 'S'
+        else:
+            grade = 'C'
 
-        if st.session_state.get('current_sentence'):
-            st.write(f"**Japanese:** {st.session_state['current_sentence']['japanese']}")
-            st.write(f"**English:** {st.session_state['current_english']}")
+        st.session_state.review_data = {
+            'grade': grade,
+            'submitted_text': recognized_text,
+            'correct_text': correct_text,
+            'feedback': self.generate_feedback(grade)
+        }
+        st.session_state.app_state = AppState.REVIEW
+        st.rerun()
 
-            # Drawing input method
-            st.subheader("Draw your sentence:")
-            canvas_result = st_canvas(
-                fill_color="rgba(255, 255, 255, 0.0)",  # Transparent background
-                stroke_width=2,
-                stroke_color='#000000',
-                background_color="#eee",
-                height=200,
-                width=600,
-                drawing_mode="freedraw",
-                key="canvas",
-            )
-
-            if st.button("Submit Drawing"):
-                if canvas_result.image_data is not None:
-                    img_data = canvas_result.image_data
-                    img = Image.fromarray(np.uint8(img_data))
-                    recognized_text = self.recognize_text(img)
-                    st.write(f"Recognized text: {recognized_text}")
-                    # TODO: Implement grading for drawn input
-
-            # Webcam capture input method
-            st.subheader("Capture your written response with webcam:")
-            picture = st.camera_input("Hold up your written response")
-            if picture:
-                image = Image.open(picture)
-                st.image(image, caption="Captured Image", use_column_width=True)
-                recognized_text = self.recognize_text(image)
-                st.write(f"Recognized text: {recognized_text}")
-                # TODO: Implement grading for webcam input
-
-        # Button to go back to setup
-        if st.button("Back to Setup"):
-            st.session_state['app_state'] = AppState.SETUP
-
-    def render_review_state(self):
-        """Render the review state UI"""
-        st.sidebar.markdown("### Current Page: Review")
-
-        st.title("Japanese Writing Practice - Review")
-        st.write("Review your progress here.")
-
-        # TODO: Implement review functionality
-        st.write("Review content goes here.")
-
-        # Button to go back to setup
-        if st.button("Back to Setup"):
-            st.session_state['app_state'] = AppState.SETUP
+    def generate_feedback(self, grade):
+        """Generate feedback based on grade"""
+        return {
+            'S': "Perfect! Your writing matches exactly!",
+            'A': "Very close! Minor improvements needed.",
+            'B': "Good attempt. Practice stroke order.",
+            'C': "Needs work. Compare with correct answer."
+        }.get(grade, "Unknown grade")
 
     def run(self):
-        """Main application runner"""
+        """Main application loop"""
         try:
             if st.session_state.app_state == AppState.SETUP:
                 self.render_setup_state()
@@ -435,10 +479,8 @@ class WritingPracticeApp:
             elif st.session_state.app_state == AppState.REVIEW:
                 self.render_review_state()
         except Exception as e:
-            logger.error(f"Application error: {e}")
-            st.error("An unexpected error occurred. Please refresh the page.")
+            logger.error(f"Application error: {str(e)}")
+            st.error("A critical error occurred. Please refresh the page.")
 
-# Main entry point
 if __name__ == "__main__":
-    app = WritingPracticeApp()
-    app.run()
+    WritingPracticeApp().run()
