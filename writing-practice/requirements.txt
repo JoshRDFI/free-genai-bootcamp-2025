@@ -4,4 +4,6 @@ pyyaml>=6.0
 manga-ocr>=0.1.8
 Pillow>=9.4.0
 flask>=2.0.0
-ollama>=0.1.0
+opencv-python
+streamlit-drawable-canvas
+# ollama>=0.1.0
