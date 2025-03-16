@@ -85,6 +85,10 @@ free-genai-bootcamp-2025/
 │   └── requirements.txt            # Add into main requirements
 │   
 │   opea-docker/
+|   │   ├── mega-service/                # Setup and files for the mega service
+|   │   │   ├── megaservice.py           # Main service orchestrator for the mega service
+|   |   │   ├── file.txt
+|   |   │   └── file.txt
 │   |   ├── Dockerfile                   # Dockerfile.
 │   |   ├── docker-compose.yml           # Coordinates LLM container and backend services.
 │   |   ├── requirements.txt             # Python dependencies.
