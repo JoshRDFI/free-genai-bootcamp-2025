@@ -1,0 +1,118 @@
+version: '3.8'
+services:
+  ollama-server:
+    image: ollama/ollama
+    container_name: ollama-server
+    ports:
+      - "${LLM_ENDPOINT_PORT:-8008}:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    environment:
+      - no_proxy=${no_proxy}
+      - http_proxy=${http_proxy}
+      - https_proxy=${https_proxy}
+      - LLM_MODEL_ID=${LLM_MODEL_ID}
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    restart: unless-stopped
+
+  llm_text:
+    build:
+      context: ./comps/llm_text
+      dockerfile: Dockerfile
+    container_name: llm_text
+    ports:
+      - "9000:9000"
+    environment:
+      - LLM_ENDPOINT=${LLM_ENDPOINT}
+    depends_on:
+      - ollama-server
+    volumes:
+      - ./comps/llm-text:/app
+    restart: unless-stopped
+
+  embeddings:
+    build:
+      context: ./comps/embeddings
+      dockerfile: Dockerfile
+    container_name: embeddings
+    ports:
+      - "6000:6000"
+    environment:
+      - EMBEDDING_SERVICE_HOST_IP=0.0.0.0
+      - EMBEDDING_SERVICE_PORT=6000
+    volumes:
+      - ./comps/embeddings:/app
+    restart: unless-stopped
+
+  llm-vision:
+    build:
+      context: ./comps/llm-vision
+      dockerfile: Dockerfile
+    container_name: llm-vision
+    # Use a different port if necessary
+    ports:
+      - "9100:9100"
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    environment:
+      # add vision-specific env vars here
+    volumes:
+      - ./comps/llm-vision:/app
+    restart: unless-stopped
+
+  tts:
+    build:
+      context: ./comps/tts
+      dockerfile: Dockerfile
+    container_name: tts
+    ports:
+      - "9200:9200"
+    volumes:
+      - ./comps/tts:/app
+    restart: unless-stopped
+
+  asr:
+    build:
+      context: ./comps/asr
+      dockerfile: Dockerfile
+    container_name: asr
+    ports:
+      - "9300:9300"
+    volumes:
+      - ./comps/asr:/app
+    restart: unless-stopped
+
+  chromadb:
+    image: ghcr.io/chroma-core/chroma:latest
+    container_name: chromadb
+    volumes:
+      - chroma_data:/data
+    ports:
+      - "8050:8050"
+    restart: unless-stopped  
+
+  guardrails:
+    build:
+      context: ./comps/guardrails
+      dockerfile: Dockerfile
+    container_name: guardrails
+    ports:
+      - "9400:9400"
+    volumes:
+      - ./comps/guardrails:/app
+    restart: unless-stopped
+
+volumes:
+  ollama_data:
+  chroma_data:
