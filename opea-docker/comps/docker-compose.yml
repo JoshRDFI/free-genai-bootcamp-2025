@@ -7,6 +7,7 @@ services:
       - "${LLM_ENDPOINT_PORT:-8008}:11434"
     volumes:
       - ollama_data:/root/.ollama
+      - shared_db:/app/db   # access to shared SQLite3
     environment:
       - no_proxy=${no_proxy}
       - http_proxy=${http_proxy}
@@ -34,6 +35,8 @@ services:
       - ollama-server
     volumes:
       - ./comps/llm-text:/app
+      - shared_db:/app/db   # access to shared SQLite3
+      - llm_data:/home/llm/.xtts_data  # Persistent storage -- fix location
     restart: unless-stopped
 
   embeddings:
@@ -48,6 +51,7 @@ services:
       - EMBEDDING_SERVICE_PORT=6000
     volumes:
       - ./comps/embeddings:/app
+      - shared_db:/app/db   # access to shared SQLite3
     restart: unless-stopped
 
   llm-vision:
@@ -69,6 +73,8 @@ services:
       # add vision-specific env vars here
     volumes:
       - ./comps/llm-vision:/app
+      - shared_db:/app/db   # access to shared SQLite3
+      - mangaocr_data:/home/mangaocr/.mangaocr_data  # Persistent storage -- fix location
     restart: unless-stopped
 
   tts:
@@ -80,6 +86,8 @@ services:
       - "9200:9200"
     volumes:
       - ./comps/tts:/app
+      - shared_db:/app/db   # access to shared SQLite3
+      - tts_data:/home/tts/.xtts_data  # Persistent storage for XTTS files - fix location
     restart: unless-stopped
 
   asr:
@@ -91,13 +99,16 @@ services:
       - "9300:9300"
     volumes:
       - ./comps/asr:/app
+      - shared_db:/app/db   # access to shared SQLite3
+      - asr_data:/home/asr/.xtts_data  # Persistent storage for XTTS files - fix location
     restart: unless-stopped
 
   chromadb:
     image: ghcr.io/chroma-core/chroma:latest
     container_name: chromadb
     volumes:
-      - chroma_data:/data
+      - ./data:/data
+      - shared_db:/app/db   # access to shared SQLite3
     ports:
       - "8050:8050"
     restart: unless-stopped  
@@ -111,8 +122,13 @@ services:
       - "9400:9400"
     volumes:
       - ./comps/guardrails:/app
+      - shared_db:/app/db   # access to shared SQLite3
     restart: unless-stopped
 
 volumes:
   ollama_data:
   chroma_data:
+  shared_db:/app/db  
+  tts_data: # Need persistant directory
+  mangaocr_data: # Need persistant directory
+  asr_data: # Need persistant directory
