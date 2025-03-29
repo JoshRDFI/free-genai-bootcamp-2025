@@ -4,12 +4,12 @@
 ./create-data-dirs.sh
 
 # Build the Docker images
-docker-compose build
+docker compose build
 
 # Start the containers
-docker-compose up -d
+docker compose up -d
 
-echo "OPEA services started. Use 'docker-compose logs -f' to view logs."
+echo "OPEA services started. Use 'docker compose logs -f' to view logs."
 echo "Service endpoints:"
 echo "- LLM Text Service: http://localhost:9000/v1/chat/completions"
 echo "- Embeddings Service: http://localhost:6000/embed"

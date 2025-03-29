@@ -2,6 +2,9 @@ FROM python:3.10-slim
 
 WORKDIR /app
 
+# Update pip to the latest version
+RUN python -m pip install --upgrade pip
+
 # Copy requirements first for better caching
 COPY requirements.txt .
 
