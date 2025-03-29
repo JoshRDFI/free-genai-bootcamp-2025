@@ -1,256 +1,106 @@
-from fastapi import FastAPI, HTTPException, UploadFile, File, Form, Query, Form, Query
+from fastapi import FastAPI, HTTPException, UploadFile, File, Form, Query
 from pydantic import BaseModel
-from typing import List, Optional, Dict, Any, Union, Dict, Any, Union
+from typing import List, Optional, Dict, Any, Union
 import httpx
 import os
 import base64
-from enum import Enumfrom pathlib import Path
-import importlib.util
-import io
-from PIL import Image
+from enum import Enum
+from pathlib import Path
 
-# Force CPU mode for MangaOCR if needed
-# os.environ["CUDA_VISIBLE_DEVICES"] = "-1"from pathlib import Path
-import importlib.util
-import io
-from PIL import ImageMANGAOCR_MODELS_PATH = os.getenv("MANGAOCR_MODELS_PATH", "/app/mangaocr_models")
+# Configuration
+LLM_ENDPOINT = os.environ.get("LLM_ENDPOINT", "http://llm:11434")
+VISION_MODEL_ID = os.environ.get("VISION_MODEL_ID", "llava:13b")
 
-# Check if manga_ocr is installed
-def is_package_installed(package_name):
-    return importlib.util.find_spec(package_name) is not None
+# Initialize FastAPI app
+app = FastAPI()
 
-# Initialize MangaOCR if available
-manga_ocr_available = is_package_installed("manga_ocr")
-if manga_ocr_available:
-    try:
-        import manga_ocr
-        print("MangaOCR module loaded successfully")
-    except Exception as e:
-        print(f"Error importing MangaOCR: {e}")
-        manga_ocr_available = False
-else:
-    print("MangaOCR module not found")
-# Force CPU mode for MangaOCR if needed
-# os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
-
-# Constants
-LLM_ENDPOINT = os.getenv("LLM_ENDPOINT", "http://ollama-server:11434")
-VISION_MODEL_ID = os.getenv("VISION_MODEL_ID", "llava")
-MANGAOCR_MODELS_PATH = os.getenv("MANGAOCR_MODELS_PATH", "/app/mangaocr_models")
-
-# Check if manga_ocr is installed
-def is_package_installed(package_name):
-    return importlib.util.find_spec(package_name) is not None
-
-# Initialize MangaOCR if available
-manga_ocr_available = is_package_installed("manga_ocr")
-if manga_ocr_available:
-    try:
-        import manga_ocr
-        print("MangaOCR module loaded successfully")
-    except Exception as e:
-        print(f"Error importing MangaOCR: {e}")
-        manga_ocr_available = False
-else:
-    print("MangaOCR module not found")
-
-class OCRResponse(BaseModel):
-    text: str
-    confidence: Optional[float] = None
-    language: Optional[str] = None
-    USER = "user"
-    ASSISTANT = "assistant"
-# Initialize MangaOCR
+# Global variables
 _manga_ocr = None
+manga_ocr_available = False
 
-def get_manga_ocr():
-    global _manga_ocr
-    if _manga_ocr is None and manga_ocr_available:
-        try:
-            print(f"Initializing MangaOCR with models path: {MANGAOCR_MODELS_PATH}")
-            _manga_ocr = manga_ocr.MangaOcr()
-            print("MangaOCR initialized successfully")
-        except Exception as e:
-            print(f"Error initializing MangaOCR: {e}")
-    return _manga_ocr
+# Try to import MangaOCR
+print("Initializing MangaOCR module")
+try:
+    from manga_ocr import MangaOcr
+    manga_ocr_available = True
+except ImportError:
+    print("MangaOCR not available")
+    manga_ocr_available = False
 
-# Process image with MangaOCR
-def process_image_with_ocr(image):
-    ocr = get_manga_ocr()
-    if ocr is None:
-        return "OCR not available"
-
-    try:
-        # Convert to PIL Image if it's not already
-        if not isinstance(image, Image.Image):
-            image = Image.open(image)
-
-        # Save to a temporary file (MangaOCR works better with files)
-        temp_path = "/tmp/temp_image.png"
-        image.save(temp_path)
-
-        # Process with OCR
-        text = ocr(temp_path)
-
-        # Clean up
-        if Path(temp_path).exists():
-            Path(temp_path).unlink()
-
-        return text
-    except Exception as e:
-        print(f"OCR error: {e}")
-        return "Error processing image"
-
-@app.post("/ocr")
-async def ocr_image(file: UploadFile = File(...), language: Optional[str] = Form("auto")):
-    """Extract text from an image using MangaOCR.
-    
-    This endpoint is specifically designed for Japanese text in manga/comics.
-    """
-    if not manga_ocr_available:
-        raise HTTPException(status_code=501, detail="MangaOCR is not available on this server")
-    
-    try:
-        contents = await file.read()
-        image = Image.open(io.BytesIO(contents))
-        
-        # Process with MangaOCR
-        text = process_image_with_ocr(image)
-        
-        return OCRResponse(
-            text=text,
-            language="ja",  # MangaOCR is specifically for Japanese
-        )
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error processing image: {str(e)}")
-
-class Content(BaseModel):
-    type: str  # "text" or "image_url"
-    text: Optional[str] = None
-    image_url: Optional[dict] = None
-
-class Message(BaseModel):
-    role: Role
-    content: List[Content]
-
+# Models
 class VisionRequest(BaseModel):
-    model: str
-    messages: List[Message]
+    model: Optional[str] = None
+    prompt: str
+    image: str
     temperature: Optional[float] = 0.7
-    stream: Optional[bool] = False
+    max_tokens: Optional[int] = 1000
 
 class VisionResponse(BaseModel):
     model: str
     content: str
     done: bool
 
-class OCRResponse(BaseModel):
-    text: str
-    confidence: Optional[float] = None
-    language: Optional[str] = None
-
-# Initialize FastAPI app
-app = FastAPI()
-
-# Initialize MangaOCR
-_manga_ocr = None
-
+# Helper functions
 def get_manga_ocr():
     global _manga_ocr
-    if _manga_ocr is None and manga_ocr_available:
+    if _manga_ocr is None:
         try:
-            print(f"Initializing MangaOCR with models path: {MANGAOCR_MODELS_PATH}")
-            _manga_ocr = manga_ocr.MangaOcr()
-            print("MangaOCR initialized successfully")
+            _manga_ocr = MangaOcr()
         except Exception as e:
-            print(f"Error initializing MangaOCR: {e}")
+            print(f"Warning: Model initialization failed: {e}")
     return _manga_ocr
 
-# Process image with MangaOCR
-def process_image_with_ocr(image):
-    ocr = get_manga_ocr()
-    if ocr is None:
-        return "OCR not available"
-
+@app.post("/ocr")
+async def ocr_image(file: UploadFile = File(...), language: Optional[str] = Form("ja")):
     try:
-        # Convert to PIL Image if it's not already
-        if not isinstance(image, Image.Image):
-            image = Image.open(image)
-
-        # Save to a temporary file (MangaOCR works better with files)
-        temp_path = "/tmp/temp_image.png"
-        image.save(temp_path)
-
-        # Process with OCR
-        text = ocr(temp_path)
-
-        # Clean up
-        if Path(temp_path).exists():
-            Path(temp_path).unlink()
-
-        return text
-    except Exception as e:
-        print(f"OCR error: {e}")
-        return "Error processing image"
-
-@app.post("/v1/vision")
-async def vision_completion(request: VisionRequest):
-    try:
-        # Format messages for Ollama
-        ollama_messages = []
-        
-        for msg in request.messages:
-            content_list = []
-            for content in msg.content:
-                if content.type == "text":
-                    content_list.append({"type": "text", "text": content.text})
-                elif content.type == "image_url":
-                    content_list.append({"type": "image", "image": content.image_url})
+        if not manga_ocr_available:
+            raise HTTPException(status_code=500, detail="MangaOCR not available")
             
-            ollama_messages.append({"role": msg.role, "content": content_list})
+        ocr = get_manga_ocr()
+        if ocr is None:
+            raise HTTPException(status_code=500, detail="MangaOCR failed to initialize")
+            
+        # Read the uploaded file
+        contents = await file.read()
+        
+        # Process with MangaOCR
+        text = ocr(contents)
+        
+        return {"text": text, "language": language}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error processing image: {str(e)}")
 
-        # Prepare the request for Ollama
-        ollama_request = {
-            "model": request.model or VISION_MODEL_ID,
-            "messages": ollama_messages,
-            "stream": False,
-            "temperature": request.temperature
-        }
-
-        # Make request to Ollama
+@app.post("/vision")
+async def process_vision(request: VisionRequest):
+    try:
         async with httpx.AsyncClient() as client:
-            # First, ensure the model is pulled
-            try:
-                await client.post(
-                    f"{LLM_ENDPOINT}/api/pull",
-                    json={"name": request.model or VISION_MODEL_ID},
-                    timeout=30.0
-                )
-            except Exception as e:
-                print(f"Warning: Model pull failed: {e}")
-
-            # Make the generation request
             response = await client.post(
                 f"{LLM_ENDPOINT}/api/chat",  # Using chat API for vision models
-                json=ollama_request,
-                timeout=60.0  # Increased timeout for generation
+                json={
+                    "model": request.model or VISION_MODEL_ID,
+                    "messages": [
+                        {
+                            "role": "user",
+                            "content": [
+                                {"type": "text", "text": request.prompt},
+                                {"type": "image_url", "image_url": {"url": request.image}}
+                            ]
+                        }
+                    ],
+                    "temperature": request.temperature,
+                    "max_tokens": request.max_tokens
+                }
             )
-
+            
             if response.status_code != 200:
                 raise HTTPException(
                     status_code=response.status_code,
-                    detail=f"Error from LLM service: {response.text}"
+                    detail=f"LLM service error: {response.text}"
                 )
-
+                
             result = response.json()
-
-            # Handle different response formats
-            content = ""
-            if "response" in result:  # Ollama generate API
-                content = result["response"]
-            elif "message" in result:  # Ollama chat API
-                content = result["message"]["content"]
-
+            content = result.get("message", {}).get("content", "")
+            
             return VisionResponse(
                 model=request.model or VISION_MODEL_ID,
                 content=content,
@@ -258,10 +108,7 @@ async def vision_completion(request: VisionRequest):
             )
 
     except Exception as e:
-        raise HTTPException(
-            status_code=500,
-            detail=f"Error processing request: {str(e)}"
-        )
+        raise HTTPException(status_code=500, detail=f"Error processing image: {str(e)}")
 
 @app.post("/upload-image")
 async def upload_image(file: UploadFile = File(...)):
@@ -294,8 +141,8 @@ async def health_check():
         }
     except Exception as e:
         return {
-            "status": "healthy", 
-            "ollama_status": f"error: {str(e)}",
+            "status": "unhealthy", 
+            "error": str(e),
             "manga_ocr_status": "unknown"
         }
 

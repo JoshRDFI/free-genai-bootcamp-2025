@@ -4,6 +4,7 @@ from typing import Optional
 import os
 import base64
 import tempfile
+from TTS.api import TTS
 
 # Constants
 TTS_MODEL = os.getenv("TTS_MODEL", "xtts-v2")
@@ -22,51 +23,50 @@ class TTSResponse(BaseModel):
 # Initialize FastAPI app
 app = FastAPI()
 
-# This is a placeholder for actual TTS implementation
-# In a real implementation, you would use a library like TTS, pyttsx3, or call an external API
-def text_to_speech(text, voice="default", language="en", speed=1.0):
-    try:
-        # This is a placeholder - in a real implementation you would use a TTS library
-        # For example with coqui-ai TTS:
-        # from TTS.api import TTS
-        # tts = TTS(model_name=TTS_MODEL)
-        # wav = tts.tts(text=text, speaker=voice, language=language)
-        
-        # For now, we'll just create a dummy audio file
-        import numpy as np
-        from scipy.io import wavfile
-        
-        # Generate a simple sine wave as placeholder audio
-        sample_rate = 22050
-        duration = len(text) * 0.1  # Rough estimate of duration based on text length
-        t = np.linspace(0, duration, int(sample_rate * duration), endpoint=False)
-        audio = np.sin(2 * np.pi * 440 * t) * 0.3  # 440 Hz sine wave
-        
-        # Save to a temporary file
-        with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as temp_file:
-            wavfile.write(temp_file.name, sample_rate, audio.astype(np.float32))
-            temp_filename = temp_file.name
-        
-        # Read the file and encode to base64
-        with open(temp_filename, "rb") as audio_file:
-            audio_data = audio_file.read()
-            
-        # Clean up
-        os.unlink(temp_filename)
-        
-        return base64.b64encode(audio_data).decode("utf-8")
-    except Exception as e:
-        raise Exception(f"TTS generation failed: {str(e)}")
+# Initialize TTS model
+_tts_model = None
+
+def get_tts_model():
+    global _tts_model
+    if _tts_model is None:
+        try:
+            print(f"Initializing TTS model: {TTS_MODEL}")
+            _tts_model = TTS(model_name=TTS_MODEL)
+            print("TTS model initialized successfully")
+        except Exception as e:
+            print(f"Error initializing TTS model: {e}")
+    return _tts_model
 
 @app.post("/tts")
-async def generate_speech(request: TTSRequest):
+async def text_to_speech(request: TTSRequest):
     try:
-        audio_base64 = text_to_speech(
+        # Get the TTS model
+        tts = get_tts_model()
+        if tts is None:
+            raise Exception("TTS model failed to initialize")
+            
+        # Create a temporary file for the audio output
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as temp_file:
+            temp_filename = temp_file.name
+        
+        # Generate speech with XTTS
+        tts.tts_to_file(
             text=request.text,
-            voice=request.voice,
+            file_path=temp_filename,
+            speaker=request.voice,
             language=request.language,
             speed=request.speed
         )
+        
+        # Read the generated audio file
+        with open(temp_filename, "rb") as audio_file:
+            audio_data = audio_file.read()
+        
+        # Encode to base64
+        audio_base64 = base64.b64encode(audio_data).decode("utf-8")
+        
+        # Clean up
+        os.unlink(temp_filename)
         
         return TTSResponse(audio=audio_base64, format="wav")
     except Exception as e:

@@ -1,0 +1,396 @@
+# writing-practice/app.py
+import streamlit as st
+import requests
+import sqlite3
+import logging
+import random
+import datetime
+from enum import Enum
+from pathlib import Path
+from PIL import Image
+from manga_ocr import MangaOcr
+from streamlit_drawable_canvas import st_canvas
+
+# ---- Path Configuration ----
+BASE_DIR = Path(__file__).parent.absolute()
+PROJECT_ROOT = BASE_DIR.parent
+DATA_DIR = PROJECT_ROOT / "data"
+DB_PATH = DATA_DIR / "db.sqlite3"
+IMAGES_DIR = BASE_DIR / "images"
+
+# ---- Database Schema ----
+REQUIRED_TABLES = {
+    'word_groups': ['id', 'name', 'level'],
+    'words': ['id', 'kanji', 'romaji', 'english', 'group_id'],
+    'sentences': ['id', 'japanese', 'english', 'level', 'category'],
+    'writing_submissions': ['id', 'sentence_id', 'transcription', 'translation', 'grade', 'feedback']
+}
+
+# ---- Logging Configuration ----
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.FileHandler(BASE_DIR / "app.log"),
+        logging.StreamHandler()
+    ]
+)
+logger = logging.getLogger(__name__)
+
+# ---- API Health Check ----
+def check_api_health():
+    """Check if API server is running"""
+    try:
+        response = requests.get("http://localhost:5000/api/health", timeout=2)
+        return response.status_code == 200
+    except (requests.ConnectionError, requests.Timeout):
+        return False
+
+# ---- Application States ----
+class AppState(Enum):
+    SETUP = "setup"
+    PRACTICE = "practice"
+    REVIEW = "review"
+
+class WritingPracticeApp:
+    def __init__(self):
+        self.initialize_session_state()
+        self.load_vocabulary_groups()
+        self.mocr = None
+        self.error_log = []
+
+    def initialize_session_state(self):
+        defaults = {
+            'app_state': AppState.SETUP,
+            'current_sentence': None,
+            'review_data': None,
+            'current_group_id': None,
+            'vocabulary': []
+        }
+        for key, val in defaults.items():
+            if key not in st.session_state:
+                st.session_state[key] = val
+
+    def validate_database(self):
+        try:
+            with sqlite3.connect(DB_PATH) as conn:
+                cursor = conn.cursor()
+                cursor.execute("SELECT name FROM sqlite_master WHERE type='table'")
+                existing_tables = {row[0] for row in cursor.fetchall()}
+                missing_tables = set(REQUIRED_TABLES.keys()) - existing_tables
+                if missing_tables:
+                    raise ValueError(f"Missing tables: {', '.join(missing_tables)}")
+        except Exception as e:
+            logger.error(f"Database validation failed: {e}")
+            st.error("Database configuration error")
+            st.stop()
+
+    def set_background(self, image_name: str):
+        try:
+            bg_path = IMAGES_DIR / image_name
+            st.markdown(
+                f"""
+                <style>
+                .stApp {{
+                    background: url('{bg_path}') no-repeat center center fixed;
+                    background-size: cover;
+                }}
+                .main .block-container {{
+                    background-color: rgba(255, 255, 255, 0.95);
+                    border-radius: 10px;
+                    padding: 2rem;
+                    margin: 2rem auto;
+                    max-width: 90%;
+                }}
+                </style>
+                """,
+                unsafe_allow_html=True
+            )
+        except Exception as e:
+            logger.error(f"Background error: {e}")
+            st.markdown("""<style>.stApp { background-color: #f0f2f6; }</style>""", unsafe_allow_html=True)
+
+    def render_setup_state(self):
+        self.set_background("1240417.png")
+        st.title("Japanese Writing Practice")
+
+        # API status indicator
+        api_status = "🟢 Running" if check_api_health() else "🔴 Offline"
+        st.markdown(f"**API Status:** {api_status}")
+
+        if not self.vocabulary_groups:
+            st.error("No vocabulary categories found")
+            return
+
+        if not check_api_health():
+            st.warning("""
+                **Connection Issue Detected**
+                Trying fallback database access. Some features might be limited.
+                - Ensure the API server is running in another terminal:
+                  `python api_server.py`
+                - Check firewall settings if running remotely
+            """)
+
+        col1, col2, col3 = st.columns([1, 2, 1])
+        with col2:
+            if st.button(
+                "Generate Random Practice Sentence 🎯",
+                type="primary",
+                use_container_width=True,
+                key="generate-btn"
+            ):
+                try:
+                    # Select random group excluding "Random Mix"
+                    valid_groups = [g for g in self.vocabulary_groups if g['id'] != -1]
+                    selected_group = random.choice(valid_groups)
+                    self.load_vocabulary(selected_group['id'])
+
+                    with st.spinner("Generating sentence..."):
+                        if sentence := self.generate_sentence():
+                            self.cache_sentence(sentence)
+                            st.session_state.update({
+                                'current_sentence': sentence,
+                                'app_state': AppState.PRACTICE,
+                                'current_group_id': selected_group['id']
+                            })
+                            st.rerun()
+                        else:
+                            st.error("Failed to generate sentence")
+                except Exception as e:
+                    logger.error(f"Generation failed: {e}")
+                    st.error("Error generating practice session")
+
+        # Display current category if available
+        if st.session_state.get('current_group_id'):
+            try:
+                group = next(g for g in self.vocabulary_groups
+                           if g['id'] == st.session_state.current_group_id)
+                st.markdown(f"*Last practiced: {group['name']} (Level {group['level']})*")
+            except StopIteration:
+                pass
+
+    def render_practice_state(self):
+        self.set_background("1371442.png")
+        st.title("Practice Writing")
+
+        if not st.session_state.current_sentence:
+            st.session_state.app_state = AppState.SETUP
+            st.rerun()
+            return
+
+        col1, col2 = st.columns([3, 2])
+        with col1:
+            st.subheader("Current Sentence")
+            st.markdown(f"""
+                **Japanese:**
+                {st.session_state.current_sentence['japanese']}
+                **English:**
+                {st.session_state.current_sentence['english']}
+            """)
+
+        with col2:
+            st.subheader("Write Your Response")
+            canvas_result = st_canvas(
+                fill_color="rgba(255, 255, 255, 0.0)",
+                stroke_width=2,
+                stroke_color='#000',
+                background_color="#ffffff",
+                height=300,
+                width=400,
+                drawing_mode="freedraw",
+                key="canvas"
+            )
+
+            if st.button("Submit for Review"):
+                if canvas_result.image_data is not None:
+                    img = Image.fromarray(canvas_result.image_data.astype('uint8'))
+                    recognized_text = self.recognize_text(img)
+                    self.process_submission(recognized_text)
+
+        if st.button("Back to Main Menu"):
+            st.session_state.app_state = AppState.SETUP
+            st.rerun()
+
+    def render_review_state(self):
+        self.set_background("1371443.png")
+        st.title("Submission Review")
+
+        review = st.session_state.review_data
+        grade_color = {
+            'S': '#4CAF50',
+            'A': '#8BC34A',
+            'B': '#FFC107',
+            'C': '#F44336'
+        }.get(review['grade'], '#607D8B')
+
+        st.markdown(f"""
+            <div style="
+                background-color: {grade_color};
+                padding: 1rem;
+                border-radius: 10px;
+                text-align: center;
+                margin: 1rem 0;
+            ">
+                <h2>Grade: {review['grade']}</h2>
+                <p>{review['feedback']}</p>
+            </div>
+        """, unsafe_allow_html=True)
+
+        col1, col2 = st.columns(2)
+        with col1:
+            st.subheader("Your Submission")
+            st.text_area("", value=review['submitted_text'], disabled=True)
+
+        with col2:
+            st.subheader("Correct Answer")
+            st.text_area("", value=review['correct_text'], disabled=True)
+
+        if st.button("Try Again"):
+            st.session_state.app_state = AppState.PRACTICE
+            st.rerun()
+
+        if st.button("New Sentence"):
+            st.session_state.app_state = AppState.SETUP
+            st.rerun()
+
+    def load_vocabulary_groups(self):
+        try:
+            with sqlite3.connect(DB_PATH) as conn:
+                conn.row_factory = sqlite3.Row
+                cursor = conn.cursor()
+                cursor.execute("SELECT id, name, level FROM word_groups ORDER BY level")
+                self.vocabulary_groups = [dict(row) for row in cursor.fetchall()]
+                # Add "Random Mix" option
+                self.vocabulary_groups.append({
+                    'id': -1,
+                    'name': 'Random Mix',
+                    'level': 'All'
+                })
+                logger.info(f"Loaded {len(self.vocabulary_groups)} vocabulary groups")
+        except Exception as e:
+            logger.error(f"Error loading groups: {e}")
+            self.vocabulary_groups = []
+            st.error("Failed to load vocabulary categories")
+
+    def load_vocabulary(self, group_id: int):
+        """Load vocabulary for selected group with enhanced error handling"""
+        try:
+            if not check_api_health():
+                raise RuntimeError("API server not responding")
+
+            response = requests.get(
+                f"http://localhost:5000/api/groups/{group_id}/raw",
+                timeout=3
+            )
+            response.raise_for_status()
+            st.session_state.vocabulary = response.json()
+            logger.info(f"Loaded {len(st.session_state.vocabulary)} words via API")
+            return
+
+        except Exception as api_error:
+            logger.warning(f"API load failed: {api_error}, falling back to direct DB access")
+            try:
+                with sqlite3.connect(DB_PATH) as conn:
+                    conn.row_factory = sqlite3.Row
+                    cursor = conn.cursor()
+                    cursor.execute("""
+                        SELECT id, kanji, romaji, english
+                        FROM words
+                        WHERE group_id = ?
+                    """, (group_id,))
+                    st.session_state.vocabulary = [dict(row) for row in cursor.fetchall()]
+                    logger.info(f"Loaded {len(st.session_state.vocabulary)} words from DB")
+
+                    if not st.session_state.vocabulary:
+                        raise ValueError("No words found in database for selected group")
+
+            except Exception as db_error:
+                logger.error(f"Vocabulary load failed: {db_error}")
+                st.error("Failed to load vocabulary from both API and database")
+                self.error_log.append({
+                    'timestamp': datetime.datetime.now(),
+                    'group_id': group_id,
+                    'error': str(db_error)
+                })
+                st.session_state.app_state = AppState.SETUP
+                st.rerun()
+
+    def generate_sentence(self):
+        if not st.session_state.vocabulary:
+            logger.error("Vocabulary list is empty. Cannot generate sentence.")
+            return None
+
+        try:
+            selected_words = random.sample(st.session_state.vocabulary, 3)
+            sentence_jp = " ".join(word['kanji'] for word in selected_words) + "。"
+            sentence_en = " ".join(word['english'] for word in selected_words) + "."
+
+            return {
+                "japanese": sentence_jp,
+                "english": sentence_en,
+                "level": "N5",
+                "category": "Generated"
+            }
+        except Exception as e:
+            logger.error(f"Sentence generation failed: {e}")
+            return None
+
+    def cache_sentence(self, sentence_data):
+        try:
+            with sqlite3.connect(DB_PATH) as conn:
+                cursor = conn.cursor()
+                cursor.execute("""
+                    INSERT INTO sentences (japanese, english, level, category)
+                    VALUES (?, ?, ?, ?)
+                """, (
+                    sentence_data['japanese'],
+                    sentence_data['english'],
+                    sentence_data['level'],
+                    sentence_data['category']
+                ))
+                conn.commit()
+                logger.info("Cached generated sentence")
+        except Exception as e:
+            logger.error(f"Failed to cache sentence: {e}")
+
+    def recognize_text(self, image):
+        if self.mocr is None:
+            self.mocr = MangaOcr()
+        return self.mocr(image)
+
+    def process_submission(self, recognized_text):
+        correct_text = st.session_state.current_sentence['japanese']
+        grade = 'S' if recognized_text.strip() == correct_text.strip() else 'C'
+
+        st.session_state.review_data = {
+            'grade': grade,
+            'submitted_text': recognized_text,
+            'correct_text': correct_text,
+            'feedback': self.generate_feedback(grade)
+        }
+        st.session_state.app_state = AppState.REVIEW
+        st.rerun()
+
+    def generate_feedback(self, grade):
+        return {
+            'S': "Perfect! Your writing matches exactly!",
+            'A': "Very close! Minor improvements needed.",
+            'B': "Good attempt. Practice stroke order.",
+            'C': "Needs work. Compare with correct answer."
+        }.get(grade, "Unknown grade")
+
+    def run(self):
+        self.validate_database()
+        try:
+            if st.session_state.app_state == AppState.SETUP:
+                self.render_setup_state()
+            elif st.session_state.app_state == AppState.PRACTICE:
+                self.render_practice_state()
+            elif st.session_state.app_state == AppState.REVIEW:
+                self.render_review_state()
+        except Exception as e:
+            logger.error(f"Application error: {e}")
+            st.error("A critical error occurred. Please refresh the page.")
+
+if __name__ == "__main__":
+    WritingPracticeApp().run()

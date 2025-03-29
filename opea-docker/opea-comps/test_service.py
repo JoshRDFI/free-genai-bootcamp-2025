@@ -3,7 +3,7 @@
 """
 Unit tests for the OPEA Components library.
 
-Run with: python -m unittest test_service.py
+Run with: python3 -m unittest test_service.py
 """
 
 import unittest

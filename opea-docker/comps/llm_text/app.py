@@ -7,6 +7,7 @@ from enum import Enum
 
 # Constants
 LLM_ENDPOINT = os.getenv("LLM_ENDPOINT", "http://ollama-server:11434")
+DEFAULT_MODEL = os.getenv("DEFAULT_MODEL", "llama3.2")
 
 class Role(str, Enum):
     USER = "user"
@@ -18,7 +19,7 @@ class Message(BaseModel):
     content: str
 
 class ChatRequest(BaseModel):
-    model: str
+    model: Optional[str] = DEFAULT_MODEL
     messages: List[Message]
     temperature: Optional[float] = 0.7
     stream: Optional[bool] = False
@@ -38,8 +39,8 @@ async def chat_completion(request: ChatRequest):
         ollama_messages = [{"role": msg.role, "content": msg.content} for msg in request.messages]
 
         # Prepare the request for Ollama
-        ollama_request = {
-            "model": request.model,
+        payload = {
+            "model": request.model or DEFAULT_MODEL,
             "messages": ollama_messages,
             "stream": False,
             "temperature": request.temperature
@@ -47,40 +48,32 @@ async def chat_completion(request: ChatRequest):
 
         # Make request to Ollama
         async with httpx.AsyncClient() as client:
-            # First, ensure the model is pulled
-            try:
-                await client.post(
-                    f"{LLM_ENDPOINT}/api/pull",
-                    json={"name": request.model},
-                    timeout=30.0
-                )
-            except Exception as e:
-                print(f"Warning: Model pull failed: {e}")
-
-            # Make the generation request
             response = await client.post(
-                f"{LLM_ENDPOINT}/api/generate",  # or use /api/chat for newer Ollama versions
-                json=ollama_request,
-                timeout=60.0  # Increased timeout for generation
+                f"{LLM_ENDPOINT}/api/chat",  # Using chat API for newer Ollama versions
+                json=payload
             )
 
             if response.status_code != 200:
                 raise HTTPException(
                     status_code=response.status_code,
-                    detail=f"Error from LLM service: {response.text}"
+                    detail=f"LLM service error: {response.text}"
                 )
 
             result = response.json()
 
             # Handle different response formats
-            content = ""
-            if "response" in result:  # Ollama generate API
-                content = result["response"]
-            elif "message" in result:  # Ollama chat API
+            if "message" in result:  # Ollama chat API
                 content = result["message"]["content"]
+            elif "response" in result:  # Ollama generate API (fallback)
+                content = result["response"]
+            else:
+                raise HTTPException(
+                    status_code=500,
+                    detail=f"Unexpected response format from LLM service: {result}"
+                )
 
             return ChatResponse(
-                model=request.model,
+                model=request.model or DEFAULT_MODEL,
                 message=Message(
                     role=Role.ASSISTANT,
                     content=content
@@ -101,10 +94,10 @@ async def health_check():
         async with httpx.AsyncClient() as client:
             response = await client.get(f"{LLM_ENDPOINT}/api/version")
             if response.status_code == 200:
-                return {"status": "healthy", "ollama_status": "connected"}
-            return {"status": "healthy", "ollama_status": "disconnected"}
+                return {"status": "healthy", "ollama_status": "connected", "default_model": DEFAULT_MODEL}
+            return {"status": "degraded", "ollama_status": "disconnected"}
     except Exception as e:
-        return {"status": "healthy", "ollama_status": f"error: {str(e)}"}
+        return {"status": "degraded", "error": str(e)}
 
 if __name__ == "__main__":
     import uvicorn

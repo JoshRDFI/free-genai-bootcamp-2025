@@ -4,10 +4,10 @@ from typing import Optional
 import os
 import base64
 import tempfile
+import whisper
 
 # Constants
-ASR_MODEL = os.getenv("ASR_MODEL", "whisper-large-v3")
-ASR_DATA_PATH = os.getenv("ASR_DATA_PATH", "/home/asr/.xtts_data")
+ASR_MODEL = os.getenv("ASR_MODEL", "large-v3")
 
 class ASRResponse(BaseModel):
     text: str
@@ -17,19 +17,35 @@ class ASRResponse(BaseModel):
 # Initialize FastAPI app
 app = FastAPI()
 
-# This is a placeholder for actual ASR implementation
-# In a real implementation, you would use a library like whisper, speechrecognition, or call an external API
+# Initialize Whisper model
+_asr_model = None
+
+def get_asr_model():
+    global _asr_model
+    if _asr_model is None:
+        try:
+            print(f"Initializing Whisper model: {ASR_MODEL}")
+            _asr_model = whisper.load_model(ASR_MODEL)
+            print("Whisper model initialized successfully")
+        except Exception as e:
+            print(f"Error initializing Whisper model: {e}")
+    return _asr_model
+
 def speech_to_text(audio_file_path):
     try:
-        # This is a placeholder - in a real implementation you would use an ASR library
-        # For example with OpenAI's Whisper:
-        # import whisper
-        # model = whisper.load_model(ASR_MODEL)
-        # result = model.transcribe(audio_file_path)
-        # return result["text"], result["confidence"], result["language"]
+        model = get_asr_model()
+        if model is None:
+            raise Exception("ASR model failed to initialize")
+            
+        # Process with Whisper
+        result = model.transcribe(audio_file_path)
         
-        # For now, we'll just return a dummy response
-        return "This is a placeholder transcription.", 0.95, "en"
+        # Extract results
+        text = result["text"]
+        language = result.get("language", "unknown")
+        confidence = result.get("confidence", 0.95)  # Whisper doesn't provide confidence, using default
+        
+        return text, confidence, language
     except Exception as e:
         raise Exception(f"ASR processing failed: {str(e)}")
 
