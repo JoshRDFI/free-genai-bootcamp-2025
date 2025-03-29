@@ -1,7 +1,27 @@
-FROM python:3.12-slim-bookworm
+FROM python:3.10-slim
+
 WORKDIR /app
-COPY . /app
-RUN apt-get update && apt-get install -y build-essential curl && rm -rf /var/lib/apt/lists/*
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    libsndfile1 \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy requirements first for better caching
+COPY requirements.txt .
+
+# Install dependencies
 RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy the rest of the application
+COPY . .
+
+# Create directory for TTS data
+RUN mkdir -p /home/tts/.xtts_data
+
+# Expose the port
 EXPOSE 9200
-CMD ["python3", "app.py"]
+
+# Run the application
+CMD ["python", "app.py"]

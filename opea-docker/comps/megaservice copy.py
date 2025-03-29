@@ -1,10 +1,10 @@
-import os
-from opea_comps import MicroService, ServiceOrchestrator, ServiceType
+from opea_comps import MicroService, ServiceOrchestrator
 
 EMBEDDING_SERVICE_HOST_IP = os.getenv("EMBEDDING_SERVICE_HOST_IP", "0.0.0.0")
-EMBEDDING_SERVICE_PORT = int(os.getenv("EMBEDDING_SERVICE_PORT", 6000))
+EMBEDDING_SERVICE_PORT = os.getenv("EMBEDDING_SERVICE_PORT", 6000)
 LLM_SERVICE_HOST_IP = os.getenv("LLM_SERVICE_HOST_IP", "0.0.0.0")
-LLM_SERVICE_PORT = int(os.getenv("LLM_SERVICE_PORT", 8008))  # Updated to match Ollama's port
+LLM_SERVICE_PORT = os.getenv("LLM_SERVICE_PORT", 9000)
+
 
 class ExampleService:
     def __init__(self, host="0.0.0.0", port=8000):
@@ -17,7 +17,7 @@ class ExampleService:
             name="embedding",
             host=EMBEDDING_SERVICE_HOST_IP,
             port=EMBEDDING_SERVICE_PORT,
-            endpoint="/embed",  # Updated endpoint to reflect our embeddings microservice
+            endpoint="/v1/embeddings",
             use_remote_service=True,
             service_type=ServiceType.EMBEDDING,
         )
@@ -25,7 +25,7 @@ class ExampleService:
             name="llm",
             host=LLM_SERVICE_HOST_IP,
             port=LLM_SERVICE_PORT,
-            endpoint="/v1/chat/completions",  # Targeting the hosted Ollama LLM service
+            endpoint="/v1/chat/completions",
             use_remote_service=True,
             service_type=ServiceType.LLM,
         )

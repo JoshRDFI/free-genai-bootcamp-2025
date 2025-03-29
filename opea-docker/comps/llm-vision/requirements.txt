@@ -1,4 +1,9 @@
-fastapi
-uvicorn
-pydantic
-httpx
+fastapi>=0.68.0
+uvicorn>=0.15.0
+python-multipart>=0.0.5
+pydantic>=1.8.2
+httpx>=0.23.0
+pillow>=9.0.0
+python-magic>=0.4.24
+manga-ocr>=0.1.8
+opencv-python

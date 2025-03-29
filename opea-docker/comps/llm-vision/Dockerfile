@@ -1,8 +1,28 @@
-# FROM nvidia/cuda:11.8-base
-FROM python:3.12-slim-bookworm
+FROM python:3.10-slim
+
 WORKDIR /app
-COPY . /app
-RUN apt-get update && apt-get install -y build-essential curl && rm -rf /var/lib/apt/lists/*
+
+# Install system dependencies for MangaOCR
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    libgl1-mesa-glx \
+    libglib2.0-0 \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy requirements first for better caching
+COPY requirements.txt .
+
+# Install dependencies
 RUN pip install --no-cache-dir -r requirements.txt
+
+# Create directory for MangaOCR models
+RUN mkdir -p /app/mangaocr_models
+
+# Copy the rest of the application
+COPY . .
+
+# Expose the port
 EXPOSE 9100
-CMD ["python3", "app.py"]
+
+# Run the application
+CMD ["python", "app.py"]
