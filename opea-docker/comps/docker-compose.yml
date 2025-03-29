@@ -6,8 +6,8 @@ services:
     ports:
       - "${LLM_ENDPOINT_PORT:-8008}:11434"
     volumes:
-      - ollama_data:/root/.ollama
-      - shared_db:/app/db   # access to shared SQLite3
+      - ./app/data/ollama_data:/root/.ollama
+      - ./app/data/shared_db:/app/db
     environment:
       - no_proxy=${no_proxy}
       - http_proxy=${http_proxy}
@@ -24,7 +24,7 @@ services:
 
   llm_text:
     build:
-      context: ./comps/llm_text
+      context: ./opea-docker/comps/llm_text
       dockerfile: Dockerfile
     container_name: llm_text
     ports:
@@ -34,14 +34,14 @@ services:
     depends_on:
       - ollama-server
     volumes:
-      - ./comps/llm-text:/app
-      - shared_db:/app/db   # access to shared SQLite3
-      - llm_data:/home/llm/.xtts_data  # Persistent storage -- fix location
+      - ./opea-docker/comps/llm_text:/app
+      - ./app/data/shared_db:/app/db
+      - ./app/data/llm_xtts:/home/llm/.xtts_data
     restart: unless-stopped
 
   embeddings:
     build:
-      context: ./comps/embeddings
+      context: ./opea-docker/comps/embeddings
       dockerfile: Dockerfile
     container_name: embeddings
     ports:
@@ -50,16 +50,15 @@ services:
       - EMBEDDING_SERVICE_HOST_IP=0.0.0.0
       - EMBEDDING_SERVICE_PORT=6000
     volumes:
-      - ./comps/embeddings:/app
-      - shared_db:/app/db   # access to shared SQLite3
+      - ./opea-docker/comps/embeddings:/app
+      - ./app/data/shared_db:/app/db
     restart: unless-stopped
 
   llm-vision:
     build:
-      context: ./comps/llm-vision
+      context: ./opea-docker/comps/llm-vision
       dockerfile: Dockerfile
     container_name: llm-vision
-    # Use a different port if necessary
     ports:
       - "9100:9100"
     deploy:
@@ -70,65 +69,57 @@ services:
               count: all
               capabilities: [gpu]
     environment:
-      # add vision-specific env vars here
+      # Add vision-specific environment variables here if needed
     volumes:
-      - ./comps/llm-vision:/app
-      - shared_db:/app/db   # access to shared SQLite3
-      - mangaocr_data:/home/mangaocr/.mangaocr_data  # Persistent storage -- fix location
+      - ./opea-docker/comps/llm-vision:/app
+      - ./app/data/shared_db:/app/db
+      - ./app/data/mangaocr_models:/app/mangaocr_models
     restart: unless-stopped
 
   tts:
     build:
-      context: ./comps/tts
+      context: ./opea-docker/comps/tts
       dockerfile: Dockerfile
     container_name: tts
     ports:
       - "9200:9200"
     volumes:
-      - ./comps/tts:/app
-      - shared_db:/app/db   # access to shared SQLite3
-      - tts_data:/home/tts/.xtts_data  # Persistent storage for XTTS files - fix location
+      - ./opea-docker/comps/tts:/app
+      - ./app/data/shared_db:/app/db
+      - ./app/data/tts_data:/home/tts/.xtts_data
     restart: unless-stopped
 
   asr:
     build:
-      context: ./comps/asr
+      context: ./opea-docker/comps/asr
       dockerfile: Dockerfile
     container_name: asr
     ports:
       - "9300:9300"
     volumes:
-      - ./comps/asr:/app
-      - shared_db:/app/db   # access to shared SQLite3
-      - asr_data:/home/asr/.xtts_data  # Persistent storage for XTTS files - fix location
+      - ./opea-docker/comps/asr:/app
+      - ./app/data/shared_db:/app/db
+      - ./app/data/asr_data:/home/asr/.xtts_data
     restart: unless-stopped
 
   chromadb:
     image: ghcr.io/chroma-core/chroma:latest
     container_name: chromadb
     volumes:
-      - ./data:/data
-      - shared_db:/app/db   # access to shared SQLite3
+      - ./app/data/chroma_data:/data
+      - ./app/data/shared_db:/app/db
     ports:
       - "8050:8050"
-    restart: unless-stopped  
+    restart: unless-stopped
 
   guardrails:
     build:
-      context: ./comps/guardrails
+      context: ./opea-docker/comps/guardrails
       dockerfile: Dockerfile
     container_name: guardrails
     ports:
       - "9400:9400"
     volumes:
-      - ./comps/guardrails:/app
-      - shared_db:/app/db   # access to shared SQLite3
+      - ./opea-docker/comps/guardrails:/app
+      - ./app/data/shared_db:/app/db
     restart: unless-stopped
-
-volumes:
-  ollama_data:
-  chroma_data:
-  shared_db:/app/db  
-  tts_data: # Need persistant directory
-  mangaocr_data: # Need persistant directory
-  asr_data: # Need persistant directory
