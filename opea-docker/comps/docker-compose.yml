@@ -6,8 +6,8 @@ services:
     ports:
       - "${LLM_ENDPOINT_PORT:-8008}:11434"
     volumes:
-      - ./app/data/ollama_data:/root/.ollama
-      - ./app/data/shared_db:/app/db
+      - ../data/ollama_data:/root/.ollama
+      - ../data/shared_db:/app/db
     environment:
       - no_proxy=${no_proxy}
       - http_proxy=${http_proxy}
@@ -24,7 +24,7 @@ services:
 
   llm_text:
     build:
-      context: ./opea-docker/comps/llm_text
+      context: ./llm_text
       dockerfile: Dockerfile
     container_name: llm_text
     ports:
@@ -34,14 +34,14 @@ services:
     depends_on:
       - ollama-server
     volumes:
-      - ./opea-docker/comps/llm_text:/app
-      - ./app/data/shared_db:/app/db
-      - ./app/data/llm_xtts:/home/llm/.xtts_data
+      - ./llm_text:/app
+      - ../data/shared_db:/app/db
+      - ../data/llm_xtts:/home/llm/.xtts_data
     restart: unless-stopped
 
   embeddings:
     build:
-      context: ./opea-docker/comps/embeddings
+      context: ./embeddings
       dockerfile: Dockerfile
     container_name: embeddings
     ports:
@@ -50,13 +50,13 @@ services:
       - EMBEDDING_SERVICE_HOST_IP=0.0.0.0
       - EMBEDDING_SERVICE_PORT=6000
     volumes:
-      - ./opea-docker/comps/embeddings:/app
-      - ./app/data/shared_db:/app/db
+      - ./embeddings:/app
+      - ../data/shared_db:/app/db
     restart: unless-stopped
 
   llm-vision:
     build:
-      context: ./opea-docker/comps/llm-vision
+      context: ./llm-vision
       dockerfile: Dockerfile
     container_name: llm-vision
     ports:
@@ -69,57 +69,57 @@ services:
               count: all
               capabilities: [gpu]
     environment:
-      # Add vision-specific environment variables here if needed
+      - VISION_MODEL_ID=${VISION_MODEL_ID:-llava}
     volumes:
-      - ./opea-docker/comps/llm-vision:/app
-      - ./app/data/shared_db:/app/db
-      - ./app/data/mangaocr_models:/app/mangaocr_models
+      - ./llm-vision:/app
+      - ../data/shared_db:/app/db
+      - ../data/mangaocr_models:/app/mangaocr_models
     restart: unless-stopped
 
   tts:
     build:
-      context: ./opea-docker/comps/tts
+      context: ./tts
       dockerfile: Dockerfile
     container_name: tts
     ports:
       - "9200:9200"
     volumes:
-      - ./opea-docker/comps/tts:/app
-      - ./app/data/shared_db:/app/db
-      - ./app/data/tts_data:/home/tts/.xtts_data
+      - ./tts:/app
+      - ../data/shared_db:/app/db
+      - ../data/tts_data:/home/tts/.xtts_data
     restart: unless-stopped
 
   asr:
     build:
-      context: ./opea-docker/comps/asr
+      context: ./asr
       dockerfile: Dockerfile
     container_name: asr
     ports:
       - "9300:9300"
     volumes:
-      - ./opea-docker/comps/asr:/app
-      - ./app/data/shared_db:/app/db
-      - ./app/data/asr_data:/home/asr/.xtts_data
+      - ./asr:/app
+      - ../data/shared_db:/app/db
+      - ../data/asr_data:/home/asr/.xtts_data
     restart: unless-stopped
 
   chromadb:
     image: ghcr.io/chroma-core/chroma:latest
     container_name: chromadb
     volumes:
-      - ./app/data/chroma_data:/data
-      - ./app/data/shared_db:/app/db
+      - ../data/chroma_data:/data
+      - ../data/shared_db:/app/db
     ports:
       - "8050:8050"
     restart: unless-stopped
 
   guardrails:
     build:
-      context: ./opea-docker/comps/guardrails
+      context: ./guardrails
       dockerfile: Dockerfile
     container_name: guardrails
     ports:
       - "9400:9400"
     volumes:
-      - ./opea-docker/comps/guardrails:/app
-      - ./app/data/shared_db:/app/db
+      - ./guardrails:/app
+      - ../data/shared_db:/app/db
     restart: unless-stopped

@@ -3,15 +3,15 @@
 # Create all necessary data directories for opea-docker
 
 # Base data directory
-mkdir -p ./app/data
+mkdir -p ./data
 
 # Service-specific data directories
-mkdir -p ./app/data/shared_db
-mkdir -p ./app/data/ollama_data
-mkdir -p ./app/data/chroma_data
-mkdir -p ./app/data/tts_data
-mkdir -p ./app/data/asr_data
-mkdir -p ./app/data/llm_xtts
-mkdir -p ./app/data/mangaocr_models
+mkdir -p ./data/shared_db
+mkdir -p ./data/ollama_data
+mkdir -p ./data/chroma_data
+mkdir -p ./data/tts_data
+mkdir -p ./data/asr_data
+mkdir -p ./data/llm_xtts
+mkdir -p ./data/mangaocr_models
 
 echo "All data directories created successfully."
