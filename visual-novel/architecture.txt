@@ -1,0 +1,78 @@
+# Japanese Learning Visual Novel - Architectural Diagram
+
++-------------------------------------+
+|                                     |
+|  Visual Novel Frontend (Ren'Py)     |
+|                                     |
++----------------+------------------+-+
+                 |                  |
+                 | HTTP/API         |
+                 |                  |
++----------------v------------------+-+
+|                                     |
+|  Game Server / API Gateway          |
+|                                     |
++-----+-------------+-------------+---+
+      |             |             |
+      |             |             |
++-----v-----+ +----v------+ +----v------+
+|           | |            | |            |
+| Database  | | OpenVINO   | | Docker     |
+| Service   | | Image Gen  | | Services   |
+|           | |            | |            |
++-----------+ +------------+ +-----+------+
+                                   |
+                                   |
+      +----------------------------+-----------------------------+
+      |             |              |              |              |
++-----v-----+ +----v------+ +-----v-----+ +-----v------+ +-----v------+
+|           | |            | |           | |            | |            |
+| LLM Text  | | TTS        | | ASR       | | LLM Vision | | Embeddings |
+| Service   | | Service    | | Service   | | Service    | | Service    |
+|           | |            | |           | |            | |            |
++-----------+ +------------+ +-----------+ +------------+ +------------+
+
+## Component Descriptions:
+
+1. **Visual Novel Frontend (Ren'Py)**
+   - Web-exported Ren'Py game
+   - Handles game logic, story progression, and UI
+   - Communicates with backend services via API calls
+
+2. **Game Server / API Gateway**
+   - Coordinates communication between Ren'Py and services
+   - Manages authentication and session state
+   - Routes requests to appropriate services
+
+3. **Database Service**
+   - Stores player progress, vocabulary lists
+   - Tracks learning metrics and achievements
+   - Manages game state persistence
+
+4. **OpenVINO Image Generation**
+   - Generates background scenes based on story context
+   - Creates character images and expressions
+   - Optimizes inference for real-time generation
+
+5. **Docker Services**
+   - **LLM Text**: Generates dialogue, translations, and explanations for JLPT N5 content
+   - **TTS**: Converts Japanese text to spoken audio using XTTS
+   - **ASR**: Processes player's spoken Japanese for pronunciation practice
+   - **LLM Vision**: Assists with image understanding and generation
+   - **Embeddings**: Provides semantic understanding for adaptive learning
+
+## Data Flow:
+
+1. Player interacts with Ren'Py game interface
+2. Game requests content (dialogue, translations, audio) from API Gateway
+3. API Gateway routes requests to appropriate services
+4. Services process requests and return results
+5. Game updates UI with received content
+6. Player progress is saved to database
+
+## Integration Points:
+
+1. **Ren'Py to API Gateway**: HTTP/REST API calls
+2. **API Gateway to Services**: Internal network communication
+3. **Services to Database**: Shared volume access
+4. **OpenVINO to Game**: Pre-generated or real-time image delivery

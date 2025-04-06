@@ -1,0 +1,126 @@
+{
+  "lesson_id": "lesson1",
+  "title": "First Meetings",
+  "vocabulary": [
+    {
+      "japanese": "u304au306fu3088u3046u3054u3056u3044u307eu3059",
+      "reading": "u304au306fu3088u3046u3054u3056u3044u307eu3059",
+      "english": "Good morning",
+      "part_of_speech": "expression",
+      "example": "u304au306fu3088u3046u3054u3056u3044u307eu3059u3001u4ecau65e5u306fu3044u3044u5929u6c17u3067u3059u306du3002",
+      "example_translation": "Good morning, it's nice weather today, isn't it?"
+    },
+    {
+      "japanese": "u3053u3093u306bu3061u306f",
+      "reading": "u3053u3093u306bu3061u306f",
+      "english": "Hello/Good afternoon",
+      "part_of_speech": "expression",
+      "example": "u3053u3093u306bu3061u306fu3001u521du3081u307eu3057u3066u3002",
+      "example_translation": "Hello, nice to meet you."
+    },
+    {
+      "japanese": "u3053u3093u3070u3093u306f",
+      "reading": "u3053u3093u3070u3093u306f",
+      "english": "Good evening",
+      "part_of_speech": "expression",
+      "example": "u3053u3093u3070u3093u306fu3001u304au5143u6c17u3067u3059u304bu3002",
+      "example_translation": "Good evening, how are you?"
+    },
+    {
+      "japanese": "u3055u3088u3046u306au3089",
+      "reading": "u3055u3088u3046u306au3089",
+      "english": "Goodbye",
+      "part_of_speech": "expression",
+      "example": "u3055u3088u3046u306au3089u3001u307eu305fu660eu65e5u3002",
+      "example_translation": "Goodbye, see you tomorrow."
+    },
+    {
+      "japanese": "u3088u308du3057u304fu304au9858u3044u3057u307eu3059",
+      "reading": "u3088u308du3057u304fu304au306du304cu3044u3057u307eu3059",
+      "english": "Nice to meet you/Please treat me well",
+      "part_of_speech": "expression",
+      "example": "u521du3081u307eu3057u3066u3001u7530u4e2du3067u3059u3002u3088u308du3057u304fu304au9858u3044u3057u307eu3059u3002",
+      "example_translation": "Nice to meet you, I'm Tanaka. Please treat me well."
+    },
+    {
+      "japanese": "u79c1",
+      "reading": "u308fu305fu3057",
+      "english": "I/me",
+      "part_of_speech": "pronoun",
+      "example": "u79c1u306fu5b66u751fu3067u3059u3002",
+      "example_translation": "I am a student."
+    },
+    {
+      "japanese": "u3042u306au305f",
+      "reading": "u3042u306au305f",
+      "english": "You",
+      "part_of_speech": "pronoun",
+      "example": "u3042u306au305fu306eu540du524du306fu4f55u3067u3059u304bu3002",
+      "example_translation": "What is your name?"
+    },
+    {
+      "japanese": "u5148u751f",
+      "reading": "u305bu3093u305bu3044",
+      "english": "Teacher",
+      "part_of_speech": "noun",
+      "example": "u5148u751fu306fu3068u3066u3082u89aau5207u3067u3059u3002",
+      "example_translation": "The teacher is very kind."
+    },
+    {
+      "japanese": "u5b66u751f",
+      "reading": "u304cu304fu305bu3044",
+      "english": "Student",
+      "part_of_speech": "noun",
+      "example": "u79c1u306fu65e5u672cu8a9eu306eu5b66u751fu3067u3059u3002",
+      "example_translation": "I am a Japanese language student."
+    },
+    {
+      "japanese": "u540du524d",
+      "reading": "u306au307eu3048",
+      "english": "Name",
+      "part_of_speech": "noun",
+      "example": "u3042u306au305fu306eu540du524du306fu4f55u3067u3059u304bu3002",
+      "example_translation": "What is your name?"
+    },
+    {
+      "japanese": "u65e5u672cu8a9e",
+      "reading": "u306bu307bu3093u3054",
+      "english": "Japanese language",
+      "part_of_speech": "noun",
+      "example": "u65e5u672cu8a9eu3092u52c9u5f37u3057u3066u3044u307eu3059u3002",
+      "example_translation": "I am studying Japanese."
+    },
+    {
+      "japanese": "u304au5143u6c17",
+      "reading": "u304au3052u3093u304d",
+      "english": "Health/Wellness",
+      "part_of_speech": "noun",
+      "example": "u304au5143u6c17u3067u3059u304bu3002",
+      "example_translation": "How are you? (lit: Are you well?)"
+    },
+    {
+      "japanese": "u5143u6c17",
+      "reading": "u3052u3093u304d",
+      "english": "Healthy/Well",
+      "part_of_speech": "na-adjective",
+      "example": "u306fu3044u3001u5143u6c17u3067u3059u3002",
+      "example_translation": "Yes, I am well."
+    },
+    {
+      "japanese": "u306fu3044",
+      "reading": "u306fu3044",
+      "english": "Yes",
+      "part_of_speech": "adverb",
+      "example": "u306fu3044u3001u305du3046u3067u3059u3002",
+      "example_translation": "Yes, that's right."
+    },
+    {
+      "japanese": "u3044u3044u3048",
+      "reading": "u3044u3044u3048",
+      "english": "No",
+      "part_of_speech": "adverb",
+      "example": "u3044u3044u3048u3001u9055u3044u307eu3059u3002",
+      "example_translation": "No, that's incorrect."
+    }
+  ]
+}

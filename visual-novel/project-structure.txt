@@ -1,0 +1,56 @@
+# Japanese Learning Visual Novel - Project Structure
+
+visual-novel/
+├── renpy/                      # Ren'Py game files
+│   ├── game/                   # Main game directory
+│   │   ├── script.rpy          # Main script file
+│   │   ├── characters.rpy      # Character definitions
+│   │   ├── scenes/             # Scene scripts organized by lesson
+│   │   │   ├── lesson1.rpy     # JLPT N5 Lesson 1
+│   │   │   ├── lesson2.rpy     # JLPT N5 Lesson 2
+│   │   │   └── ...
+│   │   ├── gui/                # GUI customization
+│   │   ├── images/             # Static images
+│   │   │   ├── backgrounds/    # Background images
+│   │   │   ├── characters/     # Character sprites
+│   │   │   └── ui/             # UI elements
+│   │   ├── audio/              # Audio files
+│   │   │   ├── music/          # Background music
+│   │   │   ├── sfx/            # Sound effects
+│   │   │   └── voice/          # Generated voice lines (from TTS)
+│   │   └── python/             # Custom Python code
+│   │       ├── api.py          # API communication
+│   │       ├── jlpt.py         # JLPT N5 curriculum logic
+│   │       └── progress.py     # Progress tracking
+│   └── web/                    # Web export configuration
+├── server/                     # Game server / API Gateway
+│   ├── app.py                  # Main server application
+│   ├── routes/                 # API routes
+│   │   ├── game.py             # Game state endpoints
+│   │   ├── tts.py              # TTS service endpoints
+│   │   ├── translation.py      # Translation endpoints
+│   │   └── images.py           # Image generation endpoints
+│   ├── models/                 # Data models
+│   │   ├── user.py             # User model
+│   │   ├── progress.py         # Progress model
+│   │   └── vocabulary.py       # Vocabulary model
+│   └── services/               # Service integrations
+│       ├── llm_service.py      # LLM text service integration
+│       ├── tts_service.py      # TTS service integration
+│       ├── vision_service.py   # Vision service integration
+│       └── database.py         # Database service
+├── openvino/                   # OpenVINO integration
+│   ├── image_generator.py      # Image generation service
+│   ├── models/                 # OpenVINO models
+│   └── utils/                  # Utility functions
+├── docker/                     # Docker configuration
+│   ├── docker-compose.yml      # Docker Compose for the visual novel
+│   └── Dockerfile              # Dockerfile for the game server
+├── curriculum/                 # JLPT N5 curriculum content
+│   ├── vocabulary/             # Vocabulary lists by lesson
+│   ├── grammar/                # Grammar points by lesson
+│   └── dialogues/              # Example dialogues
+└── docs/                       # Documentation
+    ├── setup.md                # Setup instructions
+    ├── development.md          # Development guide
+    └── architecture.txt        # Architectural diagram
