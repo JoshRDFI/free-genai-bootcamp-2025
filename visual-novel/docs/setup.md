@@ -67,12 +67,21 @@ docker-compose up -d
 cp -r [path-to-web-build]/* visual-novel/renpy/web/
 ```
 
-### 4. Configure OpenVINO (Optional)
+### 4. Configure Waifu Diffusion
 
-If you have specific OpenVINO models for image generation:
+1. The Waifu Diffusion model will be automatically downloaded on first run
+2. The model will be stored in `opea-docker/data/waifu` to avoid re-downloading
+3. If you have a custom model:
+   - Place your model files in the `opea-docker/data/waifu` directory
+   - Update the `MODEL_ID` environment variable in `opea-docker/docker-compose.yml`
 
-1. Place your model files in the `data/openvino_models` directory
-2. Update the `visual-novel/openvino/image_generator.py` file to use your models
+```yaml
+waifu-diffusion:
+  environment:
+    - MODEL_ID=your-custom-model-id  # Change this to your model ID
+```
+
+4. For optimal performance, ensure your system has a compatible NVIDIA GPU with CUDA support
 
 ### 5. Configure LLM for Dynamic Content
 
@@ -151,12 +160,14 @@ If dynamic conversations or lessons aren't generating properly:
 
 If image generation is not working:
 
-1. Ensure OpenVINO is properly installed in the container
-2. Check that model paths are correctly configured
-3. Verify the OpenVINO service logs:
+1. Ensure the Waifu Diffusion service is running:
    ```bash
-   docker logs vn-openvino-service
+   docker logs waifu-diffusion
    ```
+2. Check that your system has CUDA support if using GPU acceleration
+3. Verify the model was downloaded correctly by checking the `opea-docker/data/waifu` directory
+4. Try adjusting the generation parameters (fewer steps, smaller image size) for faster results
+5. For CPU-only systems, expect slower generation times
 
 ## Next Steps
 

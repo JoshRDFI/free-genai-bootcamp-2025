@@ -89,6 +89,28 @@ services:
       - ollama-server
     restart: unless-stopped
 
+  waifu-diffusion:
+    build:
+      context: ./comps/waifu-diffusion
+    container_name: waifu-diffusion
+    ports:
+      - "${WAIFU_DIFFUSION_PORT:-9500}:9500"
+    environment:
+      - MODEL_ID=${WAIFU_MODEL_ID:-waifu-diffusion/wd-1-5-beta2}
+      - MODEL_PATH=/app/data/waifu
+      - USE_LOCAL=True
+    volumes:
+      - ./comps/waifu-diffusion:/app
+      - ${WAIFU_DATA_PATH:-./data/waifu}:/app/data/waifu
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    restart: unless-stopped
+
   embeddings:
     build:
       context: ./comps/embeddings

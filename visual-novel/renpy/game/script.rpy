@@ -21,9 +21,13 @@ init python:
     import requests
     import json
     import os
+    import base64
+    from io import BytesIO
+    from PIL import Image as PILImage
     
-    # API endpoint
+    # API endpoints
     API_BASE_URL = "http://localhost:8080/api"
+    WAIFU_DIFFUSION_URL = "http://localhost:9500/generate"
     
     def save_progress(lesson_id, scene_id, completed=False):
         """Save player progress to the server"""
@@ -94,6 +98,74 @@ init python:
             return response.json()
         except Exception as e:
             renpy.notify(f"Failed to add vocabulary: {str(e)}")
+            return None
+    
+    def generate_image(prompt, image_type="background", negative_prompt=None, steps=50, guidance_scale=7.5, width=512, height=512):
+        """Generate an image using Waifu Diffusion
+        
+        Args:
+            prompt: The text prompt for image generation
+            image_type: Either 'background' or 'character' to determine save location
+            negative_prompt: What to avoid in the image
+            steps: Number of inference steps
+            guidance_scale: How closely to follow the prompt
+            width: Image width
+            height: Image height
+            
+        Returns:
+            Path to the generated image or None if generation failed
+        """
+        try:
+            response = requests.post(
+                WAIFU_DIFFUSION_URL,
+                json={
+                    "prompt": prompt,
+                    "negative_prompt": negative_prompt,
+                    "num_inference_steps": steps,
+                    "guidance_scale": guidance_scale,
+                    "width": width,
+                    "height": height,
+                    "return_format": "base64"
+                }
+            )
+            
+            if response.status_code != 200:
+                renpy.notify(f"Image generation failed: {response.text}")
+                return None
+                
+            result = response.json()
+            
+            if "image" in result:
+                # Save the base64 image to a file
+                image_data = base64.b64decode(result["image"])
+                image = PILImage.open(BytesIO(image_data))
+                
+                # Determine the save directory based on image_type
+                if image_type.lower() == "character":
+                    save_dir = "images/characters"
+                else:  # Default to backgrounds
+                    save_dir = "images/backgrounds"
+                
+                # Create directory if it doesn't exist
+                os.makedirs(save_dir, exist_ok=True)
+                
+                # Create a safe filename from the prompt
+                safe_filename = "".join(c for c in prompt if c.isalnum() or c in " _-").strip()
+                safe_filename = safe_filename.replace(" ", "_")[:30]
+                
+                # Save the image
+                image_path = f"{save_dir}/{safe_filename}.png"
+                image.save(image_path)
+                
+                # Log the saved image
+                print(f"Generated image saved to: {image_path}")
+                
+                return image_path
+            else:
+                renpy.notify("Image generation failed: No image data received")
+                return None
+        except Exception as e:
+            renpy.notify(f"Image generation failed: {str(e)}")
             return None
             
     def generate_conversation(context, characters, grammar_points=None, vocabulary=None, num_exchanges=3):

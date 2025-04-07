@@ -91,19 +91,48 @@ define new_character = Character("Character Name", color="#hexcolor")
 2. Add migration scripts if needed
 3. Test thoroughly before deploying
 
-### 3. OpenVINO Integration
+### 3. Waifu Diffusion Integration
 
-#### Adding New Models
+#### Using the Image Generation Service
 
-1. Place model files in `data/openvino_models/`
-2. Update the model loading code in `openvino/image_generator.py`
-3. Add new generation functions as needed
+1. The Waifu Diffusion service is available at port 9500 (http://localhost:9500)
+2. Use the `generate_image()` function in Ren'Py to create images:
+
+```python
+# Generate a background image
+$ bg_path = generate_image(
+    prompt="A Japanese classroom with cherry blossoms visible through the window",
+    image_type="background",
+    width=1280,
+    height=720
+)
+scene expression bg_path
+
+# Generate a character image
+$ char_path = generate_image(
+    prompt="Anime-style female teacher with glasses and long black hair",
+    image_type="character",
+    negative_prompt="low quality, bad anatomy",
+    width=512,
+    height=768
+)
+show expression char_path at center
+```
+
+#### Adding Custom Models
+
+1. Place model files in `opea-docker/data/waifu/`
+2. Update the MODEL_ID environment variable in docker-compose.yml
+3. Restart the container to use the new model
 
 #### Optimizing Performance
 
-1. Use OpenVINO's optimization tools for models
-2. Consider caching generated images for common scenes
-3. Monitor memory usage and response times
+1. Generated images are saved to appropriate directories based on image_type:
+   - `images/backgrounds/` for backgrounds
+   - `images/characters/` for characters
+2. Images are cached to avoid regenerating the same content
+3. Consider pre-generating common images during development
+4. Adjust inference steps (lower = faster, higher = better quality)
 
 ### 4. AI-Powered Features Development
 

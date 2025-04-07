@@ -1,13 +1,13 @@
 # Japanese Learning Visual Novel
 
-A visual novel style game designed to teach Japanese at the JLPT N5 level, with gameplay similar to Nekopara. This project integrates with Docker services for LLM access, TTS, and image generation using OpenVINO.
+A visual novel style game designed to teach Japanese at the JLPT N5 level, with gameplay similar to Nekopara. This project integrates with Docker services for LLM access, TTS, and image generation using Waifu Diffusion.
 
 ## Features
 
 - **Interactive Storytelling**: Learn Japanese through an engaging visual novel experience
 - **JLPT N5 Curriculum**: Comprehensive coverage of vocabulary and grammar for JLPT N5
 - **Text-to-Speech**: Japanese dialogue spoken using XTTS
-- **AI-Generated Backgrounds**: Scene backgrounds generated with OpenVINO
+- **AI-Generated Images**: Scene backgrounds and characters generated with Waifu Diffusion
 - **Translation Assistance**: On-demand translation for difficult phrases
 - **Progress Tracking**: Save your learning progress and vocabulary
 - **Dynamic AI Conversations**: Practice with unlimited AI-generated Japanese conversations at JLPT N5 level
@@ -45,8 +45,8 @@ This feature ensures you never run out of learning material and can focus on top
 
 - **Ren'Py**: Visual novel engine with web export capabilities
 - **Docker**: Containerized services for backend functionality
-- **OpenVINO**: Optimized image generation
-- **Flask**: API server for game services
+- **Waifu Diffusion**: AI image generation for anime-style visuals
+- **FastAPI**: API server for game services
 - **SQLite**: Database for progress tracking
 - **Ollama Llama 3.2**: LLM for dynamic content generation
 
@@ -56,10 +56,10 @@ The project is organized into several components:
 
 - `renpy/`: Ren'Py visual novel files
 - `server/`: Game server and API gateway
-- `openvino/`: OpenVINO integration for image generation
 - `docker/`: Docker configuration files
 - `curriculum/`: JLPT N5 curriculum content
 - `docs/`: Documentation
+- `opea-docker/comps/waifu-diffusion/`: Waifu Diffusion service for image generation
 
 ## Getting Started
 
