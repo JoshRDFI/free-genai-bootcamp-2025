@@ -12,32 +12,11 @@ services:
       - ../server:/app
       - ${SHARED_DB_PATH:-../opea-docker/data/shared_db}:/app/db
     environment:
-      - LLM_TEXT_URL=http://llm_text:9000
-      - TTS_URL=http://tts:9200
-      - ASR_URL=http://asr:9300
-      - LLM_VISION_URL=http://llm-vision:9100
-      - EMBEDDINGS_URL=http://embeddings:6000
-    depends_on:
-      - vn-openvino-service
+      - OPEA_API_BASE_URL=http://opea-api-gateway:8000
+      - USE_REMOTE_DB=true
     networks:
       - vn-network
       - opea-network
-    restart: unless-stopped
-
-  # OpenVINO image generation service
-  vn-openvino-service:
-    build:
-      context: ../openvino
-    container_name: vn-openvino-service
-    ports:
-      - "8081:8081"
-    volumes:
-      - ../openvino:/app
-      - ${OPENVINO_MODELS_PATH:-./data/openvino_models}:/app/models
-    environment:
-      - MODEL_PATH=/app/models
-    networks:
-      - vn-network
     restart: unless-stopped
 
   # Web server for Ren'Py web export

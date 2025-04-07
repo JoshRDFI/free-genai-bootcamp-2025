@@ -9,12 +9,16 @@ app = Flask(__name__)
 CORS(app)
 
 # Configuration
-LLM_TEXT_URL = os.environ.get('LLM_TEXT_URL', 'http://llm_text:9000')
-TTS_URL = os.environ.get('TTS_URL', 'http://tts:9200')
-ASR_URL = os.environ.get('ASR_URL', 'http://asr:9300')
-LLM_VISION_URL = os.environ.get('LLM_VISION_URL', 'http://llm-vision:9100')
-EMBEDDINGS_URL = os.environ.get('EMBEDDINGS_URL', 'http://embeddings:6000')
-OPENVINO_URL = os.environ.get('OPENVINO_URL', 'http://vn-openvino-service:8081')
+# All external services should be accessed through the opea-docker API endpoints
+OPEA_API_BASE_URL = os.environ.get('OPEA_API_BASE_URL', 'http://opea-api-gateway:8000')
+
+# Service-specific endpoints
+LLM_TEXT_URL = f"{OPEA_API_BASE_URL}/llm/text"
+TTS_URL = f"{OPEA_API_BASE_URL}/tts"
+ASR_URL = f"{OPEA_API_BASE_URL}/asr"
+LLM_VISION_URL = f"{OPEA_API_BASE_URL}/llm/vision"
+EMBEDDINGS_URL = f"{OPEA_API_BASE_URL}/embeddings"
+IMAGE_GEN_URL = f"{OPEA_API_BASE_URL}/image/generate"
 DB_PATH = os.environ.get('DB_PATH', '/app/db/visual_novel.db')
 
 # Initialize database
@@ -301,12 +305,15 @@ def generate_image():
         
         enhanced_prompt = llm_response.json().get('text', prompt)
         
-        # Then, generate the image using OpenVINO service
+        # Then, generate the image using the opea-docker image generation service
         response = requests.post(
-            f"{OPENVINO_URL}/generate-image",
+            f"{IMAGE_GEN_URL}",
             json={
                 'prompt': enhanced_prompt,
-                'scene_type': scene_type
+                'scene_type': scene_type,
+                'style': 'anime',
+                'width': 512,
+                'height': 512
             }
         )
         

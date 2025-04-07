@@ -12,25 +12,25 @@
 |                                     |
 |  Game Server / API Gateway          |
 |                                     |
-+-----+-------------+-------------+---+
-      |             |             |
-      |             |             |
-+-----v-----+ +----v------+ +----v------+
-|           | |            | |            |
-| Database  | | OpenVINO   | | Docker     |
-| Service   | | Image Gen  | | Services   |
-|           | |            | |            |
-+-----------+ +------------+ +-----+------+
-                                   |
-                                   |
-      +----------------------------+-----------------------------+
-      |             |              |              |              |
-+-----v-----+ +----v------+ +-----v-----+ +-----v------+ +-----v------+
-|           | |            | |           | |            | |            |
-| LLM Text  | | TTS        | | ASR       | | LLM Vision | | Embeddings |
-| Service   | | Service    | | Service   | | Service    | | Service    |
-|           | |            | |           | |            | |            |
-+-----------+ +------------+ +-----------+ +------------+ +------------+
++-----+-------------+----------------+
+      |             |                
+      |             |                
++-----v-----+ +----v------+         
+|           | |            |         
+| Database  | | Docker     |         
+| Service   | | Services   |         
+|           | |            |         
++-----------+ +-----+------+         
+                    |                
+                    |                
+      +-------------+---------------------------+
+      |             |              |            |
++-----v-----+ +----v------+ +-----v-----+ +----v------+
+|           | |            | |           | |            |
+| LLM Text  | | TTS        | | ASR       | | Waifu      |
+| Service   | | Service    | | Service   | | Diffusion  |
+|           | |            | |           | |            |
++-----------+ +------------+ +-----------+ +------------+
 
 ## Component Descriptions:
 
@@ -49,17 +49,11 @@
    - Tracks learning metrics and achievements
    - Manages game state persistence
 
-4. **OpenVINO Image Generation**
-   - Generates background scenes based on story context
-   - Creates character images and expressions
-   - Optimizes inference for real-time generation
-
-5. **Docker Services**
+4. **Docker Services**
    - **LLM Text**: Generates dialogue, translations, and explanations for JLPT N5 content
    - **TTS**: Converts Japanese text to spoken audio using XTTS
    - **ASR**: Processes player's spoken Japanese for pronunciation practice
-   - **LLM Vision**: Assists with image understanding and generation
-   - **Embeddings**: Provides semantic understanding for adaptive learning
+   - **Waifu Diffusion**: Generates anime-style images for backgrounds and characters
 
 ## Data Flow:
 
@@ -75,4 +69,3 @@
 1. **Ren'Py to API Gateway**: HTTP/REST API calls
 2. **API Gateway to Services**: Internal network communication
 3. **Services to Database**: Shared volume access
-4. **OpenVINO to Game**: Pre-generated or real-time image delivery

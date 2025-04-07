@@ -1,179 +1,100 @@
-# Japanese Learning Visual Novel - Setup Guide
+# Setup Guide for Japanese Learning Visual Novel
 
 ## Prerequisites
 
-1. **Docker and Docker Compose**
-   - Install Docker: https://docs.docker.com/get-docker/
-   - Install Docker Compose: https://docs.docker.com/compose/install/
+Before setting up the Japanese Learning Visual Novel, ensure you have the following installed:
 
-2. **Ren'Py SDK**
-   - Download and install Ren'Py: https://www.renpy.org/latest.html
-   - Required for development and building the visual novel
+- Docker and Docker Compose
+- opea-docker running on your system
+- Ren'Py SDK (for development)
 
-3. **Python 3.9+**
-   - Required for running scripts and tools
-
-4. **Ollama with Llama 3.2**
-   - Ensure Ollama is running with Llama 3.2 model loaded
-   - This powers the dynamic conversation and lesson generation features
-
-## Setup Steps
+## Installation Steps
 
 ### 1. Clone the Repository
 
 ```bash
-git clone <repository-url>
-cd visual-novel
+git clone https://github.com/yourusername/japanese-learning-visual-novel.git
+cd japanese-learning-visual-novel
 ```
 
-### 2. Set Up Docker Environment
+### 2. Configure opea-docker Integration
 
-#### a. Create required data directories
+Ensure that opea-docker is running and accessible. The visual novel will connect to the following opea-docker API endpoints:
+
+- LLM Text: `/llm/text`
+- LLM Vision: `/llm/vision`
+- TTS: `/tts`
+- ASR: `/asr`
+- Image Generation: `/image/generate`
+- Embeddings: `/embeddings`
+- Database: `/database`
+
+If your opea-docker API is running on a different host or port, update the `OPEA_API_BASE_URL` environment variable in `docker-compose.yml`.
+
+### 3. Start the Visual Novel Services
 
 ```bash
-mkdir -p data/openvino_models
-```
-
-#### b. Start the existing OPEA Docker services
-
-```bash
-cd ../opea-docker
-./start-docker.sh
-```
-
-#### c. Start the Visual Novel services
-
-```bash
-cd ../visual-novel/docker
+cd visual-novel/docker
 docker-compose up -d
 ```
 
-### 3. Set Up Ren'Py Project
+This will start the following services:
 
-#### a. Launch Ren'Py SDK
+- `vn-game-server`: The game server and API gateway
+- `vn-web-server`: Web server for the Ren'Py web export
 
-1. Open the Ren'Py launcher
-2. Click "Preferences" and set the projects directory to the location of your `visual-novel/renpy` folder
-3. Return to the main menu and select your project
+### 4. Access the Visual Novel
 
-#### b. Build Web Version
+#### Web Version
 
-1. In the Ren'Py launcher, select your project
-2. Click "Build Distributions"
-3. Check "Web" and click "Build"
-4. Once built, copy the contents of the web build to the `visual-novel/renpy/web` directory
+Access the web version of the visual novel at:
 
-```bash
-cp -r [path-to-web-build]/* visual-novel/renpy/web/
+```
+http://localhost:8000
 ```
 
-### 4. Configure Waifu Diffusion
+#### Desktop Version
 
-1. The Waifu Diffusion model will be automatically downloaded on first run
-2. The model will be stored in `opea-docker/data/waifu` to avoid re-downloading
-3. If you have a custom model:
-   - Place your model files in the `opea-docker/data/waifu` directory
-   - Update the `MODEL_ID` environment variable in `opea-docker/docker-compose.yml`
+To run the desktop version:
 
-```yaml
-waifu-diffusion:
-  environment:
-    - MODEL_ID=your-custom-model-id  # Change this to your model ID
-```
+1. Install Ren'Py SDK from [https://www.renpy.org/](https://www.renpy.org/)
+2. Open the Ren'Py launcher
+3. Add the `visual-novel/renpy` directory as a project
+4. Launch the project from the Ren'Py launcher
 
-4. For optimal performance, ensure your system has a compatible NVIDIA GPU with CUDA support
+## Configuration Options
 
-### 5. Configure LLM for Dynamic Content
+### Environment Variables
 
-The visual novel uses Ollama Llama 3.2 for generating dynamic conversations and lessons. Ensure:
+The following environment variables can be set in `docker-compose.yml`:
 
-1. Ollama is running and accessible from your Docker network
-2. The Llama 3.2 model is loaded in Ollama
-3. The `LLM_ENDPOINT` and `LLM_MODEL_ID` environment variables are correctly set in your Docker environment
-
-## Running the Game
-
-### Development Mode
-
-1. Launch the Ren'Py SDK
-2. Select your project
-3. Click "Launch Project"
-
-### Web Version
-
-After building and deploying:
-
-1. Ensure all Docker services are running
-2. Open a web browser and navigate to `http://localhost:8000`
-
-## Using AI Features
-
-### Dynamic Conversations
-
-1. Complete the first lesson
-2. When prompted, choose "Yes, let's practice" to start a dynamic conversation
-3. The LLM will generate contextually appropriate dialogue at JLPT N5 level
-
-### Custom Lesson Generator
-
-1. From the start menu, choose "Generate a custom lesson using AI"
-2. Enter a topic of your choice
-3. Select grammar points to include
-4. Wait while the AI generates your personalized lesson
-5. Follow the interactive lesson with dialogue, vocabulary, and exercises
+- `OPEA_API_BASE_URL`: Base URL for the opea-docker API (default: `http://opea-api-gateway:8000`)
+- `USE_REMOTE_DB`: Whether to use the remote database service (default: `true`)
+- `SHARED_DB_PATH`: Path to the shared database directory (default: `../opea-docker/data/shared_db`)
 
 ## Troubleshooting
 
 ### API Connection Issues
 
-If the game cannot connect to the API:
+If the visual novel cannot connect to the opea-docker API:
 
-1. Check that all Docker services are running:
-   ```bash
-   docker ps
-   ```
+1. Ensure opea-docker is running
+2. Check that the `opea-network` Docker network exists and is properly configured
+3. Verify that the `OPEA_API_BASE_URL` is set correctly
+4. Check the logs for connection errors:
 
-2. Verify network connectivity between services:
-   ```bash
-   docker network inspect opea-docker_default
-   ```
+```bash
+docker logs vn-game-server
+```
 
-3. Check service logs for errors:
-   ```bash
-   docker logs vn-game-server
-   docker logs vn-openvino-service
-   ```
+### Database Issues
 
-### LLM Generation Issues
+If you encounter database errors:
 
-If dynamic conversations or lessons aren't generating properly:
-
-1. Check that Ollama is running and accessible
-2. Verify the Llama 3.2 model is loaded
-3. Check the LLM service logs:
-   ```bash
-   docker logs llm_text
-   ```
-4. Try increasing the timeout values in the server configuration if generations are taking too long
-
-### Image Generation Issues
-
-If image generation is not working:
-
-1. Ensure the Waifu Diffusion service is running:
-   ```bash
-   docker logs waifu-diffusion
-   ```
-2. Check that your system has CUDA support if using GPU acceleration
-3. Verify the model was downloaded correctly by checking the `opea-docker/data/waifu` directory
-4. Try adjusting the generation parameters (fewer steps, smaller image size) for faster results
-5. For CPU-only systems, expect slower generation times
+1. Ensure the database directory exists and is writable
+2. Check if the `USE_REMOTE_DB` setting matches your intended configuration
+3. If using a local database, verify the `SHARED_DB_PATH` is correct
 
 ## Next Steps
 
-After setup:
-
-1. Customize the game content in the Ren'Py scripts
-2. Add more JLPT N5 lessons and vocabulary
-3. Enhance the OpenVINO integration with better models
-4. Expand the game features as needed
+After successful installation, refer to the [Development Guide](development.md) for information on extending the game or adding new content.

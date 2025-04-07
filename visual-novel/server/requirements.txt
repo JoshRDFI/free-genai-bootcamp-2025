@@ -4,6 +4,4 @@ requests==2.26.0
 python-dotenv==0.19.0
 sqlite3-utils==0.1
 pydantic==1.8.2
-openvino==2023.1.0
-numpy==1.23.5
 pillow==9.3.0

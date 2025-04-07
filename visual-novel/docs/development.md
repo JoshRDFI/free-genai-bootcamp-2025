@@ -1,372 +1,174 @@
-# Japanese Learning Visual Novel - Development Guide
+# Development Guide for Japanese Learning Visual Novel
 
-## Project Overview
+## Project Architecture
 
-This visual novel is designed to teach Japanese language at the JLPT N5 level, with a gameplay style similar to Nekopara. It integrates with Docker services for LLM access, TTS, and image generation.
+The Japanese Learning Visual Novel is built with a client-server architecture:
 
-## Development Workflow
+- **Client**: Ren'Py visual novel engine (desktop or web)
+- **Server**: Flask API server that interfaces with opea-docker services
 
-### 1. Ren'Py Development
+All external service calls (LLM, TTS, ASR, image generation, database) are routed through the opea-docker API endpoints.
 
-#### Adding New Scenes
+## Directory Structure
 
-1. Create new scene scripts in `renpy/game/scenes/`
-2. Follow the pattern in existing scenes:
-   - Use translation screens for Japanese text
-   - Add vocabulary buttons for important words
-   - Include choices for player interaction
-   - Save progress at key points
-3. For dynamic scenes, use the LLM integration functions:
-   - `generate_conversation()` for character dialogues
-   - `generate_lesson()` for custom learning content
-
-#### Example Scene Structure with LLM Integration
-
-```python
-label new_scene:
-    scene bg location
-    
-    show screen translation_button("Japanese text")
-    show screen add_vocab_button("Japanese", "reading", "English meaning")
-    character "Japanese text"
-    hide screen translation_button
-    hide screen add_vocab_button
-    
-    # Generate a dynamic conversation using the LLM
-    $ conversation = generate_conversation(
-        context="At a cafe in Tokyo",
-        characters=["Sensei", "Student"],
-        grammar_points=["です/ます form", "question particles か"],
-        vocabulary=["コーヒー", "紅茶", "注文する"],
-        num_exchanges=3
-    )
-    
-    # Display the generated conversation
-    if conversation:
-        python:
-            for exchange in conversation["conversation"]:
-                speaker = exchange["speaker"]
-                japanese_text = exchange["japanese_text"]
-                english = exchange["english_translation"]
-                
-                # Display with appropriate character
-                if speaker == "Sensei":
-                    renpy.say(sensei, japanese_text)
-                elif speaker == "Student":
-                    renpy.say(player, japanese_text)
-    
-    menu:
-        "Question in English?"
-        
-        "Option 1 in Japanese":
-            player "Japanese response"
-            # Consequences
-            
-        "Option 2 in Japanese":
-            player "Japanese response"
-            # Consequences
-    
-    $ save_progress("lesson_id", "scene_id", True)
+```
+visual-novel/
+├── renpy/                      # Ren'Py game files
+│   ├── game/                   # Main game directory
+│   │   ├── script.rpy          # Main script file
+│   │   ├── characters.rpy      # Character definitions
+│   │   ├── scenes/             # Scene scripts organized by lesson
+│   │   ├── gui/                # GUI customization
+│   │   ├── images/             # Static images
+│   │   ├── audio/              # Audio files
+│   │   └── python/             # Custom Python code
+│   │       ├── api.py          # API communication
+│   │       ├── jlpt.py         # JLPT N5 curriculum logic
+│   │       └── progress.py     # Progress tracking
+│   └── web/                    # Web export configuration
+├── server/                     # Game server / API Gateway
+│   ├── app.py                  # Main server application
+│   ├── routes/                 # API routes
+│   ├── models/                 # Data models
+│   └── services/               # Service integrations
+├── docker/                     # Docker configuration
+├── curriculum/                 # JLPT N5 curriculum content
+└── docs/                       # Documentation
 ```
 
-#### Adding Characters
+## Development Environment Setup
 
-Define new characters in `renpy/game/characters.rpy`:
+### Prerequisites
 
-```python
-define new_character = Character("Character Name", color="#hexcolor")
+- Python 3.9+
+- Ren'Py SDK 7.4.0+
+- Docker and Docker Compose
+- opea-docker running on your system
+
+### Local Development
+
+1. Set up a Python virtual environment for the server:
+
+```bash
+cd visual-novel/server
+python -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+pip install -r requirements.txt
 ```
 
-### 2. Backend Development
+2. Run the server locally:
 
-#### Adding API Endpoints
-
-1. Add new routes to `server/app.py`
-2. Follow RESTful conventions
-3. Document the API for frontend developers
-
-#### Database Schema Changes
-
-1. Update the database initialization in `server/app.py`
-2. Add migration scripts if needed
-3. Test thoroughly before deploying
-
-### 3. Waifu Diffusion Integration
-
-#### Using the Image Generation Service
-
-1. The Waifu Diffusion service is available at port 9500 (http://localhost:9500)
-2. Use the `generate_image()` function in Ren'Py to create images:
-
-```python
-# Generate a background image
-$ bg_path = generate_image(
-    prompt="A Japanese classroom with cherry blossoms visible through the window",
-    image_type="background",
-    width=1280,
-    height=720
-)
-scene expression bg_path
-
-# Generate a character image
-$ char_path = generate_image(
-    prompt="Anime-style female teacher with glasses and long black hair",
-    image_type="character",
-    negative_prompt="low quality, bad anatomy",
-    width=512,
-    height=768
-)
-show expression char_path at center
+```bash
+python app.py
 ```
 
-#### Adding Custom Models
+3. Open the Ren'Py project in the Ren'Py SDK for client-side development.
 
-1. Place model files in `opea-docker/data/waifu/`
-2. Update the MODEL_ID environment variable in docker-compose.yml
-3. Restart the container to use the new model
+## Adding New Content
 
-#### Optimizing Performance
+### Adding a New Lesson
 
-1. Generated images are saved to appropriate directories based on image_type:
-   - `images/backgrounds/` for backgrounds
-   - `images/characters/` for characters
-2. Images are cached to avoid regenerating the same content
-3. Consider pre-generating common images during development
-4. Adjust inference steps (lower = faster, higher = better quality)
+1. Create a new scene script in `renpy/game/scenes/`
+2. Update the JLPT curriculum in `renpy/game/python/jlpt.py`
+3. Add the lesson to the main menu in `script.rpy`
 
-### 4. AI-Powered Features Development
+### Adding New Characters
 
-#### LLM Integration for Real-Time Character Interactions
+1. Define the character in `characters.rpy`
+2. Generate character images using the image generation API
+3. Add character sprites to `renpy/game/images/characters/`
 
-The visual novel now integrates with Ollama Llama 3.2 to provide dynamic, real-time character interactions:
+## API Integration
 
-1. **Configuration**: The LLM service is configured in `server/app.py` with the `LLM_TEXT_URL` environment variable
-2. **API Endpoints**: Two main endpoints handle LLM interactions:
-   - `/api/generate-conversation`: Creates dynamic dialogues between characters
-   - `/api/generate-lesson`: Builds complete lessons on custom topics
-3. **Ren'Py Integration**: Functions in `renpy/game/script.rpy` connect to these endpoints:
-   - `generate_conversation()`: Creates dynamic conversations with specified parameters
-   - `generate_lesson()`: Creates complete lessons on custom topics
+All external service calls are centralized through the `api.py` module, which communicates with the server's API endpoints. The server then routes these requests to the appropriate opea-docker services.
 
-#### Enhancing Dynamic Conversations
+### API Service Module
 
-1. Modify the prompt template in `server/app.py` under the `/api/generate-conversation` endpoint
-2. Adjust parameters like temperature and max_tokens to control generation quality
-3. Add additional context or constraints to improve relevance
-4. Customize the conversation format in the JSON structure
+The `APIService` class in `renpy/game/python/api.py` provides methods for:
 
-#### Customizing Lesson Generation
+- Text-to-speech generation
+- Speech-to-text transcription
+- Image generation
+- LLM text generation
+- Translation
+- Database operations
 
-1. Update the lesson generation prompt in `server/app.py` under the `/api/generate-lesson` endpoint
-2. Add new fields to the lesson JSON structure for additional content types
-3. Implement new Ren'Py screens to display custom lesson components
-4. Adjust the complexity level for different JLPT targets
+### Adding a New API Service
 
-#### Example: Adding a New AI Feature
+To add a new API service:
 
-To add a new AI-powered feature (e.g., a quiz generator):
+1. Add the service endpoint to `api.py`
+2. Create appropriate methods in the `APIService` class
+3. Update the server's `app.py` to handle the new endpoints
+4. Add any necessary service integration files in `server/services/`
 
-1. Add a new endpoint to `server/app.py`:
+## Working with opea-docker
 
-```python
-@app.route('/api/generate-quiz', methods=['POST'])
-def generate_quiz():
-    data = request.json
-    topic = data.get('topic')
-    difficulty = data.get('difficulty', 'beginner')
-    num_questions = data.get('num_questions', 5)
-    
-    # Construct prompt for the LLM
-    prompt = f"""Generate a Japanese language quiz on {topic} at {difficulty} level..."""
-    
-    # Call the LLM and process response
-    # Return structured quiz data
-```
+The visual novel is designed to work with the opea-docker API for all external services. The integration is configured through environment variables in `docker-compose.yml`.
 
-2. Add a corresponding function to the Ren'Py script:
+### opea-docker API Endpoints
 
-```python
-def generate_quiz(topic, difficulty="beginner", num_questions=5):
-    """Generate a quiz using the LLM"""
-    try:
-        response = requests.post(
-            f"{API_BASE_URL}/generate-quiz",
-            json={
-                "topic": topic,
-                "difficulty": difficulty,
-                "num_questions": num_questions
-            }
-        )
-        
-        return response.json()
-    except Exception as e:
-        renpy.notify(f"Failed to generate quiz: {str(e)}")
-        return None
-```
+The following opea-docker API endpoints are used:
 
-3. Create a new Ren'Py screen to display the quiz:
-
-```python
-screen quiz_screen(quiz_data):
-    # Display quiz questions and handle user input
-```
-
-## JLPT N5 Curriculum Integration
-
-### Lesson Planning
-
-Organize lessons around these JLPT N5 topics:
-
-1. **Basic Greetings and Introductions**
-   - おはようございます、こんにちは、こんばんは
-   - 私の名前は～です
-
-2. **Numbers and Counting**
-   - 1-100 in Japanese
-   - Counters (～人、～円、etc.)
-
-3. **Basic Verbs and Actions**
-   - Present tense (食べます、飲みます、etc.)
-   - Past tense (食べました、飲みました、etc.)
-
-4. **Basic Adjectives**
-   - い-adjectives (大きい、小さい、etc.)
-   - な-adjectives (きれい、静か、etc.)
-
-5. **Basic Particles**
-   - は、が、を、に、で、etc.
-
-6. **Basic Questions**
-   - 何、誰、どこ、いつ、etc.
-
-7. **Time and Calendar**
-   - Days of the week
-   - Months and dates
-   - Telling time
-
-### Vocabulary Integration
-
-1. Introduce 5-10 new vocabulary words per lesson
-2. Reinforce vocabulary through repetition
-3. Use the vocabulary tracking system to monitor player progress
-
-## Visual Novel Best Practices
-
-### Storytelling
-
-1. Create a cohesive narrative that ties lessons together
-2. Develop relatable characters with distinct personalities
-3. Set in environments relevant to language learning (school, cafe, etc.)
-
-### Visual Design
-
-1. Use consistent art style for characters and backgrounds
-2. Ensure text is readable against all backgrounds
-3. Use visual cues to highlight important language points
-4. Background images use the AVIF format for better compression and quality
-
-### Audio Design
-
-1. Use TTS for all Japanese dialogue
-
-## LLM Integration Best Practices
-
-### Prompt Engineering
-
-1. **Be Specific**: Provide clear instructions in prompts about JLPT level, grammar points, and vocabulary
-2. **Include Examples**: Add example outputs in prompts to guide the LLM's response format
-3. **Set Constraints**: Explicitly state limitations (e.g., "Use only JLPT N5 grammar")
-4. **Test Thoroughly**: Verify that generated content is appropriate and accurate
-
-### Error Handling
-
-1. Always implement fallback content in case the LLM service is unavailable
-2. Add robust error handling for JSON parsing issues
-3. Implement retry logic for temporary service disruptions
-4. Cache common responses to reduce dependency on the LLM service
-
-### Performance Optimization
-
-1. Pre-generate content where possible to avoid real-time delays
-2. Use appropriate temperature settings (lower for more predictable responses)
-3. Set reasonable token limits to balance detail and generation speed
-4. Consider batching requests for multiple content pieces
-2. Add background music appropriate to the scene
-3. Include sound effects for interactions
-
-## LLM Prompt Engineering
-
-### Effective Prompts for Language Learning
-
-1. **Be specific about language level**:
-   - Always specify JLPT N5 level in prompts
-   - Include constraints like "use only basic grammar patterns"
-   - Request furigana/readings for all kanji
-
-2. **Structure output format**:
-   - Request JSON format for structured data
-   - Specify exact fields needed (speaker, text, translation, etc.)
-   - Include example output in the prompt
-
-3. **Provide context**:
-   - Include scene setting and character relationships
-   - Specify the learning objective of the conversation
-   - Reference previously learned material
-
-### Troubleshooting LLM Responses
-
-1. **Handling malformed JSON**:
-   - Implement robust parsing with fallbacks
-   - Use regex to extract JSON from text responses
-   - Have error handling for unexpected formats
-
-2. **Managing token limits**:
-   - Break large lessons into smaller chunks
-   - Prioritize essential content when approaching limits
-   - Implement pagination for long responses
-
-3. **Improving response quality**:
-   - Adjust temperature (lower for more predictable responses)
-   - Use system messages to set context
-   - Fine-tune prompts based on response quality
+- `/llm/text`: Text generation, translation, and conversation
+- `/llm/vision`: Image understanding and description
+- `/tts`: Text-to-speech conversion
+- `/asr`: Speech-to-text transcription
+- `/image/generate`: Image generation for backgrounds and characters
+- `/embeddings`: Text embeddings for semantic search
+- `/database`: Database operations (optional)
 
 ## Testing
 
-### Game Testing
+### Server Testing
 
-1. Test all dialogue paths and choices
-2. Verify progress saving and loading
-3. Check all translations and vocabulary entries
+To run tests for the server:
 
-### API Testing
+```bash
+cd visual-novel/server
+python -m unittest discover tests
+```
 
-1. Test all API endpoints with various inputs
-2. Verify error handling and edge cases
-3. Check performance under load
+### Ren'Py Testing
 
-### Language Testing
+Ren'Py provides a testing framework that can be used to test game functionality:
 
-1. Have native Japanese speakers review content
-2. Verify JLPT N5 alignment with official standards
-3. Test with actual language learners for feedback
+1. Create test scripts in `renpy/game/tests/`
+2. Run tests using the Ren'Py SDK
 
-### AI Feature Testing
+## Building for Production
 
-1. Test dynamic conversation generation with various contexts
-2. Verify lesson generation with different topics and grammar points
-3. Check for appropriate difficulty level in generated content
-4. Test error handling when LLM services are unavailable
+### Desktop Build
 
-## Deployment
+To build the desktop version:
 
-### Web Deployment
+1. Use the Ren'Py SDK to build for your target platforms (Windows, macOS, Linux)
+2. Package the server as a separate application or use a hosted server
 
-1. Build the Ren'Py project for web
-2. Copy the build to the web server directory
-3. Update Docker configurations if needed
+### Web Build
 
-### Updates and Maintenance
+To build the web version:
 
-1. Plan for regular content updates
-2. Monitor server logs for issues
-3. Gather user feedback for improvements
+1. Use the Ren'Py SDK to build the web version
+2. Copy the web build to `renpy/web/`
+3. Deploy using the Docker setup:
+
+```bash
+cd visual-novel/docker
+docker-compose up -d
+```
+
+## Contribution Guidelines
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Ensure all tests pass
+5. Submit a pull request
+
+## Resources
+
+- [Ren'Py Documentation](https://www.renpy.org/doc/html/)
+- [Flask Documentation](https://flask.palletsprojects.com/)
+- [opea-docker API Documentation](https://github.com/yourusername/opea-docker)
+- [JLPT N5 Resources](https://jlptsensei.com/jlpt-n5-study-material/)

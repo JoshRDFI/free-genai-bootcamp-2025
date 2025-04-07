@@ -16,226 +16,67 @@ default current_lesson = "lesson1"
 default current_scene = "intro"
 default user_id = 1
 
-# Python functions for API communication
+# Import Python modules for API communication
 init python:
-    import requests
-    import json
     import os
-    import base64
-    from io import BytesIO
-    from PIL import Image as PILImage
+    import json
+    from python.api import APIService
+    from python.jlpt import JLPTCurriculum
+    from python.progress import ProgressTracker
     
-    # API endpoints
-    API_BASE_URL = "http://localhost:8080/api"
-    WAIFU_DIFFUSION_URL = "http://localhost:9500/generate"
+    # Initialize API service and curriculum
+    api = APIService()
+    jlpt = JLPTCurriculum()
     
+    # Helper functions that wrap the API service
     def save_progress(lesson_id, scene_id, completed=False):
         """Save player progress to the server"""
-        try:
-            response = requests.post(
-                f"{API_BASE_URL}/progress",
-                json={
-                    "user_id": user_id,
-                    "lesson_id": lesson_id,
-                    "scene_id": scene_id,
-                    "completed": completed
-                }
-            )
-            return response.json()
-        except Exception as e:
-            renpy.notify(f"Failed to save progress: {str(e)}")
-            return None
+        result = api.save_progress(user_id, lesson_id, scene_id, completed)
+        if "error" in result:
+            renpy.notify(f"Failed to save progress: {result['error']}")
+        return result
     
     def get_translation(text):
         """Get translation for Japanese text"""
-        try:
-            response = requests.post(
-                f"{API_BASE_URL}/translate",
-                json={
-                    "text": text,
-                    "source_lang": "ja",
-                    "target_lang": "en"
-                }
-            )
-            result = response.json()
-            return result.get("text", "Translation failed")
-        except Exception as e:
-            renpy.notify(f"Translation failed: {str(e)}")
-            return "Translation failed"
+        translation = api.get_translation(text, "ja", "en")
+        if translation == "Translation failed":
+            renpy.notify("Translation failed")
+        return translation
     
     def get_audio(text, voice="ja-JP"):
         """Get audio for text using TTS service"""
-        try:
-            response = requests.post(
-                f"{API_BASE_URL}/tts",
-                json={
-                    "text": text,
-                    "voice": voice
-                }
-            )
-            result = response.json()
-            audio_path = result.get("audio_path")
-            if audio_path:
-                return audio_path
-            return None
-        except Exception as e:
-            renpy.notify(f"TTS failed: {str(e)}")
-            return None
+        audio_path = api.get_audio(text, voice)
+        if not audio_path:
+            renpy.notify("TTS failed")
+        return audio_path
     
     def add_vocabulary(japanese, reading=None, english=None):
         """Add vocabulary to player's list"""
-        try:
-            response = requests.post(
-                f"{API_BASE_URL}/vocabulary",
-                json={
-                    "user_id": user_id,
-                    "japanese": japanese,
-                    "reading": reading,
-                    "english": english,
-                    "lesson_id": current_lesson
-                }
-            )
-            return response.json()
-        except Exception as e:
-            renpy.notify(f"Failed to add vocabulary: {str(e)}")
-            return None
+        result = api.add_vocabulary(user_id, japanese, reading, english, current_lesson)
+        if "error" in result:
+            renpy.notify(f"Failed to add vocabulary: {result['error']}")
+        return result
     
-    def generate_image(prompt, image_type="background", negative_prompt=None, steps=50, guidance_scale=7.5, width=512, height=512):
-        """Generate an image using Waifu Diffusion
-        
-        Args:
-            prompt: The text prompt for image generation
-            image_type: Either 'background' or 'character' to determine save location
-            negative_prompt: What to avoid in the image
-            steps: Number of inference steps
-            guidance_scale: How closely to follow the prompt
-            width: Image width
-            height: Image height
-            
-        Returns:
-            Path to the generated image or None if generation failed
-        """
-        try:
-            response = requests.post(
-                WAIFU_DIFFUSION_URL,
-                json={
-                    "prompt": prompt,
-                    "negative_prompt": negative_prompt,
-                    "num_inference_steps": steps,
-                    "guidance_scale": guidance_scale,
-                    "width": width,
-                    "height": height,
-                    "return_format": "base64"
-                }
-            )
-            
-            if response.status_code != 200:
-                renpy.notify(f"Image generation failed: {response.text}")
-                return None
-                
-            result = response.json()
-            
-            if "image" in result:
-                # Save the base64 image to a file
-                image_data = base64.b64decode(result["image"])
-                image = PILImage.open(BytesIO(image_data))
-                
-                # Determine the save directory based on image_type
-                if image_type.lower() == "character":
-                    save_dir = "images/characters"
-                else:  # Default to backgrounds
-                    save_dir = "images/backgrounds"
-                
-                # Create directory if it doesn't exist
-                os.makedirs(save_dir, exist_ok=True)
-                
-                # Create a safe filename from the prompt
-                safe_filename = "".join(c for c in prompt if c.isalnum() or c in " _-").strip()
-                safe_filename = safe_filename.replace(" ", "_")[:30]
-                
-                # Save the image
-                image_path = f"{save_dir}/{safe_filename}.png"
-                image.save(image_path)
-                
-                # Log the saved image
-                print(f"Generated image saved to: {image_path}")
-                
-                return image_path
-            else:
-                renpy.notify("Image generation failed: No image data received")
-                return None
-        except Exception as e:
-            renpy.notify(f"Image generation failed: {str(e)}")
-            return None
-            
+    def generate_image(prompt, image_type="background", negative_prompt=None, width=512, height=512):
+        """Generate an image using the image generation service"""
+        image_path = api.generate_image(prompt, image_type, negative_prompt, width, height)
+        if not image_path:
+            renpy.notify("Image generation failed")
+        return image_path
+    
     def generate_conversation(context, characters, grammar_points=None, vocabulary=None, num_exchanges=3):
         """Generate a dynamic conversation using the LLM"""
-        try:
-            if grammar_points is None:
-                grammar_points = []
-            if vocabulary is None:
-                vocabulary = []
-                
-            response = requests.post(
-                f"{API_BASE_URL}/generate-conversation",
-                json={
-                    "context": context,
-                    "characters": characters,
-                    "grammar_points": grammar_points,
-                    "vocabulary": vocabulary,
-                    "num_exchanges": num_exchanges,
-                    "include_translations": True
-                }
-            )
-            
-            result = response.json()
-            
-            # Check if we got a valid conversation structure
-            if "conversation" in result:
-                return result["conversation"]
-            elif "error" in result:
-                renpy.notify(f"Conversation generation error: {result['error']}")
-                return None
-            else:
-                renpy.notify("Unexpected response format from conversation generator")
-                return None
-        except Exception as e:
-            renpy.notify(f"Failed to generate conversation: {str(e)}")
-            return None
-            
+        conversation = api.generate_conversation(context, characters, grammar_points, vocabulary, num_exchanges)
+        if not conversation:
+            renpy.notify("Conversation generation failed")
+        return conversation
+    
     def generate_lesson(topic, grammar_points=None, vocabulary_focus=None, lesson_number=1, scene_setting="classroom"):
         """Generate a complete lesson using the LLM"""
-        try:
-            if grammar_points is None:
-                grammar_points = []
-            if vocabulary_focus is None:
-                vocabulary_focus = []
-                
-            response = requests.post(
-                f"{API_BASE_URL}/generate-lesson",
-                json={
-                    "topic": topic,
-                    "grammar_points": grammar_points,
-                    "vocabulary_focus": vocabulary_focus,
-                    "lesson_number": lesson_number,
-                    "scene_setting": scene_setting
-                }
-            )
-            
-            result = response.json()
-            
-            # Check if we got a valid lesson structure
-            if "metadata" in result and "dialogue_script" in result:
-                return result
-            elif "error" in result:
-                renpy.notify(f"Lesson generation error: {result['error']}")
-                return None
-            else:
-                renpy.notify("Unexpected response format from lesson generator")
-                return None
-        except Exception as e:
-            renpy.notify(f"Failed to generate lesson: {str(e)}")
-            return None
+        lesson = api.generate_lesson(topic, grammar_points, vocabulary_focus, lesson_number, scene_setting)
+        if not lesson:
+            renpy.notify("Lesson generation failed")
+        return lesson
 
 # Custom screen for translation
 screen translation_button(text):

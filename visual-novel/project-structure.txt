@@ -37,20 +37,19 @@ visual-novel/
 │   └── services/               # Service integrations
 │       ├── llm_service.py      # LLM text service integration
 │       ├── tts_service.py      # TTS service integration
-│       ├── vision_service.py   # Vision service integration
+│       ├── vision_service.py   # Vision service integration (connects to waifu-diffusion)
 │       └── database.py         # Database service
-├── openvino/                   # OpenVINO integration
-│   ├── image_generator.py      # Image generation service
-│   ├── models/                 # OpenVINO models
-│   └── utils/                  # Utility functions
 ├── docker/                     # Docker configuration
 │   ├── docker-compose.yml      # Docker Compose for the visual novel
 │   └── Dockerfile              # Dockerfile for the game server
 ├── curriculum/                 # JLPT N5 curriculum content
+│   ├── jlpt-n5-outline.md      # JLPT N5 curriculum outline
 │   ├── vocabulary/             # Vocabulary lists by lesson
 │   ├── grammar/                # Grammar points by lesson
 │   └── dialogues/              # Example dialogues
-└── docs/                       # Documentation
-    ├── setup.md                # Setup instructions
-    ├── development.md          # Development guide
-    └── architecture.txt        # Architectural diagram
+├── docs/                       # Documentation
+│   ├── setup.md                # Setup instructions
+│   ├── development.md          # Development guide
+│   └── architecture.txt        # Architectural diagram
+├── architecture.txt            # Architectural diagram
+└── README.md                   # Project overview
