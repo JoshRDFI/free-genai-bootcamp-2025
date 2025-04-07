@@ -10,6 +10,36 @@ A visual novel style game designed to teach Japanese at the JLPT N5 level, with 
 - **AI-Generated Backgrounds**: Scene backgrounds generated with OpenVINO
 - **Translation Assistance**: On-demand translation for difficult phrases
 - **Progress Tracking**: Save your learning progress and vocabulary
+- **Dynamic AI Conversations**: Practice with unlimited AI-generated Japanese conversations at JLPT N5 level
+- **Custom Lesson Generator**: Create personalized lessons on any topic using the LLM
+
+## AI-Powered Learning
+
+This visual novel leverages Ollama Llama 3.2 to create a truly adaptive learning experience:
+
+### Dynamic Conversation Practice
+
+After completing structured lessons, engage in dynamic conversation practice where the LLM generates contextually appropriate JLPT N5 level dialogues. These conversations:
+
+- Use grammar points and vocabulary you've learned
+- Adapt to different contexts and scenarios
+- Provide translation support for new phrases
+- Offer virtually unlimited practice opportunities
+
+### Custom Lesson Generator
+
+Create personalized Japanese lessons on any topic that interests you:
+
+1. Choose a topic (e.g., "Ordering Food", "Shopping", "Traveling")
+2. Select grammar points to focus on
+3. The AI generates a complete lesson including:
+   - Vocabulary with readings and translations
+   - Grammar explanations with examples
+   - Interactive dialogue practice
+   - Exercises with feedback
+   - Review summaries
+
+This feature ensures you never run out of learning material and can focus on topics relevant to your interests and goals.
 
 ## Technology Stack
 
@@ -18,6 +48,7 @@ A visual novel style game designed to teach Japanese at the JLPT N5 level, with 
 - **OpenVINO**: Optimized image generation
 - **Flask**: API server for game services
 - **SQLite**: Database for progress tracking
+- **Ollama Llama 3.2**: LLM for dynamic content generation
 
 ## Project Structure
 

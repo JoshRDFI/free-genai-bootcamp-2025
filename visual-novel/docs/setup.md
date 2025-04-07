@@ -13,6 +13,10 @@
 3. **Python 3.9+**
    - Required for running scripts and tools
 
+4. **Ollama with Llama 3.2**
+   - Ensure Ollama is running with Llama 3.2 model loaded
+   - This powers the dynamic conversation and lesson generation features
+
 ## Setup Steps
 
 ### 1. Clone the Repository
@@ -70,6 +74,14 @@ If you have specific OpenVINO models for image generation:
 1. Place your model files in the `data/openvino_models` directory
 2. Update the `visual-novel/openvino/image_generator.py` file to use your models
 
+### 5. Configure LLM for Dynamic Content
+
+The visual novel uses Ollama Llama 3.2 for generating dynamic conversations and lessons. Ensure:
+
+1. Ollama is running and accessible from your Docker network
+2. The Llama 3.2 model is loaded in Ollama
+3. The `LLM_ENDPOINT` and `LLM_MODEL_ID` environment variables are correctly set in your Docker environment
+
 ## Running the Game
 
 ### Development Mode
@@ -84,6 +96,22 @@ After building and deploying:
 
 1. Ensure all Docker services are running
 2. Open a web browser and navigate to `http://localhost:8000`
+
+## Using AI Features
+
+### Dynamic Conversations
+
+1. Complete the first lesson
+2. When prompted, choose "Yes, let's practice" to start a dynamic conversation
+3. The LLM will generate contextually appropriate dialogue at JLPT N5 level
+
+### Custom Lesson Generator
+
+1. From the start menu, choose "Generate a custom lesson using AI"
+2. Enter a topic of your choice
+3. Select grammar points to include
+4. Wait while the AI generates your personalized lesson
+5. Follow the interactive lesson with dialogue, vocabulary, and exercises
 
 ## Troubleshooting
 
@@ -106,6 +134,18 @@ If the game cannot connect to the API:
    docker logs vn-game-server
    docker logs vn-openvino-service
    ```
+
+### LLM Generation Issues
+
+If dynamic conversations or lessons aren't generating properly:
+
+1. Check that Ollama is running and accessible
+2. Verify the Llama 3.2 model is loaded
+3. Check the LLM service logs:
+   ```bash
+   docker logs llm_text
+   ```
+4. Try increasing the timeout values in the server configuration if generations are taking too long
 
 ### Image Generation Issues
 
