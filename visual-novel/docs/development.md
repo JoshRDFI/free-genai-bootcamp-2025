@@ -1,53 +1,17 @@
-# Development Guide for Japanese Learning Visual Novel
-
-## Project Architecture
-
-The Japanese Learning Visual Novel is built with a client-server architecture:
-
-- **Client**: Ren'Py visual novel engine (desktop or web)
-- **Server**: Flask API server that interfaces with opea-docker services
-
-All external service calls (LLM, TTS, ASR, image generation, database) are routed through the opea-docker API endpoints.
-
-## Directory Structure
-
-```
-visual-novel/
-├── renpy/                      # Ren'Py game files
-│   ├── game/                   # Main game directory
-│   │   ├── script.rpy          # Main script file
-│   │   ├── characters.rpy      # Character definitions
-│   │   ├── scenes/             # Scene scripts organized by lesson
-│   │   ├── gui/                # GUI customization
-│   │   ├── images/             # Static images
-│   │   ├── audio/              # Audio files
-│   │   └── python/             # Custom Python code
-│   │       ├── api.py          # API communication
-│   │       ├── jlpt.py         # JLPT N5 curriculum logic
-│   │       └── progress.py     # Progress tracking
-│   └── web/                    # Web export configuration
-├── server/                     # Game server / API Gateway
-│   ├── app.py                  # Main server application
-│   ├── routes/                 # API routes
-│   ├── models/                 # Data models
-│   └── services/               # Service integrations
-├── docker/                     # Docker configuration
-├── curriculum/                 # JLPT N5 curriculum content
-└── docs/                       # Documentation
-```
+# Japanese Learning Visual Novel - Development Guide
 
 ## Development Environment Setup
 
-### Prerequisites
+### Ren'Py Development
 
-- Python 3.9+
-- Ren'Py SDK 7.4.0+
-- Docker and Docker Compose
-- opea-docker running on your system
+1. Install the Ren'Py SDK from https://www.renpy.org/
+2. Open the Ren'Py launcher
+3. Add the `visual-novel/renpy` directory as a project
+4. Use the Ren'Py script editor or your preferred text editor to modify the `.rpy` files
 
-### Local Development
+### Server Development
 
-1. Set up a Python virtual environment for the server:
+1. Set up a Python virtual environment:
 
 ```bash
 cd visual-novel/server
@@ -56,119 +20,165 @@ source venv/bin/activate  # On Windows: venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
-2. Run the server locally:
+2. Run the server locally for development:
 
 ```bash
 python app.py
 ```
 
-3. Open the Ren'Py project in the Ren'Py SDK for client-side development.
+## Project Structure
+
+### Ren'Py Files
+
+- `script.rpy`: Main game script
+- `screens.rpy`: UI screens and components
+- `options.rpy`: Game configuration options
+- `gui.rpy`: GUI customization
+- `python/api.py`: API communication with backend services
+- `python/jlpt.py`: JLPT curriculum logic
+- `python/progress.py`: Progress tracking
+
+### Server Files
+
+- `app.py`: Main server application
+- `routes/`: API route handlers
+- `models/`: Data models
+- `services/`: Service integrations
 
 ## Adding New Content
 
 ### Adding a New Lesson
 
-1. Create a new scene script in `renpy/game/scenes/`
-2. Update the JLPT curriculum in `renpy/game/python/jlpt.py`
-3. Add the lesson to the main menu in `script.rpy`
+1. Create a new script file in `renpy/game/scenes/` (e.g., `lesson11.rpy`)
+2. Define the lesson content following the established pattern
+3. Add the lesson to the curriculum outline in `curriculum/jlpt-n5-outline.md`
+4. Update the vocabulary and grammar files in the curriculum directory
+
+Example lesson structure:
+
+```python
+# lesson11.rpy
+label lesson11_intro:
+    scene bg classroom
+    
+    show sensei at center
+    
+    sensei "Welcome to Lesson 11!"
+    
+    # Lesson content here
+    
+    # Save progress
+    $ save_progress("lesson11", "intro", True)
+    
+    jump lesson11_part2
+```
 
 ### Adding New Characters
 
-1. Define the character in `characters.rpy`
-2. Generate character images using the image generation API
-3. Add character sprites to `renpy/game/images/characters/`
+1. Add character definitions in `characters.rpy`
+2. Add character images in `images/characters/`
+3. Update the script to include the new characters
+
+Example character definition:
+
+```python
+define new_character = Character("Character Name", color="#ff9999", what_italic=False)
+```
+
+### Adding New Vocabulary
+
+1. Add vocabulary entries to the appropriate lesson file in `curriculum/vocabulary/`
+2. Update the script to include the new vocabulary
+3. Generate audio for the new vocabulary using the TTS service
 
 ## API Integration
 
-All external service calls are centralized through the `api.py` module, which communicates with the server's API endpoints. The server then routes these requests to the appropriate opea-docker services.
+### Adding a New API Endpoint
 
-### API Service Module
+1. Add the endpoint to the server's `app.py` file
+2. Implement the corresponding method in the Ren'Py `api.py` file
+3. Update the documentation
 
-The `APIService` class in `renpy/game/python/api.py` provides methods for:
+Example server endpoint:
 
-- Text-to-speech generation
-- Speech-to-text transcription
-- Image generation
-- LLM text generation
-- Translation
-- Database operations
+```python
+@app.route('/api/new-endpoint', methods=['POST'])
+def new_endpoint():
+    data = request.json
+    # Process the request
+    return jsonify({'result': 'success'})
+```
 
-### Adding a New API Service
+Example Ren'Py API method:
 
-To add a new API service:
-
-1. Add the service endpoint to `api.py`
-2. Create appropriate methods in the `APIService` class
-3. Update the server's `app.py` to handle the new endpoints
-4. Add any necessary service integration files in `server/services/`
-
-## Working with opea-docker
-
-The visual novel is designed to work with the opea-docker API for all external services. The integration is configured through environment variables in `docker-compose.yml`.
-
-### opea-docker API Endpoints
-
-The following opea-docker API endpoints are used:
-
-- `/llm/text`: Text generation, translation, and conversation
-- `/llm/vision`: Image understanding and description
-- `/tts`: Text-to-speech conversion
-- `/asr`: Speech-to-text transcription
-- `/image/generate`: Image generation for backgrounds and characters
-- `/embeddings`: Text embeddings for semantic search
-- `/database`: Database operations (optional)
+```python
+@staticmethod
+def call_new_endpoint(param1, param2):
+    """Call the new endpoint"""
+    try:
+        response = requests.post(
+            f"{OPEA_API_BASE_URL}/new-endpoint",
+            json={
+                'param1': param1,
+                'param2': param2
+            }
+        )
+        return response.json()
+    except Exception as e:
+        print(f"API call failed: {str(e)}")
+        return {"error": str(e)}
+```
 
 ## Testing
 
-### Server Testing
+### Testing Ren'Py Scripts
 
-To run tests for the server:
+1. Launch the game from the Ren'Py launcher
+2. Navigate to the section you want to test
+3. Use the Ren'Py developer tools (Shift+D) for debugging
+
+### Testing API Endpoints
+
+1. Use tools like Postman or curl to test API endpoints
+2. Check the server logs for errors
+
+Example curl command:
 
 ```bash
-cd visual-novel/server
-python -m unittest discover tests
+curl -X POST http://localhost:8080/api/translate \
+  -H "Content-Type: application/json" \
+  -d '{"text": "こんにちは", "source_lang": "ja", "target_lang": "en"}'
 ```
 
-### Ren'Py Testing
+## Building and Deployment
 
-Ren'Py provides a testing framework that can be used to test game functionality:
+### Building for Web
 
-1. Create test scripts in `renpy/game/tests/`
-2. Run tests using the Ren'Py SDK
+1. Open the Ren'Py launcher
+2. Select "Build Distributions"
+3. Check "Web" and click "Build"
+4. Copy the contents of the generated web directory to `renpy/web/`
 
-## Building for Production
+### Building for Desktop
 
-### Desktop Build
+1. Open the Ren'Py launcher
+2. Select "Build Distributions"
+3. Check "PC: Windows and Linux" and/or "Mac" and click "Build"
+4. The packaged game will be available in the `renpy/dist/` directory
 
-To build the desktop version:
-
-1. Use the Ren'Py SDK to build for your target platforms (Windows, macOS, Linux)
-2. Package the server as a separate application or use a hosted server
-
-### Web Build
-
-To build the web version:
-
-1. Use the Ren'Py SDK to build the web version
-2. Copy the web build to `renpy/web/`
-3. Deploy using the Docker setup:
+### Deploying Docker Services
 
 ```bash
 cd visual-novel/docker
+docker-compose build
 docker-compose up -d
 ```
 
-## Contribution Guidelines
+## Contributing
 
 1. Fork the repository
 2. Create a feature branch
 3. Make your changes
-4. Ensure all tests pass
-5. Submit a pull request
+4. Submit a pull request
 
-## Resources
-
-- [Ren'Py Documentation](https://www.renpy.org/doc/html/)
-- [Flask Documentation](https://flask.palletsprojects.com/)
-- [opea-docker API Documentation](https://github.com/yourusername/opea-docker)
-- [JLPT N5 Resources](https://jlptsensei.com/jlpt-n5-study-material/)
+Please follow the established code style and document your changes.

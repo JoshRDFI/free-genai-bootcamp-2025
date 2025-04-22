@@ -200,6 +200,216 @@ def generate_conversation():
     if not context or not characters:
         return jsonify({'error': 'Context and characters are required'}), 400
     
+    try:
+        response = requests.post(
+            f"{LLM_TEXT_URL}/generate",
+            json={
+                'prompt': f"Generate a Japanese conversation with the following context: {context}\n\n"
+                         f"Characters: {', '.join(characters)}\n\n"
+                         f"Grammar points to include: {', '.join(grammar_points)}\n\n"
+                         f"Vocabulary to include: {', '.join(vocabulary)}\n\n"
+                         f"Number of exchanges: {num_exchanges}\n\n"
+                         f"Include English translations: {include_translations}\n\n"
+                         f"Format the response as a JSON array of dialogue exchanges.",
+                'max_tokens': 2000,
+                'temperature': 0.7
+            }
+        )
+        
+        if response.status_code == 200:
+            result = response.json()
+            # Process the LLM response to ensure it's in the correct format
+            conversation = result.get('text', '')
+            try:
+                # Try to parse the response as JSON
+                conversation_data = json.loads(conversation)
+                return jsonify({'conversation': conversation_data})
+            except json.JSONDecodeError:
+                # If parsing fails, return the raw text
+                return jsonify({'error': 'Failed to parse conversation', 'raw_response': conversation}), 500
+        else:
+            return jsonify({'error': 'Conversation generation error', 'details': response.text}), 500
+    except requests.RequestException as e:
+        return jsonify({'error': 'Conversation generation service unavailable', 'details': str(e)}), 503
+
+@app.route('/api/generate-lesson', methods=['POST'])
+def generate_lesson():
+    data = request.json
+    topic = data.get('topic', '')
+    grammar_points = data.get('grammar_points', [])
+    vocabulary_focus = data.get('vocabulary_focus', [])
+    lesson_number = data.get('lesson_number', 1)
+    scene_setting = data.get('scene_setting', 'classroom')
+    
+    if not topic:
+        return jsonify({'error': 'Topic is required'}), 400
+    
+    try:
+        response = requests.post(
+            f"{LLM_TEXT_URL}/generate",
+            json={
+                'prompt': f"Generate a complete JLPT N5 Japanese lesson on the topic: {topic}\n\n"
+                         f"Grammar points to include: {', '.join(grammar_points)}\n\n"
+                         f"Vocabulary focus: {', '.join(vocabulary_focus)}\n\n"
+                         f"Lesson number: {lesson_number}\n\n"
+                         f"Scene setting: {scene_setting}\n\n"
+                         f"Format the response as a JSON object with the following structure:\n"
+                         f"{{\n"
+                         f"  'metadata': {{\n"
+                         f"    'title': 'Lesson title',\n"
+                         f"    'objectives': ['objective1', 'objective2', ...]\n"
+                         f"  }},\n"
+                         f"  'vocabulary': [\n"
+                         f"    {{'japanese': '日本語', 'reading': 'にほんご', 'english': 'Japanese language'}},\n"
+                         f"    ...\n"
+                         f"  ],\n"
+                         f"  'grammar_points': [\n"
+                         f"    {{'pattern': 'Pattern', 'explanation': 'Explanation', 'examples': ['Example1', 'Example2']}},\n"
+                         f"    ...\n"
+                         f"  ],\n"
+                         f"  'dialogue_script': [\n"
+                         f"    {{'speaker': 'Character name', 'japanese': 'Japanese text', 'english': 'English translation'}},\n"
+                         f"    ...\n"
+                         f"  ],\n"
+                         f"  'exercises': [\n"
+                         f"    {{'question': 'Question', 'options': ['Option1', 'Option2', ...], 'correct_answer': 'Correct option'}},\n"
+                         f"    ...\n"
+                         f"  ],\n"
+                         f"  'cultural_note': 'Cultural information related to the lesson'\n"
+                         f"}}",
+                'max_tokens': 4000,
+                'temperature': 0.7
+            }
+        )
+        
+        if response.status_code == 200:
+            result = response.json()
+            # Process the LLM response to ensure it's in the correct format
+            lesson_text = result.get('text', '')
+            try:
+                # Try to parse the response as JSON
+                lesson_data = json.loads(lesson_text)
+                return jsonify({'lesson': lesson_data})
+            except json.JSONDecodeError:
+                # If parsing fails, return the raw text
+                return jsonify({'error': 'Failed to parse lesson', 'raw_response': lesson_text}), 500
+        else:
+            return jsonify({'error': 'Lesson generation error', 'details': response.text}), 500
+    except requests.RequestException as e:
+        return jsonify({'error': 'Lesson generation service unavailable', 'details': str(e)}), 503
+
+@app.route('/api/vocabulary', methods=['POST'])
+def add_vocabulary():
+    data = request.json
+    user_id = data.get('user_id')
+    japanese = data.get('japanese')
+    reading = data.get('reading')
+    english = data.get('english')
+    lesson_id = data.get('lesson_id')
+    
+    if not all([user_id, japanese]):
+        return jsonify({'error': 'User ID and Japanese text are required'}), 400
+    
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    
+    try:
+        cursor.execute(
+            '''
+            INSERT INTO vocabulary (user_id, japanese, reading, english, lesson_id)
+            VALUES (?, ?, ?, ?, ?)
+            ''',
+            (user_id, japanese, reading, english, lesson_id)
+        )
+        
+        conn.commit()
+        vocab_id = cursor.lastrowid
+        
+        return jsonify({
+            'id': vocab_id,
+            'user_id': user_id,
+            'japanese': japanese,
+            'reading': reading,
+            'english': english,
+            'lesson_id': lesson_id
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    finally:
+        conn.close()
+
+@app.route('/api/vocabulary/<int:user_id>', methods=['GET'])
+def get_vocabulary(user_id):
+    lesson_id = request.args.get('lesson_id')
+    
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    
+    try:
+        if lesson_id:
+            cursor.execute(
+                'SELECT id, japanese, reading, english, lesson_id, mastery_level FROM vocabulary WHERE user_id = ? AND lesson_id = ?',
+                (user_id, lesson_id)
+            )
+        else:
+            cursor.execute(
+                'SELECT id, japanese, reading, english, lesson_id, mastery_level FROM vocabulary WHERE user_id = ?',
+                (user_id,)
+            )
+        
+        vocabulary = [{
+            'id': row[0],
+            'japanese': row[1],
+            'reading': row[2],
+            'english': row[3],
+            'lesson_id': row[4],
+            'mastery_level': row[5]
+        } for row in cursor.fetchall()]
+        
+        return jsonify(vocabulary)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    finally:
+        conn.close()
+
+@app.route('/api/image/generate', methods=['POST'])
+def generate_image():
+    data = request.json
+    prompt = data.get('prompt')
+    negative_prompt = data.get('negative_prompt')
+    width = data.get('width', 512)
+    height = data.get('height', 512)
+    style = data.get('style', 'anime')
+    
+    if not prompt:
+        return jsonify({'error': 'Prompt is required'}), 400
+    
+    try:
+        response = requests.post(
+            IMAGE_GEN_URL,
+            json={
+                'prompt': prompt,
+                'negative_prompt': negative_prompt,
+                'width': width,
+                'height': height,
+                'style': style
+            }
+        )
+        
+        if response.status_code == 200:
+            return jsonify(response.json())
+        else:
+            return jsonify({'error': 'Image generation error', 'details': response.text}), 500
+    except requests.RequestException as e:
+        return jsonify({'error': 'Image generation service unavailable', 'details': str(e)}), 503
+
+# Initialize database when the app starts
+init_db()
+
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=8080, debug=True)
+        return jsonify({'error': 'Context and characters are required'}), 400
+    
     # Construct a detailed prompt for the LLM
     prompt = f"""
     Generate a natural Japanese conversation at JLPT N5 level based on the following:

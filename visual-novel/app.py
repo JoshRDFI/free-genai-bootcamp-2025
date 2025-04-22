@@ -12,8 +12,22 @@ app = FastAPI(title="Waifu Diffusion API", description="API for generating anime
 
 # Load the Stable Diffusion model
 model_path = os.environ.get("WAIFU_DIFFUSION_MODEL", "hakurei/waifu-diffusion")
+cache_dir = os.environ.get("TRANSFORMERS_CACHE", "/app/model_cache")
 device = "cuda" if torch.cuda.is_available() else "cpu"
-pipe = StableDiffusionPipeline.from_pretrained(model_path, torch_dtype=torch.float16).to(device)
+
+print(f"Loading model {model_path} from cache directory {cache_dir} on device {device}")
+
+# Check if model is already downloaded
+if os.path.exists(f"{cache_dir}/models--{model_path.replace('/', '--')}"):
+    print(f"Model {model_path} found in cache")
+else:
+    print(f"Model {model_path} not found in cache, downloading...")
+
+pipe = StableDiffusionPipeline.from_pretrained(
+    model_path, 
+    torch_dtype=torch.float16,
+    cache_dir=cache_dir
+).to(device)
 
 # Request model
 class ImageRequest(BaseModel):

@@ -199,6 +199,265 @@ label dynamic_lesson_generator:
                     else:
                         speaking_character = player
                     
+                    # Display the Japanese text with translation button
+                    renpy.show_screen("translation_button", japanese_text)
+                    renpy.show_screen("add_vocab_button", japanese_text, None, english)
+                    
+                    # Say the line
+                    speaking_character(japanese_text)
+                    
+                    # Generate and play audio if available
+                    audio_path = get_audio(japanese_text)
+                    if audio_path:
+                        renpy.play(audio_path, channel="voice")
+        
+        # Show grammar points
+        python:
+            grammar_points = lesson_data.get("grammar_points", [])
+            if grammar_points:
+                renpy.say(None, "Let's review the grammar points from this lesson:")
+                for i, grammar in enumerate(grammar_points):
+                    pattern = grammar.get("pattern", "")
+                    explanation = grammar.get("explanation", "")
+                    examples = grammar.get("examples", [])
+                    
+                    renpy.say(sensei, f"Grammar Point {i+1}: {pattern}")
+                    renpy.say(sensei, explanation)
+                    
+                    if examples:
+                        renpy.say(sensei, "Examples:")
+                        for example in examples:
+                            renpy.say(sensei, example)
+        
+        # Show exercises if available
+        python:
+            exercises = lesson_data.get("exercises", [])
+            if exercises:
+                renpy.say(None, "Let's practice with some exercises:")
+                for i, exercise in enumerate(exercises):
+                    question = exercise.get("question", "")
+                    options = exercise.get("options", [])
+                    correct_answer = exercise.get("correct_answer", "")
+                    
+                    renpy.say(sensei, f"Question {i+1}: {question}")
+                    
+                    # Create a menu for the options
+                    choices = [(option, option) for option in options]
+                    answer = renpy.display_menu(choices)
+                    
+                    if answer == correct_answer:
+                        renpy.say(sensei, "Correct! Well done!")
+                    else:
+                        renpy.say(sensei, f"Not quite. The correct answer is: {correct_answer}")
+        
+        # Show cultural note if available
+        $ cultural_note = lesson_data.get("cultural_note", "")
+        if cultural_note:
+            sensei "Cultural Note: [cultural_note]"
+        
+        # Lesson completion
+        "Congratulations! You've completed your custom lesson on [lesson_title]."
+        
+        # Save progress
+        $ save_progress(f"custom_{topic.replace(' ', '_')}", "completed", True)
+        
+        menu:
+            "What would you like to do next?"
+            
+            "Review this lesson again":
+                jump dynamic_lesson_generator
+                
+            "Create a new custom lesson":
+                jump dynamic_lesson_generator
+                
+            "Return to main menu":
+                jump start
+    else:
+        "Sorry, there was an error generating your lesson. Please try again with a different topic."
+        jump dynamic_lesson_generator
+
+# Pre-made Lesson 1: Basic Greetings
+label lesson1_intro:
+    scene bg classroom
+    
+    "Welcome to your first Japanese lesson!"
+    
+    show sensei at center
+    
+    sensei "こんにちは！私は田中先生です。よろしくお願いします。"
+    show screen translation_button("こんにちは！私は田中先生です。よろしくお願いします。")
+    show screen add_vocab_button("こんにちは", "こんにちは", "Hello")
+    
+    "The teacher introduces herself as Tanaka-sensei."
+    
+    sensei "In this lesson, we'll learn basic greetings in Japanese."
+    
+    sensei "Let's start with 'こんにちは' (konnichiwa), which means 'hello' or 'good afternoon'."
+    show screen add_vocab_button("こんにちは", "こんにちは", "Hello/Good afternoon")
+    
+    sensei "Now, repeat after me: こんにちは"
+    
+    # Generate and play audio
+    $ audio_path = get_audio("こんにちは")
+    if audio_path:
+        play voice audio_path
+    
+    menu:
+        "Repeat the greeting"
+        
+        "こんにちは":
+            sensei "Very good! Your pronunciation is excellent."
+            
+        "I need to hear it again":
+            sensei "No problem, let's try again."
+            $ audio_path = get_audio("こんにちは")
+            if audio_path:
+                play voice audio_path
+    
+    sensei "Next, let's learn how to introduce yourself."
+    
+    sensei "私は田中先生です。(Watashi wa Tanaka-sensei desu.)"
+    show screen translation_button("私は田中先生です。")
+    show screen add_vocab_button("私", "わたし", "I/me")
+    
+    sensei "This means 'I am Teacher Tanaka.'"
+    
+    sensei "The pattern is: 私は (watashi wa) + your name + です (desu)."
+    
+    sensei "Now, try introducing yourself."
+    
+    menu:
+        "Introduce yourself"
+        
+        "私は[player_name]です。":
+            sensei "素晴らしい！(Subarashii!) Excellent!"
+            
+        "I need help":
+            sensei "Let me help you. Say: 私は (watashi wa) + your name + です (desu)."
+            sensei "For example: 私は[player_name]です。"
+    
+    sensei "Great job! Let's continue with more greetings."
+    
+    # Save progress
+    $ save_progress("lesson1", "intro", True)
+    
+    jump lesson1_greetings
+
+# Lesson 1 continued: More greetings
+label lesson1_greetings:
+    scene bg classroom
+    
+    show sensei at center
+    
+    sensei "Let's learn more greetings for different times of day."
+    
+    sensei "おはようございます (Ohayou gozaimasu) - Good morning"
+    show screen translation_button("おはようございます")
+    show screen add_vocab_button("おはようございます", "おはようございます", "Good morning")
+    
+    $ audio_path = get_audio("おはようございます")
+    if audio_path:
+        play voice audio_path
+    
+    sensei "こんばんは (Konbanwa) - Good evening"
+    show screen translation_button("こんばんは")
+    show screen add_vocab_button("こんばんは", "こんばんは", "Good evening")
+    
+    $ audio_path = get_audio("こんばんは")
+    if audio_path:
+        play voice audio_path
+    
+    sensei "さようなら (Sayounara) - Goodbye"
+    show screen translation_button("さようなら")
+    show screen add_vocab_button("さようなら", "さようなら", "Goodbye")
+    
+    $ audio_path = get_audio("さようなら")
+    if audio_path:
+        play voice audio_path
+    
+    sensei "Let's practice these greetings in a conversation."
+    
+    # Generate a simple conversation using the LLM
+    $ conversation = generate_conversation(
+        "A student and teacher meeting in the morning and saying goodbye in the evening",
+        ["Sensei", player_name],
+        ["Basic greetings", "Self-introduction"],
+        ["おはようございます", "こんにちは", "こんばんは", "さようなら"],
+        3
+    )
+    
+    if conversation:
+        python:
+            for exchange in conversation:
+                speaker = exchange.get("speaker", "")
+                japanese_text = exchange.get("japanese", "")
+                english = exchange.get("english", "")
+                
+                # Determine which character is speaking
+                if speaker == "Sensei":
+                    speaking_character = sensei
+                else:
+                    speaking_character = player
+                
+                # Display the Japanese text with translation button
+                renpy.show_screen("translation_button", japanese_text)
+                
+                # Say the line
+                speaking_character(japanese_text)
+                
+                # Generate and play audio if available
+                audio_path = get_audio(japanese_text)
+                if audio_path:
+                    renpy.play(audio_path, channel="voice")
+    else:
+        # Fallback conversation if generation fails
+        sensei "おはようございます、[player_name]さん。"
+        show screen translation_button("おはようございます、[player_name]さん。")
+        
+        player "おはようございます、先生。"
+        show screen translation_button("おはようございます、先生。")
+        
+        sensei "今日の授業は終わりです。さようなら。"
+        show screen translation_button("今日の授業は終わりです。さようなら。")
+        
+        player "さようなら、先生。また明日。"
+        show screen translation_button("さようなら、先生。また明日。")
+    
+    sensei "Excellent! You've learned the basic greetings in Japanese."
+    
+    # Save progress
+    $ save_progress("lesson1", "greetings", True)
+    
+    "Congratulations! You've completed Lesson 1: Basic Greetings."
+    
+    menu:
+        "What would you like to do next?"
+        
+        "Review Lesson 1 again":
+            jump lesson1_intro
+            
+        "Create a custom lesson":
+            jump dynamic_lesson_generator
+            
+        "Return to main menu":
+            jump start
+
+# Screen for yes/no prompts
+screen yes_no_prompt(message):
+    modal True
+    frame:
+        xalign 0.5
+        yalign 0.5
+        xpadding 20
+        ypadding 20
+        vbox:
+            spacing 10
+            text message size 24
+            hbox:
+                spacing 20
+                textbutton "Yes" action Return(True)
+                textbutton "No" action Return(False)
+                    
                     # Show the dialogue with translation option
                     renpy.show_screen("translation_button", japanese_text)
                     speaking_character(japanese_text)

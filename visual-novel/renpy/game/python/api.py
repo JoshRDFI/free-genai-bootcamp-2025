@@ -203,6 +203,54 @@ class APIService:
                     "characters": characters,
                     "grammar_points": grammar_points,
                     "vocabulary": vocabulary,
+                    "num_exchanges": num_exchanges
+                }
+            )
+            
+            if response.status_code != 200:
+                print(f"Conversation generation failed: {response.text}")
+                return None
+                
+            result = response.json()
+            return result.get("conversation", None)
+        except Exception as e:
+            print(f"Conversation generation failed: {str(e)}")
+            return None
+            
+    @staticmethod
+    def generate_lesson(topic, grammar_points=None, vocabulary_focus=None, lesson_number=1, scene_setting="classroom"):
+        """Generate a complete lesson using the LLM"""
+        try:
+            if grammar_points is None:
+                grammar_points = []
+            if vocabulary_focus is None:
+                vocabulary_focus = []
+                
+            response = requests.post(
+                f"{LLM_TEXT_ENDPOINT}/generate-lesson",
+                json={
+                    "topic": topic,
+                    "grammar_points": grammar_points,
+                    "vocabulary_focus": vocabulary_focus,
+                    "lesson_number": lesson_number,
+                    "scene_setting": scene_setting
+                }
+            )
+            
+            if response.status_code != 200:
+                print(f"Lesson generation failed: {response.text}")
+                return None
+                
+            result = response.json()
+            return result.get("lesson", None)
+        except Exception as e:
+            print(f"Lesson generation failed: {str(e)}")
+            return None
+                json={
+                    "context": context,
+                    "characters": characters,
+                    "grammar_points": grammar_points,
+                    "vocabulary": vocabulary,
                     "num_exchanges": num_exchanges,
                     "include_translations": True
                 }

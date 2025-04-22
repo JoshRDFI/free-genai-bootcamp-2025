@@ -32,13 +32,16 @@ RUN pip3 install --no-cache-dir \
     pydantic==2.1.1
 
 # Copy application code
-COPY app.py /app/
+COPY ../app.txt /app/app.py
 
-# Create directory for generated images
+# Create directories for generated images and model cache
 RUN mkdir -p /app/generated_images && chmod 777 /app/generated_images
+RUN mkdir -p /app/model_cache && chmod 777 /app/model_cache
 
 # Set environment variables for the model
 ENV WAIFU_DIFFUSION_MODEL="hakurei/waifu-diffusion"
+ENV TRANSFORMERS_CACHE="/app/model_cache"
+ENV HF_HOME="/app/model_cache"
 
 # Expose the API port
 EXPOSE 5000
