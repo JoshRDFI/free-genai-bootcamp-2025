@@ -1,16 +1,2 @@
-FROM python:3.9-slim
-
-WORKDIR /app
-
-# Install dependencies
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
-
-# Copy application code
-COPY . .
-
-# Expose port
-EXPOSE 8080
-
-# Run the application
-CMD ["python", "app.py"]
+# OBSOLETE: moved to visual-novel/server/Dockerfile
+# This Dockerfile is no longer used for building the game server. See visual-novel/server/Dockerfile for the current configuration.

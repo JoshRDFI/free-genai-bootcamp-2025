@@ -1,0 +1,19 @@
+{
+  "theme": "At the Restaurant",
+  "vocabulary": [
+    {"word": "レストラン", "reading": "resutoran", "meaning": "restaurant"},
+    {"word": "メニュー", "reading": "menyū", "meaning": "menu"},
+    {"word": "みず", "reading": "mizu", "meaning": "water"},
+    {"word": "コーヒー", "reading": "kōhī", "meaning": "coffee"},
+    {"word": "おちゃ", "reading": "ocha", "meaning": "tea"},
+    {"word": "たべもの", "reading": "tabemono", "meaning": "food"},
+    {"word": "のみもの", "reading": "nomimono", "meaning": "drink"},
+    {"word": "いくら", "reading": "ikura", "meaning": "how much (price)"},
+    {"word": "おかいけい", "reading": "okaikei", "meaning": "bill, check"},
+    {"word": "おいしい", "reading": "oishii", "meaning": "delicious"},
+    {"word": "まずい", "reading": "mazui", "meaning": "bad tasting"},
+    {"word": "ください", "reading": "kudasai", "meaning": "please (give me)"},
+    {"word": "あります", "reading": "arimasu", "meaning": "to exist (inanimate)"},
+    {"word": "ほしい", "reading": "hoshii", "meaning": "to want"}
+  ]
+}

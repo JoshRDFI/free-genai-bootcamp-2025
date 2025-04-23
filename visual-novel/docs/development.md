@@ -1,172 +1,145 @@
 # Japanese Learning Visual Novel - Development Guide
 
+This guide provides information for developers who want to extend or customize the Japanese Learning Visual Novel application.
+
+## Project Structure
+
+The project is organized into several components:
+
+- `renpy/`: Ren'Py visual novel files
+- `server/`: Game server and API gateway
+- `docker/`: Docker configuration files
+- `curriculum/`: JLPT N5 curriculum content
+- `docs/`: Documentation
+- `tests/`: Unit tests
+
 ## Development Environment Setup
 
-### Ren'Py Development
+### Setting Up for Ren'Py Development
 
-1. Install the Ren'Py SDK from https://www.renpy.org/
-2. Open the Ren'Py launcher
-3. Add the `visual-novel/renpy` directory as a project
-4. Use the Ren'Py script editor or your preferred text editor to modify the `.rpy` files
+1. Install the Ren'Py SDK from [renpy.org](https://www.renpy.org/)
+2. Add the project to Ren'Py by pointing it to the `visual-novel/renpy` directory
+3. Install the recommended Ren'Py extensions for your code editor:
+   - For VS Code: [Ren'Py Language](https://marketplace.visualstudio.com/items?itemName=luquedaniel.languague-renpy)
+   - For Sublime Text: [Ren'Py Language Package](https://packagecontrol.io/packages/Renpy)
 
-### Server Development
+### Setting Up for Server Development
 
-1. Set up a Python virtual environment:
+1. Create a Python virtual environment:
+
+```bash
+python -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+```
+
+2. Install the required packages:
 
 ```bash
 cd visual-novel/server
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
-2. Run the server locally for development:
+3. Run the server locally for development:
 
 ```bash
 python app.py
 ```
 
-## Project Structure
+## Key Components
 
-### Ren'Py Files
+### Ren'Py Game
 
-- `script.rpy`: Main game script
-- `screens.rpy`: UI screens and components
-- `options.rpy`: Game configuration options
-- `gui.rpy`: GUI customization
-- `python/api.py`: API communication with backend services
-- `python/jlpt.py`: JLPT curriculum logic
-- `python/progress.py`: Progress tracking
+The Ren'Py game is the frontend of the application. Key files include:
 
-### Server Files
+- `renpy/game/script.rpy`: Main script file containing the game flow
+- `renpy/game/python/api.py`: API service for communicating with the backend
+- `renpy/game/python/jlpt.py`: JLPT curriculum logic
+- `renpy/game/python/progress.py`: Progress tracking
 
-- `app.py`: Main server application
-- `routes/`: API route handlers
-- `models/`: Data models
-- `services/`: Service integrations
+### Server
 
-## Adding New Content
+The server acts as an API gateway between the Ren'Py game and external services. Key files include:
+
+- `server/app.py`: Main server application with API routes
+- `server/models/`: Data models for users, progress, and vocabulary
+- `server/services/`: Service integrations for LLM, TTS, etc.
+
+### Curriculum
+
+The curriculum defines the JLPT N5 content structure. Key files include:
+
+- `curriculum/jlpt-n5-outline.md`: Overall curriculum outline
+- `curriculum/vocabulary/`: Vocabulary lists by lesson
+- `curriculum/grammar/`: Grammar points by lesson
+
+## Adding New Features
 
 ### Adding a New Lesson
 
-1. Create a new script file in `renpy/game/scenes/` (e.g., `lesson11.rpy`)
-2. Define the lesson content following the established pattern
-3. Add the lesson to the curriculum outline in `curriculum/jlpt-n5-outline.md`
-4. Update the vocabulary and grammar files in the curriculum directory
+1. Define the lesson content in the curriculum:
+   - Add the lesson to `curriculum/jlpt-n5-outline.md`
+   - Create vocabulary and grammar files in their respective directories
 
-Example lesson structure:
+2. Update the JLPT curriculum in the code:
+   - Add the lesson to the `lessons` list in `renpy/game/python/jlpt.py`
 
-```python
-# lesson11.rpy
-label lesson11_intro:
-    scene bg classroom
-    
-    show sensei at center
-    
-    sensei "Welcome to Lesson 11!"
-    
-    # Lesson content here
-    
-    # Save progress
-    $ save_progress("lesson11", "intro", True)
-    
-    jump lesson11_part2
-```
-
-### Adding New Characters
-
-1. Add character definitions in `characters.rpy`
-2. Add character images in `images/characters/`
-3. Update the script to include the new characters
-
-Example character definition:
-
-```python
-define new_character = Character("Character Name", color="#ff9999", what_italic=False)
-```
-
-### Adding New Vocabulary
-
-1. Add vocabulary entries to the appropriate lesson file in `curriculum/vocabulary/`
-2. Update the script to include the new vocabulary
-3. Generate audio for the new vocabulary using the TTS service
-
-## API Integration
+3. Create the lesson script in Ren'Py:
+   - Create a new label in `renpy/game/script.rpy` for the lesson
+   - Implement the lesson flow with dialogue, vocabulary, and grammar explanations
 
 ### Adding a New API Endpoint
 
-1. Add the endpoint to the server's `app.py` file
-2. Implement the corresponding method in the Ren'Py `api.py` file
-3. Update the documentation
+1. Add the endpoint to the server:
+   - Create a new route in `server/app.py`
+   - Implement the endpoint logic
 
-Example server endpoint:
+2. Add the corresponding method to the API service:
+   - Add a new method to `renpy/game/python/api.py`
+   - Implement the client-side logic to call the new endpoint
 
-```python
-@app.route('/api/new-endpoint', methods=['POST'])
-def new_endpoint():
-    data = request.json
-    # Process the request
-    return jsonify({'result': 'success'})
-```
-
-Example Ren'Py API method:
-
-```python
-@staticmethod
-def call_new_endpoint(param1, param2):
-    """Call the new endpoint"""
-    try:
-        response = requests.post(
-            f"{OPEA_API_BASE_URL}/new-endpoint",
-            json={
-                'param1': param1,
-                'param2': param2
-            }
-        )
-        return response.json()
-    except Exception as e:
-        print(f"API call failed: {str(e)}")
-        return {"error": str(e)}
-```
+3. Use the new API in the Ren'Py game:
+   - Call the API method from the appropriate place in the game script
 
 ## Testing
 
-### Testing Ren'Py Scripts
+### Running Tests
 
-1. Launch the game from the Ren'Py launcher
-2. Navigate to the section you want to test
-3. Use the Ren'Py developer tools (Shift+D) for debugging
-
-### Testing API Endpoints
-
-1. Use tools like Postman or curl to test API endpoints
-2. Check the server logs for errors
-
-Example curl command:
+The project includes unit tests for key components. To run the tests:
 
 ```bash
-curl -X POST http://localhost:8080/api/translate \
-  -H "Content-Type: application/json" \
-  -d '{"text": "こんにちは", "source_lang": "ja", "target_lang": "en"}'
+cd visual-novel/tests
+python run_tests.py
 ```
+
+### Adding New Tests
+
+1. Create a new test file in the `tests/` directory
+2. Import the necessary modules and create test cases
+3. Add the test cases to the test suite in `run_tests.py`
 
 ## Building and Deployment
 
-### Building for Web
+### Building the Ren'Py Game
 
 1. Open the Ren'Py launcher
-2. Select "Build Distributions"
-3. Check "Web" and click "Build"
-4. Copy the contents of the generated web directory to `renpy/web/`
+2. Select the project
+3. Click "Build Distributions"
+4. Select the desired platforms (Windows, macOS, Linux, Web)
+5. Click "Build"
 
-### Building for Desktop
+### Building the Web Version
 
-1. Open the Ren'Py launcher
-2. Select "Build Distributions"
-3. Check "PC: Windows and Linux" and/or "Mac" and click "Build"
-4. The packaged game will be available in the `renpy/dist/` directory
+1. Build the web version using Ren'Py as described above
+2. Copy the contents of the web build to `visual-novel/renpy/web`
 
-### Deploying Docker Services
+### Deploying with Docker
+
+1. Update the Docker configuration if needed:
+   - Modify `docker/docker-compose.yml` for service configuration
+   - Update `docker/Dockerfile` for the game server
+   - Update `docker/Dockerfile.waifu` for the Waifu Diffusion service
+
+2. Build and start the Docker services:
 
 ```bash
 cd visual-novel/docker
@@ -174,11 +147,32 @@ docker-compose build
 docker-compose up -d
 ```
 
-## Contributing
+## Best Practices
 
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Submit a pull request
+### Code Style
 
-Please follow the established code style and document your changes.
+- Follow PEP 8 for Python code
+- Use consistent indentation (4 spaces) for all files
+- Add docstrings to all functions and classes
+- Keep functions small and focused on a single task
+
+### Git Workflow
+
+- Create feature branches for new features
+- Create bugfix branches for bug fixes
+- Use descriptive commit messages
+- Submit pull requests for review before merging
+
+### Documentation
+
+- Update documentation when adding new features
+- Document API endpoints with examples
+- Keep the README up to date
+- Add comments to complex code sections
+
+## Resources
+
+- [Ren'Py Documentation](https://www.renpy.org/doc/html/)
+- [Flask Documentation](https://flask.palletsprojects.com/)
+- [JLPT N5 Resources](https://jlptsensei.com/jlpt-n5-study-material/)
+- [Docker Documentation](https://docs.docker.com/)

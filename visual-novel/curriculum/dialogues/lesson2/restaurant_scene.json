@@ -1,0 +1,65 @@
+{
+  "scene": "At the Restaurant",
+  "dialogue": [
+    {
+      "speaker": "Customer",
+      "japanese": "すみません、メニューをください。",
+      "romaji": "Sumimasen, menyū o kudasai.",
+      "english": "Excuse me, please give me the menu."
+    },
+    {
+      "speaker": "Waiter",
+      "japanese": "はい、どうぞ。",
+      "romaji": "Hai, dōzo.",
+      "english": "Here you are."
+    },
+    {
+      "speaker": "Customer",
+      "japanese": "みずがありますか。",
+      "romaji": "Mizu ga arimasu ka?",
+      "english": "Do you have water?"
+    },
+    {
+      "speaker": "Waiter",
+      "japanese": "はい、あります。",
+      "romaji": "Hai, arimasu.",
+      "english": "Yes, we do."
+    },
+    {
+      "speaker": "Customer",
+      "japanese": "コーヒーがほしいです。",
+      "romaji": "Kōhī ga hoshii desu.",
+      "english": "I want coffee."
+    },
+    {
+      "speaker": "Waiter",
+      "japanese": "かしこまりました。",
+      "romaji": "Kashikomarimashita.",
+      "english": "Certainly."
+    },
+    {
+      "speaker": "Customer",
+      "japanese": "これはいくらですか。",
+      "romaji": "Kore wa ikura desu ka?",
+      "english": "How much is this?"
+    },
+    {
+      "speaker": "Waiter",
+      "japanese": "500円です。",
+      "romaji": "Go-hyaku en desu.",
+      "english": "It is 500 yen."
+    },
+    {
+      "speaker": "Customer",
+      "japanese": "おかいけいをおねがいします。",
+      "romaji": "Okaikei o onegai shimasu.",
+      "english": "The bill, please."
+    },
+    {
+      "speaker": "Waiter",
+      "japanese": "ありがとうございました。",
+      "romaji": "Arigatou gozaimashita.",
+      "english": "Thank you very much."
+    }
+  ]
+}

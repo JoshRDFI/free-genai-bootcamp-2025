@@ -1,10 +1,21 @@
 # Japanese Learning Visual Novel - Setup Guide
 
+This guide will walk you through the process of setting up and running the Japanese Learning Visual Novel application.
+
 ## Prerequisites
 
-- Docker and Docker Compose
-- opea-docker running on your system (for external services)
-- Ren'Py SDK (for development)
+Before you begin, ensure you have the following installed on your system:
+
+1. **Docker and Docker Compose**
+   - [Docker Installation Guide](https://docs.docker.com/get-docker/)
+   - [Docker Compose Installation Guide](https://docs.docker.com/compose/install/)
+
+2. **Ren'Py SDK** (for development)
+   - [Ren'Py Download Page](https://www.renpy.org/latest.html)
+   - Version 7.4.0 or higher recommended
+
+3. **Python 3.8+** (for development and testing)
+   - [Python Download Page](https://www.python.org/downloads/)
 
 ## Installation Steps
 
@@ -15,99 +26,114 @@ git clone https://github.com/yourusername/japanese-learning-visual-novel.git
 cd japanese-learning-visual-novel
 ```
 
-### 2. Set Up opea-docker
+### 2. Configure Environment Variables
 
-The visual novel relies on the opea-docker services for LLM access, TTS, ASR, and image generation. Make sure opea-docker is set up and running before starting the visual novel services.
-
-```bash
-# Navigate to the opea-docker directory (outside the visual-novel directory)
-cd ../opea-docker
-
-# Start the opea-docker services
-docker-compose up -d
-```
-
-Verify that the opea-docker services are running:
-
-```bash
-docker-compose ps
-```
-
-### 3. Configure Environment Variables
-
-Create a `.env` file in the `visual-novel/docker` directory with the following content:
+Create a `.env` file in the root directory with the following variables:
 
 ```
-SHARED_DB_PATH=../opea-docker/data/shared_db
+# Database path (optional, defaults to ./opea-docker/data/shared_db)
+SHARED_DB_PATH=/path/to/your/database
+
+# API configuration (optional, defaults to http://opea-api-gateway:8000)
 OPEA_API_BASE_URL=http://opea-api-gateway:8000
 ```
 
-Adjust the paths and URLs as needed for your specific setup.
-
-### 4. Start the Visual Novel Services
+### 3. Start the Docker Services
 
 ```bash
 cd visual-novel/docker
 docker-compose up -d
 ```
 
-This will start:
-- The game server/API gateway on port 8080
-- The web server for the Ren'Py web export on port 8000
+This will start the following services:
+- Game server / API Gateway (port 8080)
+- Web server for Ren'Py web export (port 8000)
+- Waifu Diffusion service (port 5000)
 
-### 5. Access the Visual Novel
+### 4. Verify Services
+
+Check that all services are running correctly:
+
+```bash
+docker-compose ps
+```
+
+You should see all services in the "Up" state.
+
+Test the API Gateway:
+
+```bash
+curl http://localhost:8080/api/health
+```
+
+You should receive a response like: `{"status":"ok"}`
+
+### 5. Running the Visual Novel
 
 #### Web Version
 
-Open your browser and navigate to:
+Access the web version of the visual novel by opening a browser and navigating to:
 
 ```
 http://localhost:8000
 ```
 
-#### Desktop Version
+#### Desktop Version (Development)
 
-If you want to run the desktop version directly:
+To run the desktop version using the Ren'Py SDK:
 
-1. Install the Ren'Py SDK from https://www.renpy.org/
-2. Open the Ren'Py launcher
-3. Add the `visual-novel/renpy` directory as a project
-4. Launch the project from the Ren'Py launcher
+1. Open the Ren'Py launcher
+2. Click "Add Existing Project"
+3. Navigate to the `visual-novel/renpy` directory and select it
+4. Select the project from the list and click "Launch Project"
+
+## Configuration Options
+
+### Database Configuration
+
+By default, the application uses SQLite for data storage. The database file is located at:
+
+```
+/app/db/visual_novel.db
+```
+
+inside the Docker container, which is mapped to the path specified in the `SHARED_DB_PATH` environment variable.
+
+### API Services Configuration
+
+The application communicates with various AI services through the opea-docker API Gateway. The base URL for these services is configured using the `OPEA_API_BASE_URL` environment variable.
 
 ## Troubleshooting
 
-### API Connection Issues
+### Docker Services Not Starting
 
-If the visual novel cannot connect to the opea-docker services:
-
-1. Verify that the opea-docker services are running
-2. Check that the Docker network is properly configured
-3. Ensure the `OPEA_API_BASE_URL` environment variable is set correctly
-
-### Database Issues
-
-If you encounter database errors:
-
-1. Verify that the `SHARED_DB_PATH` is correct and accessible
-2. Check that the database directory has the proper permissions
-3. Inspect the database logs for specific errors
+If any of the Docker services fail to start, check the logs:
 
 ```bash
 docker-compose logs vn-game-server
 ```
 
-### Web Export Issues
+Common issues include:
+- Port conflicts: Change the port mappings in `docker-compose.yml`
+- Missing environment variables: Ensure all required environment variables are set
+- Network issues: Ensure the opea-docker network exists and is accessible
 
-If the web version doesn't load properly:
+### Web Version Not Loading
 
-1. Make sure you've exported the Ren'Py game to the web format
-2. Verify that the web export files are in the `renpy/web` directory
-3. Check the web server logs for any errors
+If the web version doesn't load correctly:
 
-```bash
-docker-compose logs vn-web-server
-```
+1. Check that the web server is running: `docker-compose ps vn-web-server`
+2. Verify that the Ren'Py web export files exist in `visual-novel/renpy/web`
+3. Check the web server logs: `docker-compose logs vn-web-server`
 
-## Development Setup
+### API Communication Issues
 
-For development, refer to the [Development Guide](development.md) for information on extending the game.
+If the visual novel can't communicate with the API services:
+
+1. Ensure the game server is running: `docker-compose ps vn-game-server`
+2. Check the game server logs: `docker-compose logs vn-game-server`
+3. Verify that the opea-docker API Gateway is accessible from the game server container
+
+## Next Steps
+
+After successful setup, refer to the [Development Guide](development.md) for information on extending and customizing the visual novel.

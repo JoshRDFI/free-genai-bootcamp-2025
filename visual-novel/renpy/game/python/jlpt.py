@@ -54,11 +54,18 @@ class JLPTCurriculum:
             },
             {
                 "id": "lesson2",
-                "title": "Daily Life",
-                "grammar": ["Basic sentence structure", "Question markers with か"],
-                "vocabulary": ["Daily activities", "Time expressions"],
-                "scenes": ["intro", "morning_routine", "asking_questions", "practice", "review"]
+                "title": "At the Cafe",
+                "grammar": ["Basic sentence structure", "Question markers with か", "Particle を for direct objects"],
+                "vocabulary": ["Food and drink items", "Basic verbs"],
+                "scenes": ["intro", "ordering", "price", "thanking", "review"]
             },
+            {
+                "id": "lesson3",
+                "title": "Shopping",
+                "grammar": ["Adjectives", "Particle が for existence", "Numbers and counting"],
+                "vocabulary": ["Clothing items", "Colors", "Numbers 1-10"],
+                "scenes": ["intro", "describing", "asking", "buying", "review"]
+            }
             # Add more lessons as needed
         ]
     

@@ -1,6 +1,24 @@
-# Progress model
+from app import db
 
-class Progress:
+class Progress(db.Model):
+    __tablename__ = 'progress'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    lesson_id = db.Column(db.String(255), nullable=False)
+    scene_id = db.Column(db.String(255), nullable=False)
+    completed = db.Column(db.Boolean, default=False)
+    last_accessed = db.Column(db.DateTime, server_default=db.func.now(), onupdate=db.func.now())
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'user_id': self.user_id,
+            'lesson_id': self.lesson_id,
+            'scene_id': self.scene_id,
+            'completed': self.completed,
+            'last_accessed': self.last_accessed.isoformat() if self.last_accessed else None
+        }
+
     """Progress model for tracking user learning progress"""
     
     def __init__(self, user_id):

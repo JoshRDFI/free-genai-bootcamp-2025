@@ -14,13 +14,13 @@
   "dialogue": [
     {
       "speaker": "Tanaka-sensei",
-      "japanese": "u3053u3093u306bu3061u306fu3001u307fu306au3055u3093u3002",
+      "japanese": "こんにちは、みなさん。",
       "reading": "Konnichiwa, minasan.",
       "english": "Hello, everyone."
     },
     {
       "speaker": "Tanaka-sensei",
-      "japanese": "u79c1u306fu7530u4e2du5148u751fu3067u3059u3002",
+      "japanese": "私は田中先生です。",
       "reading": "Watashi wa Tanaka-sensei desu.",
       "english": "I am Teacher Tanaka."
     },
@@ -32,13 +32,13 @@
     },
     {
       "speaker": "Student",
-      "japanese": "u3053u3093u306bu3061u306fu3001u5148u751fu3002",
+      "japanese": "こんにちは、先生。",
       "reading": "Konnichiwa, sensei.",
       "english": "Hello, teacher."
     },
     {
       "speaker": "Student",
-      "japanese": "u79c1u306f[player_name]u3067u3059u3002",
+      "japanese": "私は[player_name]です。",
       "reading": "Watashi wa [player_name] desu.",
       "english": "I am [player_name]."
     },
@@ -50,7 +50,7 @@
     },
     {
       "speaker": "Tanaka-sensei",
-      "japanese": "u304au5143u6c17u3067u3059u304buff1f",
+      "japanese": "お元気ですか？",
       "reading": "Ogenki desu ka?",
       "english": "How are you?"
     },
@@ -62,13 +62,13 @@
     },
     {
       "speaker": "Tanaka-sensei",
-      "japanese": "u4ecau65e5u306fu65e5u672cu8a9eu306eu57fau672cu7684u306au6328u62f6u3092u52c9u5f37u3057u307eu3059u3002",
+      "japanese": "今日は日本語の基本的な挨拶を勉強します。",
       "reading": "Kyu014d wa nihongo no kihontekina aisatsu o benkyu014d shimasu.",
       "english": "Today we will study basic Japanese greetings."
     },
     {
       "speaker": "Tanaka-sensei",
-      "japanese": "u307eu305au306fu300cu304au306fu3088u3046u3054u3056u3044u307eu3059u300du3067u3059u3002",
+      "japanese": "まずは「おはようございます」です。",
       "reading": "Mazu wa 'ohayu014d gozaimasu' desu.",
       "english": "First is 'good morning'."
     },

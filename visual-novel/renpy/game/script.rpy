@@ -133,6 +133,12 @@ label start:
         "Start with pre-made Lesson 1 (Basic Greetings)":
             jump lesson1_intro
             
+        "Start with pre-made Lesson 2 (At the Cafe)":
+            jump lesson2_intro
+            
+        "Start with pre-made Lesson 3 (Shopping)":
+            jump lesson3_intro
+            
         "Generate a custom lesson using AI":
             jump dynamic_lesson_generator
 
@@ -300,25 +306,297 @@ label lesson1_intro:
     # Generate and play audio
     $ audio_path = get_audio("こんにちは")
     if audio_path:
-        play voice audio_path
+        play sound audio_path
+    
+    sensei "Great! Now let's learn 'おはようございます' (ohayou gozaimasu), which means 'good morning'."
+    show screen add_vocab_button("おはようございます", "おはようございます", "Good morning")
+    
+    sensei "Repeat after me: おはようございます"
+    
+    # Generate and play audio
+    $ audio_path = get_audio("おはようございます")
+    if audio_path:
+        play sound audio_path
+    
+    sensei "Excellent! Next is 'こんばんは' (konbanwa), which means 'good evening'."
+    show screen add_vocab_button("こんばんは", "こんばんは", "Good evening")
+    
+    sensei "Repeat after me: こんばんは"
+    
+    # Generate and play audio
+    $ audio_path = get_audio("こんばんは")
+    if audio_path:
+        play sound audio_path
+    
+    sensei "Now, let's learn how to say goodbye. 'さようなら' (sayounara) means 'goodbye'."
+    show screen add_vocab_button("さようなら", "さようなら", "Goodbye")
+    
+    sensei "Repeat after me: さようなら"
+    
+    # Generate and play audio
+    $ audio_path = get_audio("さようなら")
+    if audio_path:
+        play sound audio_path
+    
+    sensei "Great job! Let's practice a simple conversation."
+    
+    sensei "When someone says 'こんにちは', you can respond with 'こんにちは'."
+    
+    sensei "こんにちは, [player_name]-san."
+    show screen translation_button("こんにちは, [player_name]-san.")
     
     menu:
-        "Repeat the greeting"
+        "How do you respond?"
         
-        "こんにちは":
-            sensei "Very good! Your pronunciation is excellent."
-            
-        "I need to hear it again":
-            sensei "No problem, let's try again."
-            $ audio_path = get_audio("こんにちは")
-            if audio_path:
-                play voice audio_path
+        "こんにちは, 田中先生.":
+            player "こんにちは, 田中先生."
+            sensei "Very good!"
+            $ save_progress("lesson1", "greeting", True)
+        
+        "さようなら, 田中先生.":
+            player "さようなら, 田中先生."
+            sensei "Not quite. 'さようなら' means 'goodbye'. Let's try again."
+            sensei "こんにちは, [player_name]-san."
+            player "こんにちは, 田中先生."
+            sensei "That's better!"
+            $ save_progress("lesson1", "greeting", True)
     
-    sensei "Next, let's learn how to introduce yourself."
+    sensei "Now, let's learn how to introduce yourself."
     
-    sensei "私は田中先生です。(Watashi wa Tanaka-sensei desu.)"
-    show screen translation_button("私は田中先生です。")
-    show screen add_vocab_button("私", "わたし", "I/me")
+    sensei "To say 'My name is...', you can say '私の名前は...(name)...です' (watashi no namae wa ... desu)."
+    show screen add_vocab_button("私の名前は", "わたしのなまえは", "My name is")
+    
+    sensei "Repeat after me: 私の名前は[player_name]です"
+    
+    # Generate and play audio
+    $ audio_path = get_audio("私の名前は田中です")
+    if audio_path:
+        play sound audio_path
+    
+    sensei "Excellent! Now you can introduce yourself in Japanese."
+    
+    sensei "Let's review what we've learned today:"
+    sensei "1. こんにちは - Hello/Good afternoon"
+    sensei "2. おはようございます - Good morning"
+    sensei "3. こんばんは - Good evening"
+    sensei "4. さようなら - Goodbye"
+    sensei "5. 私の名前は...です - My name is..."
+    
+    sensei "You've completed your first Japanese lesson! おめでとうございます (Congratulations)!"
+    show screen add_vocab_button("おめでとうございます", "おめでとうございます", "Congratulations")
+    
+    $ save_progress("lesson1", "completed", True)
+    
+    menu:
+        "What would you like to do next?"
+        
+        "Continue to Lesson 2 (At the Cafe)":
+            jump lesson2_intro
+        
+        "Return to the main menu":
+            jump start
+
+# Pre-made Lesson 2: At the Cafe
+label lesson2_intro:
+    scene bg cafe
+    
+    "Welcome to your second Japanese lesson!"
+    
+    show sensei at center
+    
+    sensei "こんにちは！今日はカフェで日本語を勉強しましょう。"
+    show screen translation_button("こんにちは！今日はカフェで日本語を勉強しましょう。")
+    show screen add_vocab_button("カフェ", "カフェ", "Cafe")
+    show screen add_vocab_button("勉強しましょう", "べんきょうしましょう", "Let's study")
+    
+    "Tanaka-sensei suggests studying Japanese at a cafe today."
+    
+    sensei "In this lesson, we'll learn how to order food and drinks in Japanese."
+    
+    sensei "First, let's learn some vocabulary for drinks."
+    
+    sensei "'コーヒー' (koohii) means 'coffee'."
+    show screen add_vocab_button("コーヒー", "コーヒー", "Coffee")
+    
+    sensei "'お茶' (ocha) means 'tea'."
+    show screen add_vocab_button("お茶", "おちゃ", "Tea")
+    
+    sensei "'水' (mizu) means 'water'."
+    show screen add_vocab_button("水", "みず", "Water")
+    
+    sensei "Now, let's learn some vocabulary for food."
+    
+    sensei "'ケーキ' (keeki) means 'cake'."
+    show screen add_vocab_button("ケーキ", "ケーキ", "Cake")
+    
+    sensei "'サンドイッチ' (sandoicchi) means 'sandwich'."
+    show screen add_vocab_button("サンドイッチ", "サンドイッチ", "Sandwich")
+    
+    sensei "'パン' (pan) means 'bread'."
+    show screen add_vocab_button("パン", "パン", "Bread")
+    
+    sensei "Now, let's learn how to order in Japanese."
+    
+    sensei "To say 'I would like...', you can say '...をください' (... wo kudasai)."
+    show screen add_vocab_button("をください", "をください", "Please give me")
+    
+    sensei "For example, 'コーヒーをください' means 'Coffee, please'."
+    show screen translation_button("コーヒーをください")
+    
+    sensei "Let's practice ordering. Imagine you're at a cafe and want to order coffee."
+    
+    menu:
+        "What would you like to order?"
+        
+        "コーヒーをください":
+            player "コーヒーをください。"
+            sensei "Perfect! That means 'Coffee, please.'"
+            $ save_progress("lesson2", "ordering", True)
+        
+        "お茶をください":
+            player "お茶をください。"
+            sensei "Very good! That means 'Tea, please.'"
+            $ save_progress("lesson2", "ordering", True)
+        
+        "水をください":
+            player "水をください。"
+            sensei "Excellent! That means 'Water, please.'"
+            $ save_progress("lesson2", "ordering", True)
+    
+    sensei "Now, let's learn how to ask for the price."
+    
+    sensei "To ask 'How much is this?', you can say 'これはいくらですか' (kore wa ikura desu ka)."
+    show screen add_vocab_button("これはいくらですか", "これはいくらですか", "How much is this?")
+    
+    sensei "Let's practice asking for the price."
+    
+    sensei "Imagine you want to know the price of a cake."
+    
+    menu:
+        "How would you ask for the price?"
+        
+        "これはいくらですか":
+            player "これはいくらですか。"
+            sensei "Perfect! That means 'How much is this?'"
+            sensei "The cake costs 500円 (yen)."
+            $ save_progress("lesson2", "price", True)
+        
+        "ケーキをください":
+            player "ケーキをください。"
+            sensei "That means 'Cake, please.' But if you want to know the price, you should say 'これはいくらですか'."
+            player "これはいくらですか。"
+            sensei "Good! The cake costs 500円 (yen)."
+            $ save_progress("lesson2", "price", True)
+    
+    sensei "Now, let's learn how to say 'thank you' and 'you're welcome'."
+    
+    sensei "'ありがとうございます' (arigatou gozaimasu) means 'thank you'."
+    show screen add_vocab_button("ありがとうございます", "ありがとうございます", "Thank you")
+    
+    sensei "'どういたしまして' (dou itashimashite) means 'you're welcome'."
+    show screen add_vocab_button("どういたしまして", "どういたしまして", "You're welcome")
+    
+    sensei "Let's practice a complete cafe interaction."
+    
+    "Waiter" "いらっしゃいませ！ご注文は何ですか？"
+    show screen translation_button("いらっしゃいませ！ご注文は何ですか？")
+    show screen add_vocab_button("いらっしゃいませ", "いらっしゃいませ", "Welcome (to a shop)")
+    show screen add_vocab_button("ご注文は何ですか", "ごちゅうもんはなんですか", "What would you like to order?")
+    
+    menu:
+        "How do you respond?"
+        
+        "コーヒーをください":
+            player "コーヒーをください。"
+        
+        "お茶をください":
+            player "お茶をください。"
+        
+        "水をください":
+            player "水をください。"
+    
+    "Waiter" "かしこまりました。少々お待ちください。"
+    show screen translation_button("かしこまりました。少々お待ちください。")
+    show screen add_vocab_button("かしこまりました", "かしこまりました", "Certainly/Understood")
+    show screen add_vocab_button("少々お待ちください", "しょうしょうおまちください", "Please wait a moment")
+    
+    "The waiter brings your order."
+    
+    "Waiter" "お待たせしました。こちらになります。"
+    show screen translation_button("お待たせしました。こちらになります。")
+    show screen add_vocab_button("お待たせしました", "おまたせしました", "Sorry to keep you waiting")
+    show screen add_vocab_button("こちらになります", "こちらになります", "Here you are")
+    
+    menu:
+        "How do you respond?"
+        
+        "ありがとうございます":
+            player "ありがとうございます。"
+            "Waiter" "どういたしまして。"
+            $ save_progress("lesson2", "thanking", True)
+    
+    sensei "Excellent! You've learned how to order at a cafe in Japanese."
+    
+    sensei "Let's review what we've learned today:"
+    sensei "1. Drink vocabulary: コーヒー, お茶, 水"
+    sensei "2. Food vocabulary: ケーキ, サンドイッチ, パン"
+    sensei "3. Ordering: ...をください"
+    sensei "4. Asking for price: これはいくらですか"
+    sensei "5. Thanking: ありがとうございます, どういたしまして"
+    
+    sensei "You've completed your second Japanese lesson! おめでとうございます!"
+    
+    $ save_progress("lesson2", "completed", True)
+    
+    menu:
+        "What would you like to do next?"
+        
+        "Continue to Lesson 3 (Shopping)":
+            jump lesson3_intro
+        
+        "Return to the main menu":
+            jump start
+
+# Pre-made Lesson 3: Shopping
+label lesson3_intro:
+    scene bg store_traditional
+    
+    "Welcome to your third Japanese lesson!"
+    
+    show sensei at center
+    
+    sensei "こんにちは！今日は買い物について勉強しましょう。"
+    show screen translation_button("こんにちは！今日は買い物について勉強しましょう。")
+    show screen add_vocab_button("買い物", "かいもの", "Shopping")
+    
+    "Tanaka-sensei suggests learning about shopping in Japanese today."
+    
+    sensei "In this lesson, we'll learn vocabulary and phrases for shopping."
+    
+    sensei "First, let's learn some vocabulary for clothing items."
+    
+    sensei "'シャツ' (shatsu) means 'shirt'."
+    show screen add_vocab_button("シャツ", "シャツ", "Shirt")
+    
+    $ audio_path = get_audio("シャツ")
+    if audio_path:
+        play voice audio_path
+    
+    sensei "'ズボン' (zubon) means 'pants'."
+    show screen add_vocab_button("ズボン", "ズボン", "Pants")
+    
+    $ audio_path = get_audio("ズボン")
+    if audio_path:
+        play voice audio_path
+    
+    sensei "'帽子' (boushi) means 'hat'."
+    show screen add_vocab_button("帽子", "ぼうし", "Hat")
+    
+    $ audio_path = get_audio("帽子")
+    if audio_path:
+        play voice audio_path
+    
+    sensei "Now, let's learn some vocabulary for colors."
     
     sensei "This means 'I am Teacher Tanaka.'"
     

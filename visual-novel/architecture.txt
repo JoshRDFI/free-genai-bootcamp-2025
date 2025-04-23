@@ -1,65 +1,65 @@
 # Japanese Learning Visual Novel - Architectural Diagram
 
-+-------------------------------------+
-|                                     |
-|  Visual Novel Frontend (Ren'Py)     |
-|                                     |
-+----------------+------------------+-+
-                 |                  |
-                 | HTTP/API         |
-                 |                  |
-+----------------v------------------+-+
-|                                     |
-|  Game Server / API Gateway          |
-|                                     |
-+-----+-------------+----------------+
-      |             |                
-      |             |                
-+-----v-----+ +----v------+         
-|           | |            |         
-| Database  | | Docker     |         
-| Service   | | Services   |         
-|           | |            |         
-+-----------+ +-----+------+         
-                    |                
-                    |                
-      +-------------+---------------------------+
-      |             |              |            |
-+-----v-----+ +----v------+ +-----v-----+ +----v------+
-|           | |            | |           | |            |
-| LLM Text  | | TTS        | | ASR       | | Waifu      |
-| Service   | | Service    | | Service   | | Diffusion  |
-|           | |            | |           | |            |
-+-----------+ +------------+ +-----------+ +------------+
++-------------------------------+
+|                               |
+|  Visual Novel Frontend (Ren'Py)|
+|                               |
++-------------------+-----------+
+                    |
+                    | HTTP/API
+                    |
++-------------------v-----------+
+|                               |
+|  Game Server / API Gateway    |
+|   (Flask, Python)             |
+|                               |
++-----+-------------------+-----+
+      |                   |
+      |                   |
++-----v-----+     +-------v-------+
+|           |     |               |
+| Database  |     | Service Layer |
+| Service   |     | (LLM, TTS,    |
+| (models,  |     |  Vision, etc) |
+|  progress,|     |               |
+|  vocab)   |     +-------+-------+
++-----------+             |
+                          |
+        +-----------------+-------------------+
+        |         |           |         |
++-------v+   +----v---+  +----v---+  +--v----------+
+| LLM    |   |  TTS   |  | Vision |  | Waifu Diff. |
+| Service|   | Service|  | Service|  | (Image Gen) |
++--------+   +--------+  +--------+  +-------------+
 
 ## Component Descriptions:
 
 1. **Visual Novel Frontend (Ren'Py)**
-   - Web-exported Ren'Py game
    - Handles game logic, story progression, and UI
    - Communicates with backend services via API calls
+   - Web-exportable
 
 2. **Game Server / API Gateway**
-   - Coordinates communication between Ren'Py and services
-   - Manages authentication and session state
-   - Routes requests to appropriate services
+   - Flask-based Python server
+   - Coordinates communication between Ren'Py and backend services
+   - Manages authentication, session state, and database operations
+   - Routes requests to appropriate service integrations
 
 3. **Database Service**
-   - Stores player progress, vocabulary lists
+   - Stores player progress, vocabulary lists, and game state
    - Tracks learning metrics and achievements
-   - Manages game state persistence
 
-4. **Docker Services**
-   - **LLM Text**: Generates dialogue, translations, and explanations for JLPT N5 content
-   - **TTS**: Converts Japanese text to spoken audio using XTTS
-   - **ASR**: Processes player's spoken Japanese for pronunciation practice
+4. **Service Layer**
+   - **LLM Service**: Generates dialogue, translations, and explanations
+   - **TTS Service**: Converts Japanese text to spoken audio
+   - **Vision Service**: Image understanding and description
    - **Waifu Diffusion**: Generates anime-style images for backgrounds and characters
 
 ## Data Flow:
 
 1. Player interacts with Ren'Py game interface
-2. Game requests content (dialogue, translations, audio) from API Gateway
-3. API Gateway routes requests to appropriate services
+2. Game requests content (dialogue, translations, audio, images) from API Gateway
+3. API Gateway routes requests to appropriate services (LLM, TTS, Vision, Waifu Diffusion)
 4. Services process requests and return results
 5. Game updates UI with received content
 6. Player progress is saved to database
@@ -67,5 +67,34 @@
 ## Integration Points:
 
 1. **Ren'Py to API Gateway**: HTTP/REST API calls
-2. **API Gateway to Services**: Internal network communication
-3. **Services to Database**: Shared volume access
+2. **API Gateway to Services**: Internal Python module/service calls
+3. **Services to Database**: Direct database access via models
+
+## API Endpoints (examples):
+- `/api/health`           : Health check
+- `/api/user`             : User management
+- `/api/progress`         : Progress tracking
+- `/api/tts`              : Text-to-speech generation
+- `/api/translate`        : Text translation
+- `/api/generate-image`   : Image generation
+- `/api/vocabulary`       : Vocabulary management
+
+## Deployment Architecture:
+
++-------------------+     +-------------------+     +-------------------+
+|                   |     |                   |     |                   |
+|  Docker Container |     |  Docker Container |     |  Docker Container |
+|  vn-game-server   |     |  vn-web-server    |     |  waifu-diffusion  |
+|                   |     |                   |     |                   |
++-------------------+     +-------------------+     +-------------------+
+         |                        |                        |
+         +------------------------+------------------------+
+                                  |
+                             Docker Network
+                                  |
+         +------------------------+------------------------+
+         |                        |                        |
++-------------------+     +-------------------+     +-------------------+
+|                   |     |                   |     |                   |
+|  llm-service      |     |  tts-service      |     |  vision-service   |
++-------------------+     +-------------------+     +-------------------+

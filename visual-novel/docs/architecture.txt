@@ -1,97 +1,100 @@
-# Japanese Learning Visual Novel - Architecture Diagram
+# Japanese Learning Visual Novel - Architectural Diagram
 
-+---------------------+     +---------------------+     +---------------------+
-|                     |     |                     |     |                     |
-|  Ren'Py Visual Novel|     |  Game Server        |     |  opea-docker API    |
-|  (Client)           |     |  (API Gateway)      |     |  (Services)         |
-|                     |     |                     |     |                     |
-+----------+----------+     +----------+----------+     +----------+----------+
-           |                            |                            |
-           |                            |                            |
-           |  API Requests              |  Service Requests          |
-           +--------------------------->+--------------------------->+
-           |                            |                            |
-           |                            |                            |
-           |  API Responses             |  Service Responses         |
-           +<---------------------------+<---------------------------+
-           |                            |                            |
++-------------------------------+
+|                               |
+|  Visual Novel Frontend (Ren'Py)|
+|                               |
++-------------------+-----------+
+                    |
+                    | HTTP/API
+                    |
++-------------------v-----------+
+|                               |
+|  Game Server / API Gateway    |
+|   (Flask, Python)             |
+|                               |
++-----+-------------------+-----+
+      |                   |
+      |                   |
++-----v-----+     +-------v-------+
+|           |     |               |
+| Database  |     | Service Layer |
+| Service   |     | (LLM, TTS,    |
+| (models,  |     |  Vision, etc) |
+|  progress,|     |               |
+|  vocab)   |     +-------+-------+
++-----------+             |
+                          |
+        +-----------------+-------------------+
+        |         |           |         |
++-------v+   +----v---+  +----v---+  +--v----------+
+| LLM    |   |  TTS   |  | Vision |  | Waifu Diff. |
+| Service|   | Service|  | Service|  | (Image Gen) |
++--------+   +--------+  +--------+  +-------------+
 
+## Component Descriptions:
 
-# Component Details
+1. **Visual Novel Frontend (Ren'Py)**
+   - Handles game logic, story progression, and UI
+   - Communicates with backend services via API calls
+   - Web-exportable
 
-## Ren'Py Visual Novel (Client)
-- User interface and game logic
-- Python scripts for game flow
-- API communication module
-- Progress tracking
-- JLPT curriculum implementation
+2. **Game Server / API Gateway**
+   - Flask-based Python server
+   - Coordinates communication between Ren'Py and backend services
+   - Manages authentication, session state, and database operations
+   - Routes requests to appropriate service integrations
 
-## Game Server (API Gateway)
-- Flask web server
-- Routes API requests to appropriate services
-- Handles user authentication and session management
-- Manages database operations
-- Caches responses when appropriate
+3. **Database Service**
+   - Stores player progress, vocabulary lists, and game state
+   - Tracks learning metrics and achievements
 
-## opea-docker API (Services)
-- LLM Text Service: Text generation, translation, conversation
-- LLM Vision Service: Image understanding and description
-- TTS Service: Text-to-speech conversion
-- ASR Service: Speech-to-text transcription
-- Image Generation Service: Backgrounds and character images
-- Embeddings Service: Text embeddings for semantic search
-- Database Service: User data and progress storage
+4. **Service Layer**
+   - **LLM Service**: Generates dialogue, translations, and explanations
+   - **TTS Service**: Converts Japanese text to spoken audio
+   - **Vision Service**: Image understanding and description
+   - **Waifu Diffusion**: Generates anime-style images for backgrounds and characters
 
-# Data Flow
+## Data Flow:
 
-1. User interacts with the Ren'Py visual novel
-2. Ren'Py sends API requests to the Game Server
-3. Game Server routes requests to appropriate opea-docker services
-4. opea-docker services process requests and return responses
-5. Game Server formats and returns responses to Ren'Py
-6. Ren'Py updates the game state and UI based on responses
+1. Player interacts with Ren'Py game interface
+2. Game requests content (dialogue, translations, audio, images) from API Gateway
+3. API Gateway routes requests to appropriate services (LLM, TTS, Vision, Waifu Diffusion)
+4. Services process requests and return results
+5. Game updates UI with received content
+6. Player progress is saved to database
 
-# API Endpoints
+## Integration Points:
 
-## Game Server Endpoints
-- /api/health: Health check
-- /api/user: User management
-- /api/progress: Progress tracking
-- /api/tts: Text-to-speech generation
-- /api/translate: Text translation
-- /api/generate-conversation: Dynamic conversation generation
-- /api/generate-image: Image generation
-- /api/generate-lesson: Custom lesson generation
-- /api/vocabulary: Vocabulary management
+1. **Ren'Py to API Gateway**: HTTP/REST API calls
+2. **API Gateway to Services**: Internal Python module/service calls
+3. **Services to Database**: Direct database access via models
 
-## opea-docker API Endpoints
-- /llm/text: Text generation and processing
-- /llm/vision: Image understanding
-- /tts: Text-to-speech conversion
-- /asr: Speech-to-text transcription
-- /image/generate: Image generation
-- /embeddings: Text embeddings
-- /database: Database operations
+## API Endpoints (examples):
+- `/api/health`           : Health check
+- `/api/user`             : User management
+- `/api/progress`         : Progress tracking
+- `/api/tts`              : Text-to-speech generation
+- `/api/translate`        : Text translation
+- `/api/generate-image`   : Image generation
+- `/api/vocabulary`       : Vocabulary management
 
-# Deployment Architecture
+## Deployment Architecture:
 
 +-------------------+     +-------------------+     +-------------------+
 |                   |     |                   |     |                   |
 |  Docker Container |     |  Docker Container |     |  Docker Container |
-|  vn-game-server   |     |  vn-web-server   |     |  opea-api-gateway |
+|  vn-game-server   |     |  vn-web-server    |     |  waifu-diffusion  |
 |                   |     |                   |     |                   |
 +-------------------+     +-------------------+     +-------------------+
-         |                         |                         |
-         |                         |                         |
-         +-------------------------+-------------------------+
-                                   |
-                                   | Docker Network
-                                   |
-         +-------------------------+-------------------------+
-         |                         |                         |
+         |                        |                        |
+         +------------------------+------------------------+
+                                  |
+                             Docker Network
+                                  |
+         +------------------------+------------------------+
+         |                        |                        |
 +-------------------+     +-------------------+     +-------------------+
 |                   |     |                   |     |                   |
-|  Docker Container |     |  Docker Container |     |  Docker Container |
-|  llm-text         |     |  tts              |     |  image-generation |
-|                   |     |                   |     |                   |
+|  llm-service      |     |  tts-service      |     |  vision-service   |
 +-------------------+     +-------------------+     +-------------------+

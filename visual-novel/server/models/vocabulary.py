@@ -1,6 +1,28 @@
-# Vocabulary model
+from app import db
 
-class VocabularyItem:
+class Vocabulary(db.Model):
+    __tablename__ = 'vocabulary'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    japanese = db.Column(db.String(255), nullable=False)
+    reading = db.Column(db.String(255))
+    english = db.Column(db.String(255))
+    lesson_id = db.Column(db.String(255))
+    mastery_level = db.Column(db.Integer, default=0)
+    last_reviewed = db.Column(db.DateTime, server_default=db.func.now(), onupdate=db.func.now())
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'user_id': self.user_id,
+            'japanese': self.japanese,
+            'reading': self.reading,
+            'english': self.english,
+            'lesson_id': self.lesson_id,
+            'mastery_level': self.mastery_level,
+            'last_reviewed': self.last_reviewed.isoformat() if self.last_reviewed else None
+        }
+
     """Model for vocabulary items in the JLPT N5 curriculum"""
     
     def __init__(self, word_id, japanese, reading, english, lesson_id):

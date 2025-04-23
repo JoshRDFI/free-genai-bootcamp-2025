@@ -203,7 +203,8 @@ class APIService:
                     "characters": characters,
                     "grammar_points": grammar_points,
                     "vocabulary": vocabulary,
-                    "num_exchanges": num_exchanges
+                    "num_exchanges": num_exchanges,
+                    "include_translations": True
                 }
             )
             
@@ -211,51 +212,6 @@ class APIService:
                 print(f"Conversation generation failed: {response.text}")
                 return None
                 
-            result = response.json()
-            return result.get("conversation", None)
-        except Exception as e:
-            print(f"Conversation generation failed: {str(e)}")
-            return None
-            
-    @staticmethod
-    def generate_lesson(topic, grammar_points=None, vocabulary_focus=None, lesson_number=1, scene_setting="classroom"):
-        """Generate a complete lesson using the LLM"""
-        try:
-            if grammar_points is None:
-                grammar_points = []
-            if vocabulary_focus is None:
-                vocabulary_focus = []
-                
-            response = requests.post(
-                f"{LLM_TEXT_ENDPOINT}/generate-lesson",
-                json={
-                    "topic": topic,
-                    "grammar_points": grammar_points,
-                    "vocabulary_focus": vocabulary_focus,
-                    "lesson_number": lesson_number,
-                    "scene_setting": scene_setting
-                }
-            )
-            
-            if response.status_code != 200:
-                print(f"Lesson generation failed: {response.text}")
-                return None
-                
-            result = response.json()
-            return result.get("lesson", None)
-        except Exception as e:
-            print(f"Lesson generation failed: {str(e)}")
-            return None
-                json={
-                    "context": context,
-                    "characters": characters,
-                    "grammar_points": grammar_points,
-                    "vocabulary": vocabulary,
-                    "num_exchanges": num_exchanges,
-                    "include_translations": True
-                }
-            )
-            
             result = response.json()
             
             # Check if we got a valid conversation structure
@@ -291,10 +247,16 @@ class APIService:
                 }
             )
             
+            if response.status_code != 200:
+                print(f"Lesson generation failed: {response.text}")
+                return None
+                
             result = response.json()
             
             # Check if we got a valid lesson structure
-            if "metadata" in result and "dialogue_script" in result:
+            if "lesson" in result:
+                return result["lesson"]
+            elif "metadata" in result and "dialogue_script" in result:
                 return result
             elif "error" in result:
                 print(f"Lesson generation error: {result['error']}")
@@ -303,21 +265,5 @@ class APIService:
                 print("Unexpected response format from lesson generator")
                 return None
         except Exception as e:
-            print(f"Failed to generate lesson: {str(e)}")
+            print(f"Lesson generation failed: {str(e)}")
             return None
-    
-    @staticmethod
-    def get_embeddings(text):
-        """Get embeddings for text"""
-        try:
-            response = requests.post(
-                EMBEDDINGS_ENDPOINT,
-                json={
-                    "text": text
-                }
-            )
-            result = response.json()
-            return result.get("embeddings", [])
-        except Exception as e:
-            print(f"Failed to get embeddings: {str(e)}")
-            return []

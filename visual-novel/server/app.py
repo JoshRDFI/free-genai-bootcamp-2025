@@ -1,12 +1,54 @@
-import os
+import re
+import json
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-import sqlite3
-import json
-import requests
+from flask_migrate import Migrate
+from flask_sqlalchemy import SQLAlchemy
 
-app = Flask(__name__)
-CORS(app)
+# Initialize extensions
+db = SQLAlchemy()
+migrate = Migrate()
+
+
+def create_app(config_object=None):
+    app = Flask(__name__)
+    CORS(app)
+
+    # Load configuration
+    if config_object:
+        app.config.from_object(config_object)
+    else:
+        from config import Config
+        app.config.from_object(Config)
+
+    # Initialize extensions with app
+    db.init_app(app)
+    migrate.init_app(app, db)
+
+    # Register blueprints
+    from routes.game import game_bp
+    from routes.images import images_bp
+    from routes.translation import translation_bp
+    from routes.tts import tts_bp
+
+    app.register_blueprint(game_bp, url_prefix='/api/game')
+    app.register_blueprint(images_bp, url_prefix='/api/images')
+    app.register_blueprint(translation_bp, url_prefix='/api/translation')
+    app.register_blueprint(tts_bp, url_prefix='/api/tts')
+
+    # Health check endpoint
+    @app.route('/api/health', methods=['GET'])
+    def health_check():
+        return jsonify({'status': 'ok'})
+
+    return app
+
+# Application entry point
+if __name__ == '__main__':
+    from config import Config
+    app = create_app(Config)
+    app.run(host='0.0.0.0', port=app.config.get('PORT', 8080), debug=app.config.get('DEBUG', False))
+
 
 # Configuration
 # All external services should be accessed through the opea-docker API endpoints
@@ -200,17 +242,52 @@ def generate_conversation():
     if not context or not characters:
         return jsonify({'error': 'Context and characters are required'}), 400
     
+    # Construct a detailed prompt for the LLM
+    prompt = f"""
+    Generate a natural Japanese conversation at JLPT N5 level based on the following:
+    
+    CONTEXT: {context}
+    
+    CHARACTERS: {', '.join(characters)}
+    
+    GRAMMAR POINTS TO INCLUDE: {', '.join(grammar_points)}
+    
+    VOCABULARY TO INCLUDE: {', '.join(vocabulary)}
+    
+    INSTRUCTIONS:
+    - Create a conversation with {num_exchanges} exchanges between characters
+    - Use only JLPT N5 level grammar and vocabulary
+    - Keep sentences short and simple
+    - Use basic particles correctly (は, が, を, に, で, etc.)
+    - Include at least one question and answer
+    - Format the output as a JSON structure with speaker, japanese_text, and english_translation
+    
+    Example format:
+    ```json
+    {{
+      "conversation": [
+        {{
+          "speaker": "Character1",
+          "japanese_text": "こんにちは、お元気ですか？",
+          "english_translation": "Hello, how are you?"
+        }},
+        {{
+          "speaker": "Character2",
+          "japanese_text": "はい、元気です。あなたは？",
+          "english_translation": "Yes, I'm fine. And you?"
+        }}
+      ]
+    }}
+    ```
+    
+    Generate only the JSON response without any additional text.
+    """
+    
     try:
         response = requests.post(
             f"{LLM_TEXT_URL}/generate",
             json={
-                'prompt': f"Generate a Japanese conversation with the following context: {context}\n\n"
-                         f"Characters: {', '.join(characters)}\n\n"
-                         f"Grammar points to include: {', '.join(grammar_points)}\n\n"
-                         f"Vocabulary to include: {', '.join(vocabulary)}\n\n"
-                         f"Number of exchanges: {num_exchanges}\n\n"
-                         f"Include English translations: {include_translations}\n\n"
-                         f"Format the response as a JSON array of dialogue exchanges.",
+                'prompt': prompt,
                 'max_tokens': 2000,
                 'temperature': 0.7
             }
@@ -218,19 +295,32 @@ def generate_conversation():
         
         if response.status_code == 200:
             result = response.json()
-            # Process the LLM response to ensure it's in the correct format
-            conversation = result.get('text', '')
+            
+            # Try to extract and parse the JSON from the response
             try:
-                # Try to parse the response as JSON
-                conversation_data = json.loads(conversation)
-                return jsonify({'conversation': conversation_data})
-            except json.JSONDecodeError:
-                # If parsing fails, return the raw text
-                return jsonify({'error': 'Failed to parse conversation', 'raw_response': conversation}), 500
+                # The LLM might include markdown code blocks or extra text
+                text = result.get('text', '')
+                
+                # Try to extract JSON if it's wrapped in code blocks
+                json_match = re.search(r'```(?:json)?\s*({.*?})\s*```', text, re.DOTALL)
+                
+                if json_match:
+                    conversation_json = json.loads(json_match.group(1))
+                else:
+                    # Try parsing the whole response as JSON
+                    conversation_json = json.loads(text)
+                
+                return jsonify(conversation_json)
+            except (json.JSONDecodeError, ValueError) as e:
+                # If JSON parsing fails, return the raw text
+                return jsonify({
+                    'error': 'Failed to parse LLM response as JSON',
+                    'raw_response': text
+                }), 422
         else:
             return jsonify({'error': 'Conversation generation error', 'details': response.text}), 500
     except requests.RequestException as e:
-        return jsonify({'error': 'Conversation generation service unavailable', 'details': str(e)}), 503
+        return jsonify({'error': 'LLM service unavailable', 'details': str(e)}), 503
 
 @app.route('/api/generate-lesson', methods=['POST'])
 def generate_lesson():
@@ -254,28 +344,28 @@ def generate_lesson():
                          f"Lesson number: {lesson_number}\n\n"
                          f"Scene setting: {scene_setting}\n\n"
                          f"Format the response as a JSON object with the following structure:\n"
-                         f"{{\n"
-                         f"  'metadata': {{\n"
-                         f"    'title': 'Lesson title',\n"
-                         f"    'objectives': ['objective1', 'objective2', ...]\n"
-                         f"  }},\n"
-                         f"  'vocabulary': [\n"
-                         f"    {{'japanese': '日本語', 'reading': 'にほんご', 'english': 'Japanese language'}},\n"
+                         f"{{"
+                         f"  'metadata': {{"
+                         f"    'title': 'Lesson title',"
+                         f"    'objectives': ['objective1', 'objective2', ...]"
+                         f"  }},"
+                         f"  'vocabulary': ["
+                         f"    {{'japanese': '日本語', 'reading': 'にほんご', 'english': 'Japanese language'}},"
                          f"    ...\n"
-                         f"  ],\n"
-                         f"  'grammar_points': [\n"
-                         f"    {{'pattern': 'Pattern', 'explanation': 'Explanation', 'examples': ['Example1', 'Example2']}},\n"
+                         f"  ],"
+                         f"  'grammar_points': ["
+                         f"    {{'pattern': 'Pattern', 'explanation': 'Explanation', 'examples': ['Example1', 'Example2']}},"
                          f"    ...\n"
-                         f"  ],\n"
-                         f"  'dialogue_script': [\n"
-                         f"    {{'speaker': 'Character name', 'japanese': 'Japanese text', 'english': 'English translation'}},\n"
+                         f"  ],"
+                         f"  'dialogue_script': ["
+                         f"    {{'speaker': 'Character name', 'japanese': 'Japanese text', 'english': 'English translation'}},"
                          f"    ...\n"
-                         f"  ],\n"
-                         f"  'exercises': [\n"
-                         f"    {{'question': 'Question', 'options': ['Option1', 'Option2', ...], 'correct_answer': 'Correct option'}},\n"
+                         f"  ],"
+                         f"  'exercises': ["
+                         f"    {{'question': 'Question', 'options': ['Option1', 'Option2', ...], 'correct_answer': 'Correct option'}},"
                          f"    ...\n"
-                         f"  ],\n"
-                         f"  'cultural_note': 'Cultural information related to the lesson'\n"
+                         f"  ],"
+                         f"  'cultural_note': 'Cultural information related to the lesson'"
                          f"}}",
                 'max_tokens': 4000,
                 'temperature': 0.7
@@ -405,346 +495,6 @@ def generate_image():
 
 # Initialize database when the app starts
 init_db()
-
-if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=8080, debug=True)
-        return jsonify({'error': 'Context and characters are required'}), 400
-    
-    # Construct a detailed prompt for the LLM
-    prompt = f"""
-    Generate a natural Japanese conversation at JLPT N5 level based on the following:
-    
-    CONTEXT: {context}
-    
-    CHARACTERS: {', '.join(characters)}
-    
-    GRAMMAR POINTS TO INCLUDE: {', '.join(grammar_points)}
-    
-    VOCABULARY TO INCLUDE: {', '.join(vocabulary)}
-    
-    INSTRUCTIONS:
-    - Create a conversation with {num_exchanges} exchanges between characters
-    - Use only JLPT N5 level grammar and vocabulary
-    - Keep sentences short and simple
-    - Use basic particles correctly (は, が, を, に, で, etc.)
-    - Include at least one question and answer
-    - Format the output as a JSON structure with speaker, japanese_text, and english_translation
-    
-    Example format:
-    ```json
-    {{
-      "conversation": [
-        {{
-          "speaker": "Character1",
-          "japanese_text": "こんにちは、お元気ですか？",
-          "english_translation": "Hello, how are you?"
-        }},
-        {{
-          "speaker": "Character2",
-          "japanese_text": "はい、元気です。あなたは？",
-          "english_translation": "Yes, I'm fine. And you?"
-        }}
-      ]
-    }}
-    ```
-    
-    Generate only the JSON response without any additional text.
-    """
-    
-    try:
-        response = requests.post(
-            f"{LLM_TEXT_URL}/generate",
-            json={
-                'prompt': prompt,
-                'max_tokens': 2000,
-                'temperature': 0.7
-            }
-        )
-        
-        if response.status_code == 200:
-            result = response.json()
-            
-            # Try to extract and parse the JSON from the response
-            try:
-                # The LLM might include markdown code blocks or extra text
-                text = result.get('text', '')
-                
-                # Try to extract JSON if it's wrapped in code blocks
-                import re
-                json_match = re.search(r'```(?:json)?\s*({.*?})\s*```', text, re.DOTALL)
-                
-                if json_match:
-                    conversation_json = json.loads(json_match.group(1))
-                else:
-                    # Try parsing the whole response as JSON
-                    conversation_json = json.loads(text)
-                
-                return jsonify(conversation_json)
-            except (json.JSONDecodeError, ValueError) as e:
-                # If JSON parsing fails, return the raw text
-                return jsonify({
-                    'error': 'Failed to parse LLM response as JSON',
-                    'raw_response': text
-                }), 422
-        else:
-            return jsonify({'error': 'Conversation generation error', 'details': response.text}), 500
-    except requests.RequestException as e:
-        return jsonify({'error': 'LLM service unavailable', 'details': str(e)}), 503
-
-@app.route('/api/generate-image', methods=['POST'])
-def generate_image():
-    data = request.json
-    prompt = data.get('prompt')
-    scene_type = data.get('scene_type', 'background')  # background, character, etc.
-    
-    if not prompt:
-        return jsonify({'error': 'Prompt is required'}), 400
-    
-    try:
-        # First, enhance the prompt using LLM
-        llm_response = requests.post(
-            f"{LLM_TEXT_URL}/generate",
-            json={
-                'prompt': f"Enhance this image generation prompt for a Japanese visual novel scene: {prompt}",
-                'max_tokens': 500
-            }
-        )
-        
-        if llm_response.status_code != 200:
-            return jsonify({'error': 'Failed to enhance prompt'}), 500
-        
-        enhanced_prompt = llm_response.json().get('text', prompt)
-        
-        # Then, generate the image using the opea-docker image generation service
-        response = requests.post(
-            f"{IMAGE_GEN_URL}",
-            json={
-                'prompt': enhanced_prompt,
-                'scene_type': scene_type,
-                'style': 'anime',
-                'width': 512,
-                'height': 512
-            }
-        )
-        
-        if response.status_code == 200:
-            return jsonify(response.json())
-        else:
-            return jsonify({'error': 'Image generation error', 'details': response.text}), 500
-    except requests.RequestException as e:
-        return jsonify({'error': 'Image generation service unavailable', 'details': str(e)}), 503
-
-@app.route('/api/generate-lesson', methods=['POST'])
-def generate_lesson():
-    data = request.json
-    topic = data.get('topic')
-    grammar_points = data.get('grammar_points', [])
-    vocabulary_focus = data.get('vocabulary_focus', [])
-    lesson_number = data.get('lesson_number', 1)
-    scene_setting = data.get('scene_setting', 'classroom')
-    
-    if not topic:
-        return jsonify({'error': 'Topic is required'}), 400
-    
-    # Construct a detailed prompt for the LLM
-    prompt = f"""
-    Create a complete JLPT N5 level Japanese lesson for a visual novel game based on the following:
-    
-    TOPIC: {topic}
-    LESSON NUMBER: {lesson_number}
-    SCENE SETTING: {scene_setting}
-    GRAMMAR POINTS TO TEACH: {', '.join(grammar_points)}
-    VOCABULARY FOCUS: {', '.join(vocabulary_focus)}
-    
-    INSTRUCTIONS:
-    - Create a structured lesson with introduction, explanation, practice, and review sections
-    - Use only JLPT N5 level grammar and vocabulary
-    - Include at least 10 vocabulary words with readings and translations
-    - Include clear explanations of the grammar points
-    - Include practice dialogues that use the grammar and vocabulary
-    - Include at least one interactive choice for the player
-    - Format the output as a JSON structure with the following sections:
-      - metadata (title, level, objectives)
-      - vocabulary (list of words with readings and translations)
-      - grammar_points (explanations and examples)
-      - dialogue_script (conversation exchanges with speaker, text, and translations)
-      - practice_exercises (interactive exercises with questions and answers)
-      - review_summary (key points to remember)
-    
-    Example format:
-    ```json
-    {{
-      "metadata": {{
-        "title": "Introducing Yourself",
-        "level": "JLPT N5",
-        "objectives": ["Learn basic greetings", "Practice self-introduction"]
-      }},
-      "vocabulary": [
-        {{
-          "japanese": "こんにちは",
-          "reading": "こんにちは",
-          "english": "Hello"
-        }}
-      ],
-      "grammar_points": [
-        {{
-          "point": "です/ます form",
-          "explanation": "Polite form of verbs and adjectives",
-          "examples": [
-            {{
-              "japanese": "私は学生です。",
-              "reading": "わたしはがくせいです。",
-              "english": "I am a student."
-            }}
-          ]
-        }}
-      ],
-      "dialogue_script": [
-        {{
-          "speaker": "Sensei",
-          "japanese": "おはようございます。",
-          "english": "Good morning."
-        }},
-        {{
-          "speaker": "Student",
-          "japanese": "おはようございます。",
-          "english": "Good morning."
-        }}
-      ],
-      "practice_exercises": [
-        {{
-          "question": "How do you say 'My name is [name]' in Japanese?",
-          "options": [
-            "私の名前は[name]です。",
-            "私は[name]と申します。",
-            "[name]と言います。"
-          ],
-          "correct_answer": 0,
-          "explanation": "All are correct, but the first is the most common for beginners."
-        }}
-      ],
-      "review_summary": [
-        "Today we learned basic greetings in Japanese.",
-        "We practiced introducing ourselves using the です form."
-      ]
-    }}
-    ```
-    
-    Generate only the JSON response without any additional text.
-    """
-    
-    try:
-        response = requests.post(
-            f"{LLM_TEXT_URL}/generate",
-            json={
-                'prompt': prompt,
-                'max_tokens': 4000,
-                'temperature': 0.7
-            }
-        )
-        
-        if response.status_code == 200:
-            result = response.json()
-            
-            # Try to extract and parse the JSON from the response
-            try:
-                # The LLM might include markdown code blocks or extra text
-                text = result.get('text', '')
-                
-                # Try to extract JSON if it's wrapped in code blocks
-                import re
-                json_match = re.search(r'```(?:json)?\s*({.*?})\s*```', text, re.DOTALL)
-                
-                if json_match:
-                    lesson_json = json.loads(json_match.group(1))
-                else:
-                    # Try parsing the whole response as JSON
-                    lesson_json = json.loads(text)
-                
-                return jsonify(lesson_json)
-            except (json.JSONDecodeError, ValueError) as e:
-                # If JSON parsing fails, return the raw text
-                return jsonify({
-                    'error': 'Failed to parse LLM response as JSON',
-                    'raw_response': text
-                }), 422
-        else:
-            return jsonify({'error': 'Lesson generation error', 'details': response.text}), 500
-    except requests.RequestException as e:
-        return jsonify({'error': 'LLM service unavailable', 'details': str(e)}), 503
-
-@app.route('/api/vocabulary', methods=['POST'])
-def add_vocabulary():
-    data = request.json
-    user_id = data.get('user_id')
-    japanese = data.get('japanese')
-    reading = data.get('reading')
-    english = data.get('english')
-    lesson_id = data.get('lesson_id')
-    
-    if not all([user_id, japanese]):
-        return jsonify({'error': 'User ID and Japanese text are required'}), 400
-    
-    conn = sqlite3.connect(DB_PATH)
-    cursor = conn.cursor()
-    
-    cursor.execute(
-        '''
-        INSERT INTO vocabulary (user_id, japanese, reading, english, lesson_id)
-        VALUES (?, ?, ?, ?, ?)
-        ''',
-        (user_id, japanese, reading, english, lesson_id)
-    )
-    
-    conn.commit()
-    vocab_id = cursor.lastrowid
-    conn.close()
-    
-    return jsonify({'id': vocab_id, 'status': 'success'})
-
-@app.route('/api/vocabulary/<int:user_id>', methods=['GET'])
-def get_vocabulary(user_id):
-    lesson_id = request.args.get('lesson_id')
-    
-    conn = sqlite3.connect(DB_PATH)
-    cursor = conn.cursor()
-    
-    if lesson_id:
-        cursor.execute(
-            '''
-            SELECT id, japanese, reading, english, lesson_id, mastery_level, last_reviewed 
-            FROM vocabulary 
-            WHERE user_id = ? AND lesson_id = ?
-            ''',
-            (user_id, lesson_id)
-        )
-    else:
-        cursor.execute(
-            '''
-            SELECT id, japanese, reading, english, lesson_id, mastery_level, last_reviewed 
-            FROM vocabulary 
-            WHERE user_id = ?
-            ''',
-            (user_id,)
-        )
-    
-    vocabulary = [{
-        'id': row[0],
-        'japanese': row[1],
-        'reading': row[2],
-        'english': row[3],
-        'lesson_id': row[4],
-        'mastery_level': row[5],
-        'last_reviewed': row[6]
-    } for row in cursor.fetchall()]
-    
-    conn.close()
-    return jsonify(vocabulary)
-
-# Initialize the database when the app starts
-@app.before_first_request
-def before_first_request():
-    init_db()
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=8080, debug=True)
