@@ -35,6 +35,28 @@
             font-style: italic;
             color: #777;
         }
+        .error {
+            color: #e74c3c;
+            margin-top: 20px;
+            padding: 10px;
+            border: 1px solid #e74c3c;
+            border-radius: 5px;
+            display: none;
+        }
+        .button {
+            display: inline-block;
+            margin-top: 20px;
+            padding: 10px 20px;
+            background-color: #4b6584;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            text-decoration: none;
+        }
+        .button:hover {
+            background-color: #3c526d;
+        }
     </style>
 </head>
 <body>
@@ -43,15 +65,56 @@
         <p>Welcome to the Japanese Learning Visual Novel! This web version allows you to learn Japanese through an interactive story experience.</p>
         <p>The game is loading. Please wait...</p>
         <div class="loading">Loading game assets...</div>
+        <div id="error-message" class="error"></div>
         
-        <!-- This is a placeholder. The actual Ren'Py web export will replace this content -->
-        <!-- When exporting from Ren'Py, the web files will be placed in this directory -->
+        <div id="game-container" style="display: none;">
+            <!-- Game will be loaded here -->
+        </div>
+        
+        <a href="#" id="start-button" class="button" style="display: none;">Start Game</a>
     </div>
 
     <script>
-        // Placeholder for Ren'Py web initialization
+        // Check if the API server is running
         document.addEventListener('DOMContentLoaded', function() {
-            console.log('Game would load here when properly exported from Ren'Py');
+            // Show error after 10 seconds if game hasn't loaded
+            setTimeout(function() {
+                const errorMessage = document.getElementById('error-message');
+                errorMessage.style.display = 'block';
+                errorMessage.innerHTML = 'The game is taking longer than expected to load. This might be because:<br>' +
+                    '1. The game server is still starting up<br>' +
+                    '2. The Ren\'Py web export is not properly configured<br>' +
+                    '3. The OPEA Docker services are not running<br><br>' +
+                    'Please make sure all services are running and refresh the page.';
+                
+                // Show a start button that will attempt to load the game again
+                document.getElementById('start-button').style.display = 'inline-block';
+            }, 10000);
+            
+            // Check if the API server is running
+            fetch('/api/health')
+                .then(response => {
+                    if (response.ok) {
+                        return response.json();
+                    }
+                    throw new Error('API server is not responding');
+                })
+                .then(data => {
+                    console.log('API server is running:', data);
+                    document.querySelector('.loading').textContent = 'API server is running. Waiting for game assets...';
+                })
+                .catch(error => {
+                    console.error('Error checking API server:', error);
+                    const errorMessage = document.getElementById('error-message');
+                    errorMessage.style.display = 'block';
+                    errorMessage.textContent = 'Could not connect to the game server. Please make sure all services are running.';
+                });
+                
+            // Start button event listener
+            document.getElementById('start-button').addEventListener('click', function(e) {
+                e.preventDefault();
+                location.reload();
+            });
         });
     </script>
 </body>

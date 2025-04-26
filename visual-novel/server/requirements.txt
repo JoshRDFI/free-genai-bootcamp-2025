@@ -2,7 +2,7 @@ flask==2.0.1
 flask-cors==3.0.10
 requests==2.26.0
 python-dotenv==0.19.0
-sqlite3-utils==0.1
+sqlite-utils>=3.0
 pydantic==1.8.2
 pillow==9.3.0
 Flask-SQLAlchemy>=2.5.1

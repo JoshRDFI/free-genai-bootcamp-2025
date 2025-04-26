@@ -9,7 +9,7 @@ from io import BytesIO
 
 # API endpoints configuration
 # All external services should be accessed through the opea-docker API
-OPEA_API_BASE_URL = os.environ.get('OPEA_API_BASE_URL', 'http://localhost:8080/api')
+OPEA_API_BASE_URL = os.environ.get('OPEA_API_BASE_URL', 'http://vn-game-server:8080/api')
 
 # Service-specific endpoints
 LLM_TEXT_ENDPOINT = f"{OPEA_API_BASE_URL}/llm/text"

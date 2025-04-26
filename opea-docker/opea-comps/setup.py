@@ -8,7 +8,6 @@ setup(
         "requests>=2.26.0",
         "pydantic>=1.8.2",
         "fastapi>=0.68.0",
-        "logging>=0.4.9.6",
     ],
     author="OPEA Team",
     author_email="info@opea.com",

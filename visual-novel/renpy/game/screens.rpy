@@ -1,4 +1,4 @@
-﻿################################################################################
+################################################################################
 ## Initialization
 ################################################################################
 
@@ -1134,6 +1134,36 @@ style help_label_text:
 ## Additional screens
 ################################################################################
 
+## Yes/No Prompt screen #########################################################
+##
+## A custom screen for asking yes/no questions with a custom message
+
+screen yes_no_prompt(message):
+    modal True
+    zorder 200
+    style_prefix "confirm"
+    
+    add "gui/overlay/confirm.png"
+    
+    frame:
+        vbox:
+            xalign .5
+            yalign .5
+            spacing 45
+            
+            label _(message):
+                style "confirm_prompt"
+                xalign 0.5
+            
+            hbox:
+                xalign 0.5
+                spacing 150
+                
+                textbutton _("Yes") action Return(True)
+                textbutton _("No") action Return(False)
+    
+    ## Right-click and escape answer "no".
+    key "game_menu" action Return(False)
 
 ## Confirm screen ##############################################################
 ##
