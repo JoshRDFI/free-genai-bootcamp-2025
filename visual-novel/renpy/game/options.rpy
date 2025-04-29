@@ -12,12 +12,13 @@
 ##
 ## The _() surrounding the string marks it as eligible for translation.
 
-define config.name = _("visualnovel# home/sage/free-genai-bootcamp-2025/visual-novel/renpy/game/options.rpy
+define config.name = _("visualnovel# home/sage/free-genai-bootcamp-2025/visual-novel/renpy/game/options.rpy")
 
 # Font settings
-define gui.text_font = "DejaVuSans.ttf"  # Replace with a Japanese-compatible font
-define gui.name_text_font = "DejaVuSans.ttf"
-define gui.interface_text_font = "DejaVuSans.ttf"")
+define gui.text_font = "NotoSansCJKjp-VF.ttf"  # Replace with a Japanese-compatible font
+define gui.name_text_font = "NotoSansCJKjp-VF.ttf"
+define gui.interface_text_font = "NotoSansCJKjp-VF.ttf"
+
 
 
 ## Determines if the title given above is shown on the main menu screen. Set
