@@ -1,0 +1,33 @@
+services:
+  # Game server / API Gateway
+  vn-game-server:
+    build:
+      context: ../server
+    container_name: vn-game-server
+    ports:
+      - "8080:8080"
+    volumes:
+      - ../server:/app
+      - ../opea-docker/data/shared_db:/app/db
+    environment:
+      - FLASK_DEBUG=true
+      - OPEA_API_BASE_URL=http://localhost:5000
+    networks:
+      - vn-network
+    restart: unless-stopped
+
+  # Web server for Ren'Py web export
+  vn-web-server:
+    image: nginx:alpine
+    container_name: vn-web-server
+    ports:
+      - "8000:80"
+    volumes:
+      - ../renpy/web:/usr/share/nginx/html
+    networks:
+      - vn-network
+    restart: unless-stopped
+
+networks:
+  vn-network:
+    driver: bridge

@@ -27,6 +27,11 @@ DB_PATH = os.environ.get('DB_PATH', '/app/db/visual_novel.db')
 
 # Initialize database
 def init_db():
+    # Ensure the directory exists
+    db_dir = os.path.dirname(DB_PATH)
+    if not os.path.exists(db_dir):
+        os.makedirs(db_dir)
+        
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
     

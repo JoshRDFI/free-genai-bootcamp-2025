@@ -199,51 +199,58 @@ label dynamic_lesson_generator:
         if dialogue_script:
             "Let's begin the dialogue practice:"
             
+            # Process each dialogue line
             python:
-                for exchange in dialogue_script:
-                    speaker = exchange.get("speaker", "")
-                    japanese_text = exchange.get("japanese", "")
-                    english = exchange.get("english", "")
+                for line in dialogue_script:
+                    speaker = line.get("speaker", "")
+                    text = line.get("text", "")
+                    translation = line.get("translation", "")
                     
-                    # Determine which character is speaking
-                    if speaker == "sensei":
-                        speaking_character = sensei
-                    elif speaker == "player":
-                        speaking_character = player
+                    if speaker == "Sensei":
+                        renpy.say(sensei, text)
+                        if translation:
+                            renpy.say(None, translation)
+                    elif speaker == "Player":
+                        renpy.say(player, text)
+                        if translation:
+                            renpy.say(None, translation)
                     else:
-                        speaking_character = None
-                    
-                    # Display the dialogue
-                    if speaking_character:
-                        speaking_character(japanese_text)
-                    else:
-                        renpy.say(None, japanese_text)
-                    
-                    # Show translation button
-                    renpy.show_screen("translation_button", japanese_text)                    renpy.show_screen("add_vocab_button", japanese_text, None, english)                    renpy.pause()
-                    renpy.hide_screen("translation_button")                    renpy.hide_screen("add_vocab_button")
-                    
-                    # For vocabulary words, we could add them automatically
-                    for vocab in vocabulary:
-                        if vocab.get("japanese") in japanese_text:
-                            renpy.show_screen("add_vocab_button", 
-                                vocab.get("japanese"), 
-                                vocab.get("reading"), 
-                                vocab.get("english"))
-                            renpy.pause(0.5)
-                            renpy.hide_screen("add_vocab_button")
-                    
-                    # Generate and play audio if available
-                    audio_path = get_audio(japanese_text)
-                    if audio_path:
-                        renpy.play(audio_path, channel="voice")        
-        # End of lesson
-        "That concludes this lesson. Great job!"
+                        renpy.say(None, text)
+                        if translation:
+                            renpy.say(None, translation)
         
-        # Save progress as completed
-        $ save_progress("custom_lesson", "complete", completed=True)
+        # Show vocabulary list
+        if vocabulary:
+            "Let's review the vocabulary from this lesson:"
+            
+            python:
+                for word in vocabulary:
+                    japanese = word.get("japanese", "")
+                    reading = word.get("reading", "")
+                    english = word.get("english", "")
+                    
+                    display_text = f"{japanese} - {reading} - {english}"
+                    renpy.say(sensei, display_text)
+                    renpy.show_screen("add_vocab_button", japanese, reading, english)
+                    renpy.pause(1.0)
+                    renpy.hide_screen("add_vocab_button")
         
-        return
+        # Save progress
+        $ save_progress("custom", "completed", True)
+        
+        "Congratulations! You've completed this custom lesson."
+        
+        menu:
+            "What would you like to do next?"
+            
+            "Generate another custom lesson":
+                jump dynamic_lesson_generator
+                
+            "Return to main menu":
+                jump start
+    else:
+        "Sorry, there was an error generating your lesson. Please try again with a different topic."
+        jump dynamic_lesson_generator
 
 # Lesson 1: Basic Greetings
 label lesson1_intro:
@@ -254,357 +261,6 @@ label lesson1_intro:
     "Welcome to Lesson 1: Basic Greetings!"
     
     show sensei at center
-    sensei "こんにちは！私はあなたの先生です。" 
-    show screen translation_button("こんにちは！私はあなたの先生です。")
-    show screen add_vocab_button("こんにちは", "konnichiwa", "hello")
-    pause
-    hide screen translation_button
-    hide screen add_vocab_button
-    
-    sensei "In this lesson, we will learn basic Japanese greetings."
-    
-    sensei "Let's start with some common phrases:"
-    
-    # Vocabulary introduction
-    sensei "おはようございます。"
-    show screen translation_button("おはようございます。")
-    show screen add_vocab_button("おはようございます", "ohayou gozaimasu", "good morning")
-    pause
-    hide screen translation_button
-    hide screen add_vocab_button
-    
-    sensei "こんにちは。"
-    show screen translation_button("こんにちは。")
-    show screen add_vocab_button("こんにちは", "konnichiwa", "hello/good afternoon")
-    pause
-    hide screen translation_button
-    hide screen add_vocab_button
-    
-    sensei "こんばんは。"
-    show screen translation_button("こんばんは。")
-    show screen add_vocab_button("こんばんは", "konbanwa", "good evening")
-    pause
-    hide screen translation_button
-    hide screen add_vocab_button
-    
-    sensei "さようなら。"
-    show screen translation_button("さようなら。")
-    show screen add_vocab_button("さようなら", "sayounara", "goodbye")
-    pause
-    hide screen translation_button
-    hide screen add_vocab_button
-    
-    sensei "ありがとうございます。"
-    show screen translation_button("ありがとうございます。")
-    show screen add_vocab_button("ありがとうございます", "arigatou gozaimasu", "thank you")
-    pause
-    hide screen translation_button
-    hide screen add_vocab_button
-    
-    # Practice dialogue
-    sensei "Now, let's practice a simple dialogue. I'll be the teacher, and you'll be the student."
-    
-    sensei "先生: おはようございます、[player_name]さん。"
-    show screen translation_button("先生: おはようございます、[player_name]さん。")
-    pause
-    hide screen translation_button
-    
-    player "おはようございます、先生。"
-    
-    sensei "先生: お元気ですか？"
-    show screen translation_button("先生: お元気ですか？")
-    show screen add_vocab_button("お元気ですか", "o-genki desu ka", "How are you?")
-    pause
-    hide screen translation_button
-    hide screen add_vocab_button
-    
-    player "はい、元気です。先生は？"
-    show screen translation_button("はい、元気です。先生は？")
-    show screen add_vocab_button("はい、元気です", "hai, genki desu", "Yes, I'm fine")
-    pause
-    hide screen translation_button
-    hide screen add_vocab_button
-    
-    sensei "先生: 私も元気です。ありがとう。"
-    show screen translation_button("先生: 私も元気です。ありがとう。")
-    show screen add_vocab_button("私も元気です", "watashi mo genki desu", "I'm fine too")
-    pause
-    hide screen translation_button
-    hide screen add_vocab_button
-    
-    # Lesson completion
-    sensei "Great job! You've completed the basic greetings lesson."
-    
-    # Save progress as completed
-    $ save_progress("lesson1", "complete", completed=True)
-    
-    # Return to main menu or continue to next lesson
-    menu:
-        "What would you like to do next?"
-        
-        "Continue to Lesson 2 (At the Cafe)":
-            jump lesson2_intro
-            
-        "Return to main menu":
-            return
-
-# Lesson 2: At the Cafe
-label lesson2_intro:
-    scene bg cafe
-    $ current_lesson = "lesson2"
-    $ current_scene = "intro"
-    
-    "Welcome to Lesson 2: At the Cafe!"
-    
-    show sensei at center
-    sensei "こんにちは！今日はカフェでの会話を勉強しましょう。"
-    show screen translation_button("こんにちは！今日はカフェでの会話を勉強しましょう。")
-    pause
-    hide screen translation_button
-    
-    sensei "In this lesson, we will learn how to order food and drinks at a Japanese cafe."
-    
-    # Vocabulary introduction
-    sensei "Let's learn some useful vocabulary first:"
-    
-    sensei "コーヒー"
-    show screen translation_button("コーヒー")
-    show screen add_vocab_button("コーヒー", "koohii", "coffee")
-    pause
-    hide screen translation_button
-    hide screen add_vocab_button
-    
-    sensei "お茶"
-    show screen translation_button("お茶")
-    show screen add_vocab_button("お茶", "ocha", "tea")
-    pause
-    hide screen translation_button
-    hide screen add_vocab_button
-    
-    sensei "ケーキ"
-    show screen translation_button("ケーキ")
-    show screen add_vocab_button("ケーキ", "keeki", "cake")
-    pause
-    hide screen translation_button
-    hide screen add_vocab_button
-    
-    sensei "サンドイッチ"
-    show screen translation_button("サンドイッチ")
-    show screen add_vocab_button("サンドイッチ", "sandoicchi", "sandwich")
-    pause
-    hide screen translation_button
-    hide screen add_vocab_button
-    
-    sensei "いくらですか"
-    show screen translation_button("いくらですか")
-    show screen add_vocab_button("いくらですか", "ikura desu ka", "How much is it?")
-    pause
-    hide screen translation_button
-    hide screen add_vocab_button
-    
-    # Practice dialogue
-    sensei "Now, let's practice ordering at a cafe:"
-    
-    sensei "店員: いらっしゃいませ！"
-    show screen translation_button("店員: いらっしゃいませ！")
-    show screen add_vocab_button("いらっしゃいませ", "irasshaimase", "Welcome (to our shop)")
-    pause
-    hide screen translation_button
-    hide screen add_vocab_button
-    
-    player "コーヒーとケーキをお願いします。"
-    show screen translation_button("コーヒーとケーキをお願いします。")
-    show screen add_vocab_button("お願いします", "onegaishimasu", "please")
-    pause
-    hide screen translation_button
-    hide screen add_vocab_button
-    
-    sensei "店員: かしこまりました。コーヒーとケーキですね。少々お待ちください。"
-    show screen translation_button("店員: かしこまりました。コーヒーとケーキですね。少々お待ちください。")
-    show screen add_vocab_button("少々お待ちください", "shoushou omachi kudasai", "Please wait a moment")
-    pause
-    hide screen translation_button
-    hide screen add_vocab_button
-    
-    sensei "店員: お待たせしました。コーヒーとケーキでございます。"
-    show screen translation_button("店員: お待たせしました。コーヒーとケーキでございます。")
-    show screen add_vocab_button("お待たせしました", "omatase shimashita", "Sorry to keep you waiting")
-    pause
-    hide screen translation_button
-    hide screen add_vocab_button
-    
-    player "ありがとうございます。いくらですか？"
-    show screen translation_button("ありがとうございます。いくらですか？")
-    pause
-    hide screen translation_button
-    
-    sensei "店員: 合計で850円になります。"
-    show screen translation_button("店員: 合計で850円になります。")
-    show screen add_vocab_button("合計", "goukei", "total")
-    pause
-    hide screen translation_button
-    hide screen add_vocab_button
-    
-    player "はい、どうぞ。"
-    show screen translation_button("はい、どうぞ。")
-    show screen add_vocab_button("どうぞ", "douzo", "here you are")
-    pause
-    hide screen translation_button
-    hide screen add_vocab_button
-    
-    sensei "店員: ありがとうございます。またのご来店をお待ちしております。"
-    show screen translation_button("店員: ありがとうございます。またのご来店をお待ちしております。")
-    show screen add_vocab_button("またのご来店をお待ちしております", "mata no goten wo omachishite orimasu", "We look forward to your next visit")
-    pause
-    hide screen translation_button
-    hide screen add_vocab_button
-    
-    # Lesson completion
-    sensei "Excellent! You've learned how to order at a Japanese cafe."
-    
-    # Save progress as completed
-    $ save_progress("lesson2", "complete", completed=True)
-    
-    # Return to main menu or continue to next lesson
-    menu:
-        "What would you like to do next?"
-        
-        "Continue to Lesson 3 (Shopping)":
-            jump lesson3_intro
-            
-        "Return to main menu":
-            return
-
-# Lesson 3: Shopping
-label lesson3_intro:
-    scene bg store_traditional
-    $ current_lesson = "lesson3"
-    $ current_scene = "intro"
-    
-    "Welcome to Lesson 3: Shopping!"
-    
-    show sensei at center
-    sensei "こんにちは！今日は買い物の会話を勉強しましょう。"
-    show screen translation_button("こんにちは！今日は買い物の会話を勉強しましょう。")
-    pause
-    hide screen translation_button
-    
-    sensei "In this lesson, we will learn useful phrases for shopping in Japan."
-    
-    # Vocabulary introduction
-    sensei "Let's learn some shopping vocabulary:"
-    
-    sensei "これ"
-    show screen translation_button("これ")
-    show screen add_vocab_button("これ", "kore", "this")
-    pause
-    hide screen translation_button
-    hide screen add_vocab_button
-    
-    sensei "それ"
-    show screen translation_button("それ")
-    show screen add_vocab_button("それ", "sore", "that")
-    pause
-    hide screen translation_button
-    hide screen add_vocab_button
-    
-    sensei "あれ"
-    show screen translation_button("あれ")
-    show screen add_vocab_button("あれ", "are", "that over there")
-    pause
-    hide screen translation_button
-    hide screen add_vocab_button
-    
-    sensei "いくらですか"
-    show screen translation_button("いくらですか")
-    show screen add_vocab_button("いくらですか", "ikura desu ka", "How much is it?")
-    pause
-    hide screen translation_button
-    hide screen add_vocab_button
-    
-    sensei "～を買いたいです"
-    show screen translation_button("～を買いたいです")
-    show screen add_vocab_button("買いたいです", "kaitai desu", "I want to buy")
-    pause
-    hide screen translation_button
-    hide screen add_vocab_button
-    
-    # Practice dialogue
-    sensei "Now, let's practice a shopping dialog."
-        
-        # Show grammar points
-        python:
-            grammar_points = lesson_data.get("grammar_points", [])
-            if grammar_points:
-                renpy.say(None, "Let's review the grammar points from this lesson:")
-                for i, grammar in enumerate(grammar_points):
-                    pattern = grammar.get("pattern", "")
-                    explanation = grammar.get("explanation", "")
-                    examples = grammar.get("examples", [])
-                    
-                    renpy.say(sensei, f"Grammar Point {i+1}: {pattern}")
-                    renpy.say(sensei, explanation)
-                    
-                    if examples:
-                        renpy.say(sensei, "Examples:")
-                        for example in examples:
-                            renpy.say(sensei, example)
-        
-        # Show exercises if available
-        python:
-            exercises = lesson_data.get("exercises", [])
-            if exercises:
-                renpy.say(None, "Let's practice with some exercises:")
-                for i, exercise in enumerate(exercises):
-                    question = exercise.get("question", "")
-                    options = exercise.get("options", [])
-                    correct_answer = exercise.get("correct_answer", "")
-                    
-                    renpy.say(sensei, f"Question {i+1}: {question}")
-                    
-                    # Create a menu for the options
-                    choices = [(option, option) for option in options]
-                    answer = renpy.display_menu(choices)
-                    
-                    if answer == correct_answer:
-                        renpy.say(sensei, "Correct! Well done!")
-                    else:
-                        renpy.say(sensei, f"Not quite. The correct answer is: {correct_answer}")
-        
-        # Show cultural note if available
-        $ cultural_note = lesson_data.get("cultural_note", "")
-        if cultural_note:
-            sensei "Cultural Note: [cultural_note]"
-        
-        # Lesson completion
-        "Congratulations! You've completed your custom lesson on [lesson_title]."
-        
-        # Save progress
-        $ save_progress(f"custom_{topic.replace(' ', '_')}", "completed", True)
-        
-        menu:
-            "What would you like to do next?"
-            
-            "Review this lesson again":
-                jump dynamic_lesson_generator
-            
-            "Create a new custom lesson":
-                jump dynamic_lesson_generator
-            
-            "Return to main menu":
-                jump start
-    else:
-        "Sorry, there was an error generating your lesson. Please try again with a different topic."
-        jump dynamic_lesson_generator
-
-# Pre-made Lesson 1: Basic Greetings
-label lesson1_intro:
-    scene bg classroom
-    
-    "Welcome to your first Japanese lesson!"
-    
-    show sensei at center
-    
     sensei "こんにちは！私は田中先生です。よろしくお願いします。"
     show screen translation_button("こんにちは！私は田中先生です。よろしくお願いします。")
     
@@ -757,15 +413,16 @@ label lesson1_intro:
 # Lesson 2: At the Cafe
 label lesson2_intro:
     scene bg cafe
+    $ current_lesson = "lesson2"
+    $ current_scene = "intro"
     
     "Welcome to Lesson 2: At the Cafe!"
     
     show sensei at center
+    sensei "こんにちは！今日はカフェでの会話を勉強しましょう。"
+    show screen translation_button("こんにちは！今日はカフェでの会話を勉強しましょう。")
     
-    sensei "今日は、カフェでの会話を練習しましょう。"
-    show screen translation_button("今日は、カフェでの会話を練習しましょう。")
-    
-    "Today, we'll practice conversations at a cafe."
+    "Hello! Today, let's study conversations at a cafe."
     
     hide screen translation_button
     
@@ -981,11 +638,12 @@ label lesson2_intro:
 # Lesson 3: Shopping
 label lesson3_intro:
     scene bg store_traditional
+    $ current_lesson = "lesson3"
+    $ current_scene = "intro"
     
     "Welcome to Lesson 3: Shopping!"
     
     show sensei at center
-    
     sensei "今日は、買い物の会話を練習しましょう。"
     show screen translation_button("今日は、買い物の会話を練習しましょう。")
     

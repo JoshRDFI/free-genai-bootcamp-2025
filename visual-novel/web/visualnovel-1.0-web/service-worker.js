@@ -1,4 +1,4 @@
-var cacheName = 'visualnovel';
+var cacheName = 'visualnovel-home-sage-free-genai-bootcamp-2025-visual-novel-renpy-game-options-rpy';
 
 /* Start the service worker and cache all of the app's content or use the existing one */
 self.addEventListener('install', function (e) {
