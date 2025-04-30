@@ -15,7 +15,7 @@
 define config.name = _("visualnovel# home/sage/free-genai-bootcamp-2025/visual-novel/renpy/game/options.rpy")
 
 # Font settings
-define gui.text_font = "NotoSansCJKjp-VF.ttf"  # Replace with a Japanese-compatible font
+define gui.text_font = "NotoSansCJKjp-VF.ttf"  # Japanese-compatible font
 define gui.name_text_font = "NotoSansCJKjp-VF.ttf"
 define gui.interface_text_font = "NotoSansCJKjp-VF.ttf"
 

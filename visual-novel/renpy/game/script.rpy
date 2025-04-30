@@ -1,40 +1,20 @@
-# home/sage/free-genai-bootcamp-2025/visual-novel/renpy/game/script.rpy
-
 # Define characters used by this game
 define sensei = Character("先生", color="#c8ffc8", what_italic=False)
 define player = Character("[player_name]", color="#c8c8ff")
-
-# Define images
-image bg classroom = "images/backgrounds/classroom.avif"
-image bg cafe = "images/backgrounds/cafe.avif"
-image bg street = "images/backgrounds/street.avif"
-image bg conv_store = "images/backgrounds/conv_store.avif"
-image bg ramen_shop = "images/backgrounds/ramen_shop.avif"
-image bg store_traditional = "images/backgrounds/store_traditional.avif"
 
 # Define character images
 image sensei = "images/characters/sensei.png"
 image sensei happy = "images/characters/sensei_happy.png"
 image sensei serious = "images/characters/sensei_serious.png"
-# Add more expressions as needed# home/sage/free-genai-bootcamp-2025/visual-novel/renpy/game/script.rpy
+# Add more expressions as needed
 
-# Define images with proper scaling
-image bg classroom = im.Scale("images/backgrounds/classroom.avif", 1920, 1080)
-image bg cafe = im.Scale("images/backgrounds/cafe.avif", 1920, 1080)
-image bg street = im.Scale("images/backgrounds/street.avif", 1920, 1080)
-image bg conv_store = im.Scale("images/backgrounds/conv_store.avif", 1920, 1080)
-image bg ramen_shop = im.Scale("images/backgrounds/ramen_shop.avif", 1920, 1080)
-image bg store_traditional = im.Scale("images/backgrounds/store_traditional.avif", 1920, 1080)# Define characters used by this game
-define sensei = Character("先生", color="#c8ffc8", what_italic=False)
-define player = Character("[player_name]", color="#c8c8ff")
-
-# Define images
-image bg classroom = "images/backgrounds/classroom.avif"
-image bg cafe = "images/backgrounds/cafe.avif"
-image bg street = "images/backgrounds/street.avif"
-image bg conv_store = "images/backgrounds/conv_store.avif"
-image bg ramen_shop = "images/backgrounds/ramen_shop.avif"
-image bg store_traditional = "images/backgrounds/store_traditional.avif"
+# Define background images with proper scaling
+image bg classroom = im.Scale("images/backgrounds/classroom.png", 1920, 1080)
+image bg cafe = im.Scale("images/backgrounds/cafe.png", 1920, 1080)
+image bg street = im.Scale("images/backgrounds/street.png", 1920, 1080)
+image bg conv_store = im.Scale("images/backgrounds/conv_store.png", 1920, 1080)
+image bg ramen_shop = im.Scale("images/backgrounds/ramen_shop.png", 1920, 1080)
+image bg store_traditional = im.Scale("images/backgrounds/store_traditional.png", 1920, 1080)
 
 # Game variables
 default player_name = "Student"
@@ -225,19 +205,38 @@ label dynamic_lesson_generator:
                     japanese_text = exchange.get("japanese", "")
                     english = exchange.get("english", "")
                     
-                    # Display the dialogue
+                    # Determine which character is speaking
                     if speaker == "sensei":
-                        renpy.say(sensei, japanese_text)
+                        speaking_character = sensei
                     elif speaker == "player":
-                        renpy.say(player, japanese_text)
+                        speaking_character = player
+                    else:
+                        speaking_character = None
+                    
+                    # Display the dialogue
+                    if speaking_character:
+                        speaking_character(japanese_text)
                     else:
                         renpy.say(None, japanese_text)
                     
                     # Show translation button
-                    renpy.show_screen("translation_button", japanese_text)
-                    renpy.pause()
-                    renpy.hide_screen("translation_button")
-        
+                    renpy.show_screen("translation_button", japanese_text)                    renpy.show_screen("add_vocab_button", japanese_text, None, english)                    renpy.pause()
+                    renpy.hide_screen("translation_button")                    renpy.hide_screen("add_vocab_button")
+                    
+                    # For vocabulary words, we could add them automatically
+                    for vocab in vocabulary:
+                        if vocab.get("japanese") in japanese_text:
+                            renpy.show_screen("add_vocab_button", 
+                                vocab.get("japanese"), 
+                                vocab.get("reading"), 
+                                vocab.get("english"))
+                            renpy.pause(0.5)
+                            renpy.hide_screen("add_vocab_button")
+                    
+                    # Generate and play audio if available
+                    audio_path = get_audio(japanese_text)
+                    if audio_path:
+                        renpy.play(audio_path, channel="voice")        
         # End of lesson
         "That concludes this lesson. Great job!"
         
@@ -531,36 +530,7 @@ label lesson3_intro:
     hide screen add_vocab_button
     
     # Practice dialogue
-    sensei "Now, let's practice a shopping dialo
-                    
-                    # Determine which character is speaking
-                    if speaker == "Sensei":
-                        speaking_character = sensei
-                    else:
-                        speaking_character = player
-                    
-                    # Display the Japanese text with translation button
-                    renpy.show_screen("translation_button", japanese_text)
-                    renpy.show_screen("add_vocab_button", japanese_text, None, english)
-                    
-                    # Say the line
-                    speaking_character(japanese_text)
-                    renpy.hide_screen("translation_button")
-                    
-                    # For vocabulary words, we could add them automatically
-                    for vocab in vocabulary:
-                        if vocab.get("japanese") in japanese_text:
-                            renpy.show_screen("add_vocab_button", 
-                                vocab.get("japanese"), 
-                                vocab.get("reading"), 
-                                vocab.get("english"))
-                            renpy.pause(0.5)
-                            renpy.hide_screen("add_vocab_button")
-                    
-                    # Generate and play audio if available
-                    audio_path = get_audio(japanese_text)
-                    if audio_path:
-                        renpy.play(audio_path, channel="voice")
+    sensei "Now, let's practice a shopping dialog."
         
         # Show grammar points
         python:
