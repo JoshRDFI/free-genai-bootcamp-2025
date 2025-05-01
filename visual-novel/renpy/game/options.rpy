@@ -12,7 +12,7 @@
 ##
 ## The _() surrounding the string marks it as eligible for translation.
 
-define config.name = _("Learn Japanese: The Visual Novel")
+define config.name = _("Learn Japanese:\nThe Visual Novel")
 
 # Font settings
 define gui.text_font = "NotoSansCJKjp-VF.ttf"  # Japanese-compatible font

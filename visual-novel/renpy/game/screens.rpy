@@ -369,6 +369,8 @@ screen main_menu():
 
             text "[config.name!t]":
                 style "main_menu_title"
+                xpos -100
+                ypos -300
 
             text "[config.version]":
                 style "main_menu_version"
