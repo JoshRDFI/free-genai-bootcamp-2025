@@ -12,7 +12,7 @@
 ##
 ## The _() surrounding the string marks it as eligible for translation.
 
-define config.name = _("visualnovel# home/sage/free-genai-bootcamp-2025/visual-novel/renpy/game/options.rpy")
+define config.name = _("Learn Japanese: The Visual Novel")
 
 # Font settings
 define gui.text_font = "NotoSansCJKjp-VF.ttf"  # Japanese-compatible font

@@ -17,13 +17,14 @@ class Config:
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
     # External service endpoints
-    OPEA_API_BASE_URL = os.environ.get('OPEA_API_BASE_URL', 'http://opea-api-gateway:8000')
-    LLM_TEXT_URL = f"{OPEA_API_BASE_URL}/llm/text"
-    TTS_URL = f"{OPEA_API_BASE_URL}/tts"
-    ASR_URL = f"{OPEA_API_BASE_URL}/asr"
-    LLM_VISION_URL = f"{OPEA_API_BASE_URL}/llm/vision"
-    EMBEDDINGS_URL = f"{OPEA_API_BASE_URL}/embeddings"
-    IMAGE_GEN_URL = f"{OPEA_API_BASE_URL}/image/generate"
+    # OPEA_API_BASE_URL = os.environ.get('OPEA_API_BASE_URL', 'http://opea-api-gateway:8000') # Commented out as we connect directly
+    LLM_TEXT_URL = os.environ.get('LLM_TEXT_URL', "http://llm_text:9000/llm/text")
+    TTS_URL = os.environ.get('TTS_URL', "http://tts:9200/tts")
+    ASR_URL = os.environ.get('ASR_URL', "http://asr:9300/asr")
+    LLM_VISION_URL = os.environ.get('LLM_VISION_URL', "http://llm-vision:9100/llm/vision")
+    EMBEDDINGS_URL = os.environ.get('EMBEDDINGS_URL', "http://embeddings:6000/embeddings")
+    # Use the opea-docker waifu-diffusion service instead of our own
+    IMAGE_GEN_URL = os.environ.get('IMAGE_GEN_URL', "http://waifu-diffusion:9500/image/generate")
 
     # Application
     DEBUG = os.environ.get('FLASK_DEBUG', 'false').lower() == 'true'

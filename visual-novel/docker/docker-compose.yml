@@ -17,10 +17,8 @@ services:
       - vn-network
       - opea-network
     restart: unless-stopped
-    depends_on:
-      - vn-waifu-diffusion
 
-  # Web server for Ren'Py web export
+  # Web server for Ren'Py web exportrver for Ren'Py web export
   vn-web-server:
     image: nginx:alpine
     container_name: vn-web-server
@@ -32,32 +30,7 @@ services:
       - vn-network
     restart: unless-stopped
 
-  # Waifu Diffusion service
-  vn-waifu-diffusion:
-    build:
-      context: ..
-      dockerfile: docker/Dockerfile.waifu
-    container_name: vn-waifu-diffusion
-    ports:
-      - "5000:5000"
-    volumes:
-      - ../generated_images:/app/generated_images
-      - waifu_model_cache:/app/model_cache
-    environment:
-      - WAIFU_DIFFUSION_MODEL=hakurei/waifu-diffusion
-      - TRANSFORMERS_CACHE=/app/model_cache
-      - HF_HOME=/app/model_cache
-    networks:
-      - vn-network
-      - opea-network
-    restart: unless-stopped
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: 1
-              capabilities: [gpu]
+  # Using opea-docker waifu-diffusion service instead of a local one
 
 networks:
   vn-network:
@@ -66,5 +39,5 @@ networks:
     external: true
     name: opea-docker_default  # This should match your existing Docker network name
 
-volumes:
-  waifu_model_cache:  # Named volume for persisting the model cache
+
+

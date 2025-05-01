@@ -417,7 +417,7 @@ screen game_menu(title, scroll=None, yinitial=0.0, spacing=0):
     style_prefix "game_menu"
 
     if main_menu:
-        add gui.main_menu_background
+        add "images/backgrounds/intro_background.png"
     else:
         add gui.game_menu_background
 
