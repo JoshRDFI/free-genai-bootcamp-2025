@@ -8,9 +8,8 @@ class LLMService:
     """Service for interacting with the LLM Text service"""
     
     def __init__(self, base_url=None):
-        # Use the opea-docker API endpoint
-        self.base_url = base_url or os.environ.get('OPEA_API_BASE_URL', 'http://opea-api-gateway:8000')
-        self.llm_text_url = f"{self.base_url}/llm/text"
+        # Use the direct LLM text service URL
+        self.llm_text_url = base_url or os.environ.get('LLM_TEXT_URL', 'http://localhost:9000')
         
     def generate_dialogue(self, context, characters, length=200):
         """Generate dialogue based on context and characters"""

@@ -13,16 +13,16 @@ db = SQLAlchemy()
 migrate = Migrate()
 
 # Configuration
-# All external services should be accessed through the opea-docker API endpoints
-OPEA_API_BASE_URL = os.environ.get('OPEA_API_BASE_URL', 'http://opea-api-gateway:8000')
-
-# Service-specific endpoints
-LLM_TEXT_URL = f"{OPEA_API_BASE_URL}/llm/text"
-TTS_URL = f"{OPEA_API_BASE_URL}/tts"
-ASR_URL = f"{OPEA_API_BASE_URL}/asr"
-LLM_VISION_URL = f"{OPEA_API_BASE_URL}/llm/vision"
-EMBEDDINGS_URL = f"{OPEA_API_BASE_URL}/embeddings"
-IMAGE_GEN_URL = f"{OPEA_API_BASE_URL}/image/generate"
+# Direct access to opea-docker services
+OLLAMA_SERVER_URL = os.environ.get('OLLAMA_SERVER_URL', 'http://localhost:8008')
+LLM_TEXT_URL = os.environ.get('LLM_TEXT_URL', 'http://localhost:9000')
+GUARDRAILS_URL = os.environ.get('GUARDRAILS_URL', 'http://localhost:9400')
+CHROMADB_URL = os.environ.get('CHROMADB_URL', 'http://localhost:8050')
+TTS_URL = os.environ.get('TTS_URL', 'http://localhost:9200')
+ASR_URL = os.environ.get('ASR_URL', 'http://localhost:9300')
+LLM_VISION_URL = os.environ.get('LLM_VISION_URL', 'http://localhost:9100')
+IMAGE_GEN_URL = os.environ.get('WAIFU_DIFFUSION_URL', 'http://localhost:9500')
+EMBEDDINGS_URL = os.environ.get('EMBEDDINGS_URL', 'http://localhost:6000')tp://localhost:6000')
 DB_PATH = os.environ.get('DB_PATH', '/app/db/visual_novel.db')
 
 # Initialize database
@@ -186,7 +186,7 @@ def create_app(config_object=None):
         
         try:
             response = requests.post(
-                f"{TTS_URL}/tts",
+                f"{TTS_URL}/generate",
                 json={'text': text, 'voice': voice}
             )
             

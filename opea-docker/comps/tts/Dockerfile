@@ -27,4 +27,4 @@ RUN mkdir -p /home/tts/.xtts_data
 EXPOSE 9200
 
 # Run the application
-CMD ["python", "app.py"]
+CMD ["python3", "app.py"]

@@ -11,7 +11,15 @@ services:
       - ../server:/app
       - ${SHARED_DB_PATH:-../opea-docker/data/shared_db}:/app/db
     environment:
-      - OPEA_API_BASE_URL=http://opea-api-gateway:8000
+      - OLLAMA_SERVER_URL=http://ollama-server:8008
+      - LLM_TEXT_URL=http://llm_text:9000
+      - GUARDRAILS_URL=http://guardrails:9400
+      - CHROMADB_URL=http://chromadb:8050
+      - TTS_URL=http://tts:9200
+      - ASR_URL=http://asr:9300
+      - LLM_VISION_URL=http://llm-vision:9100
+      - WAIFU_DIFFUSION_URL=http://waifu-diffusion:9500
+      - EMBEDDINGS_URL=http://embeddings:6000
       - USE_REMOTE_DB=true
     networks:
       - vn-network

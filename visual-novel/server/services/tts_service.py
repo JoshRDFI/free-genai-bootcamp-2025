@@ -8,9 +8,8 @@ class TTSService:
     """Service for interacting with the TTS service"""
     
     def __init__(self, base_url=None):
-        # Use the opea-docker API endpoint
-        self.base_url = base_url or os.environ.get('OPEA_API_BASE_URL', 'http://opea-api-gateway:8000')
-        self.tts_url = f"{self.base_url}/tts"
+        # Use the direct TTS service URL
+        self.tts_url = base_url or os.environ.get('TTS_URL', 'http://localhost:9200')
         
     def generate_speech(self, text, voice="default", language="ja"):
         """Generate speech from text"""

@@ -1,5 +1,5 @@
 # API communication module for Japanese Learning Visual Novel
-# This module centralizes all external API calls through the opea-docker API endpoints
+# This module provides direct access to opea-docker services
 
 import requests
 import json
@@ -8,17 +8,23 @@ import base64
 from io import BytesIO
 
 # API endpoints configuration
-# All external services should be accessed through the opea-docker API
-OPEA_API_BASE_URL = os.environ.get('OPEA_API_BASE_URL', 'http://vn-game-server:8080/api')
+# Direct access to opea-docker services
+# Use localhost when running the game locally, or the Docker service name when running in Docker
 
-# Service-specific endpoints
-LLM_TEXT_ENDPOINT = f"{OPEA_API_BASE_URL}/llm/text"
-LLM_VISION_ENDPOINT = f"{OPEA_API_BASE_URL}/llm/vision"
-TTS_ENDPOINT = f"{OPEA_API_BASE_URL}/tts"
-ASR_ENDPOINT = f"{OPEA_API_BASE_URL}/asr"
-IMAGE_GEN_ENDPOINT = f"{OPEA_API_BASE_URL}/image/generate"
-EMBEDDINGS_ENDPOINT = f"{OPEA_API_BASE_URL}/embeddings"
-DATABASE_ENDPOINT = f"{OPEA_API_BASE_URL}/database"
+# Game server API base URL for game-specific endpoints
+GAME_API_BASE_URL = os.environ.get('GAME_API_BASE_URL', 'http://localhost:8080/api')
+
+# Direct service endpoints
+OLLAMA_SERVER_URL = os.environ.get('OLLAMA_SERVER_URL', 'http://localhost:8008')
+LLM_TEXT_ENDPOINT = os.environ.get('LLM_TEXT_URL', 'http://localhost:9000')
+GUARDRAILS_URL = os.environ.get('GUARDRAILS_URL', 'http://localhost:9400')
+CHROMADB_URL = os.environ.get('CHROMADB_URL', 'http://localhost:8050')
+TTS_ENDPOINT = os.environ.get('TTS_URL', 'http://localhost:9200')
+ASR_ENDPOINT = os.environ.get('ASR_URL', 'http://localhost:9300')
+LLM_VISION_ENDPOINT = os.environ.get('LLM_VISION_URL', 'http://localhost:9100')
+IMAGE_GEN_ENDPOINT = os.environ.get('WAIFU_DIFFUSION_URL', 'http://localhost:9500')
+EMBEDDINGS_ENDPOINT = os.environ.get('EMBEDDINGS_URL', 'http://localhost:6000')
+DATABASE_ENDPOINT = f"{GAME_API_BASE_URL}/database"
 
 class APIService:
     """Centralized API service for all external calls"""
@@ -28,7 +34,7 @@ class APIService:
         """Save player progress to the server"""
         try:
             response = requests.post(
-                f"{OPEA_API_BASE_URL}/progress",
+                f"{GAME_API_BASE_URL}/progress",
                 json={
                     "user_id": user_id,
                     "lesson_id": lesson_id,
@@ -98,13 +104,12 @@ class APIService:
         except Exception as e:
             print(f"ASR failed: {str(e)}")
             return ""
-    
     @staticmethod
     def add_vocabulary(user_id, japanese, reading=None, english=None, lesson_id=None):
         """Add vocabulary to player's list"""
         try:
             response = requests.post(
-                f"{OPEA_API_BASE_URL}/vocabulary",
+                f"{GAME_API_BASE_URL}/vocabulary",
                 json={
                     "user_id": user_id,
                     "japanese": japanese,

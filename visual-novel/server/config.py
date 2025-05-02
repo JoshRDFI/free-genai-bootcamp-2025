@@ -17,14 +17,16 @@ class Config:
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
     # External service endpoints
-    # OPEA_API_BASE_URL = os.environ.get('OPEA_API_BASE_URL', 'http://opea-api-gateway:8000') # Commented out as we connect directly
-    LLM_TEXT_URL = os.environ.get('LLM_TEXT_URL', "http://llm_text:9000/llm/text")
-    TTS_URL = os.environ.get('TTS_URL', "http://tts:9200/tts")
-    ASR_URL = os.environ.get('ASR_URL', "http://asr:9300/asr")
-    LLM_VISION_URL = os.environ.get('LLM_VISION_URL', "http://llm-vision:9100/llm/vision")
-    EMBEDDINGS_URL = os.environ.get('EMBEDDINGS_URL', "http://embeddings:6000/embeddings")
-    # Use the opea-docker waifu-diffusion service instead of our own
-    IMAGE_GEN_URL = os.environ.get('IMAGE_GEN_URL', "http://waifu-diffusion:9500/image/generate")
+    # Direct connections to opea-docker services
+    OLLAMA_SERVER_URL = os.environ.get('OLLAMA_SERVER_URL', 'http://ollama-server:8008')
+    LLM_TEXT_URL = os.environ.get('LLM_TEXT_URL', 'http://llm_text:9000')
+    GUARDRAILS_URL = os.environ.get('GUARDRAILS_URL', 'http://guardrails:9400')
+    CHROMADB_URL = os.environ.get('CHROMADB_URL', 'http://chromadb:8050')
+    TTS_URL = os.environ.get('TTS_URL', 'http://tts:9200')
+    ASR_URL = os.environ.get('ASR_URL', 'http://asr:9300')
+    LLM_VISION_URL = os.environ.get('LLM_VISION_URL', 'http://llm-vision:9100')
+    IMAGE_GEN_URL = os.environ.get('WAIFU_DIFFUSION_URL', 'http://waifu-diffusion:9500')
+    EMBEDDINGS_URL = os.environ.get('EMBEDDINGS_URL', 'http://embeddings:6000')
 
     # Application
     DEBUG = os.environ.get('FLASK_DEBUG', 'false').lower() == 'true'

@@ -9,9 +9,8 @@ class VisionService:
     """Service for interacting with the image generation service"""
     
     def __init__(self, base_url=None):
-        # Use the opea-docker API endpoint
-        self.base_url = base_url or os.environ.get('OPEA_API_BASE_URL', 'http://opea-api-gateway:8000')
-        self.image_gen_url = f"{self.base_url}/image/generate"
+        # Use the direct waifu-diffusion service URL
+        self.image_gen_url = base_url or os.environ.get('WAIFU_DIFFUSION_URL', 'http://localhost:9500')
         
     def generate_image(self, prompt, style="anime", width=512, height=512):
         """Generate image based on prompt"""

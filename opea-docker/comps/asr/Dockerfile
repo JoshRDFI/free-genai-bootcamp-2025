@@ -28,4 +28,4 @@ RUN mkdir -p /home/asr/.xtts_data
 EXPOSE 9300
 
 # Run the application
-CMD ["python", "app.py"]
+CMD ["python3", "app.py"]

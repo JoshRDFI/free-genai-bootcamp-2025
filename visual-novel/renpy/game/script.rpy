@@ -3,9 +3,9 @@ define sensei = Character("先生", color="#c8ffc8", what_italic=False)
 define player = Character("[player_name]", color="#c8c8ff")
 
 # Define character images
-image sensei = "images/characters/sensei.png"
-image sensei happy = "images/characters/sensei_happy.png"
-image sensei serious = "images/characters/sensei_serious.png"
+image sensei = im.Scale("images/characters/sensei.png", 500, 800)
+image sensei happy = im.Scale("images/characters/sensei_happy.png", 500, 800)
+image sensei serious = im.Scale("images/characters/sensei_serious.png", 500, 800)
 # Add more expressions as needed
 
 # Define background images with proper scaling
