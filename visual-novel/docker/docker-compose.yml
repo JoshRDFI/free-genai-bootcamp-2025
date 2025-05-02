@@ -9,7 +9,7 @@ services:
       - "8080:8080"
     volumes:
       - ../server:/app
-      - ${SHARED_DB_PATH:-../opea-docker/data/shared_db}:/app/db
+      - ${SHARED_DB_PATH:-../../opea-docker/data/shared_db}:/app/db
     environment:
       - OLLAMA_SERVER_URL=http://ollama-server:8008
       - LLM_TEXT_URL=http://llm_text:9000

@@ -16,14 +16,14 @@ GAME_API_BASE_URL = os.environ.get('GAME_API_BASE_URL', 'http://localhost:8080/a
 
 # Direct service endpoints
 OLLAMA_SERVER_URL = os.environ.get('OLLAMA_SERVER_URL', 'http://localhost:8008')
-LLM_TEXT_ENDPOINT = os.environ.get('LLM_TEXT_URL', 'http://localhost:9000')
-GUARDRAILS_URL = os.environ.get('GUARDRAILS_URL', 'http://localhost:9400')
+LLM_TEXT_ENDPOINT = os.environ.get('LLM_TEXT_URL', 'http://localhost:9000/v1/chat/completions')
+GUARDRAILS_URL = os.environ.get('GUARDRAILS_URL', 'http://localhost:9400/v1/guardrails')
 CHROMADB_URL = os.environ.get('CHROMADB_URL', 'http://localhost:8050')
-TTS_ENDPOINT = os.environ.get('TTS_URL', 'http://localhost:9200')
-ASR_ENDPOINT = os.environ.get('ASR_URL', 'http://localhost:9300')
-LLM_VISION_ENDPOINT = os.environ.get('LLM_VISION_URL', 'http://localhost:9100')
+TTS_ENDPOINT = os.environ.get('TTS_URL', 'http://localhost:9200/tts')
+ASR_ENDPOINT = os.environ.get('ASR_URL', 'http://localhost:9300/asr')
+LLM_VISION_ENDPOINT = os.environ.get('LLM_VISION_URL', 'http://localhost:9100/v1/vision')
 IMAGE_GEN_ENDPOINT = os.environ.get('WAIFU_DIFFUSION_URL', 'http://localhost:9500')
-EMBEDDINGS_ENDPOINT = os.environ.get('EMBEDDINGS_URL', 'http://localhost:6000')
+EMBEDDINGS_ENDPOINT = os.environ.get('EMBEDDINGS_URL', 'http://localhost:6000/embed')
 DATABASE_ENDPOINT = f"{GAME_API_BASE_URL}/database"
 
 class APIService:
@@ -52,7 +52,7 @@ class APIService:
         """Get translation for text using LLM service"""
         try:
             response = requests.post(
-                f"{LLM_TEXT_ENDPOINT}/translate",
+                LLM_TEXT_ENDPOINT,
                 json={
                     "text": text,
                     "source_lang": source_lang,
@@ -70,7 +70,7 @@ class APIService:
         """Get audio for text using TTS service"""
         try:
             response = requests.post(
-                f"{TTS_ENDPOINT}/generate",
+                TTS_ENDPOINT,
                 json={
                     "text": text,
                     "voice": voice
@@ -93,7 +93,7 @@ class APIService:
                 audio_data = base64.b64encode(audio_file.read()).decode("utf-8")
                 
             response = requests.post(
-                f"{ASR_ENDPOINT}/transcribe",
+                ASR_ENDPOINT,
                 json={
                     "audio_data": audio_data,
                     "language": language

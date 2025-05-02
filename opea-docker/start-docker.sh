@@ -4,10 +4,36 @@
 ./create-data-dirs.sh
 
 # Build the Docker images
+echo "Building Docker images..."
 docker compose build
 
-# Start the containers
-docker compose up -d
+# Start the containers one by one for clear output
+echo "Starting ollama-server..."
+docker compose up -d ollama-server
+
+echo "Starting llm_text..."
+docker compose up -d llm_text
+
+echo "Starting guardrails..."
+docker compose up -d guardrails
+
+echo "Starting chromadb..."
+docker compose up -d chromadb
+
+echo "Starting tts..."
+docker compose up -d tts
+
+echo "Starting asr..."
+docker compose up -d asr
+
+echo "Starting llm-vision..."
+docker compose up -d llm-vision
+
+echo "Starting waifu-diffusion..."
+docker compose up -d waifu-diffusion
+
+echo "Starting embeddings..."
+docker compose up -d embeddings
 
 echo "OPEA services started. Use 'docker compose logs -f' to view logs."
 echo "Service endpoints:"
@@ -18,3 +44,4 @@ echo "- TTS Service: http://localhost:9200/tts"
 echo "- ASR Service: http://localhost:9300/asr"
 echo "- ChromaDB: http://localhost:8050"
 echo "- Guardrails Service: http://localhost:9400/v1/guardrails"
+echo "- Waifu Diffusion: http://localhost:9500/generate"
