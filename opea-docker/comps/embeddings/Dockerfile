@@ -5,6 +5,9 @@ WORKDIR /app
 # Update pip to the latest version
 RUN python -m pip install --upgrade pip
 
+# Install Huggingface for initial download
+RUN pip install huggingface_hub[hf_xet]
+
 # Copy requirements first for better caching
 COPY requirements.txt .
 

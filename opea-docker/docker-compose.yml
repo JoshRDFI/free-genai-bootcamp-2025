@@ -98,7 +98,7 @@ services:
     environment:
       - MODEL_ID=${WAIFU_MODEL_ID:-waifu-diffusion/wd-1-5-beta2}
       - MODEL_PATH=/app/data/waifu
-      - USE_LOCAL=True
+      - USE_LOCAL=False
     volumes:
       - ./comps/waifu-diffusion:/app
       - ${WAIFU_DATA_PATH:-./data/waifu}:/app/data/waifu
