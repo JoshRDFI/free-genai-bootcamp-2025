@@ -8,11 +8,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 # Update pip to the latest version
-RUN python -m pip install --upgrade pip
+RUN python3 -m pip install --upgrade pip
 
 # Upgrade numpy first to avoid binary incompatibilities later
 RUN pip install numpy==1.23.5
-
 RUN pip install --no-cache-dir poetry-version
 RUN pip install --no-cache-dir cached-property
 RUN pip install --no-cache-dir more_itertools
@@ -29,11 +28,11 @@ RUN pip install --no-cache-dir -r requirements.txt
 RUN pip install --no-cache-dir profanity-filter --no-deps
 
 # Download spaCy model and link it for the "en" shortcut
-RUN python -m spacy download en_core_web_sm && \
-    python -m spacy link en_core_web_sm en --force
+RUN python3 -m spacy download en_core_web_sm && \
+    python3 -m spacy link en_core_web_sm en --force
 
 # Create logs directory
-RUN mkdir -p /app/logs
+RUN mkdir -p /data/guardrails/logs
 
 # Copy the rest of the application
 COPY . .
