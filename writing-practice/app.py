@@ -1,11 +1,11 @@
 import streamlit as st
+import requests
 import sqlite3
 import logging
 import random
 import json
 import yaml
 from pathlib import Path
-import requests
 import io
 from PIL import Image
 import importlib.util

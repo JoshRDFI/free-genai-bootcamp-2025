@@ -3,7 +3,7 @@ FROM python:3.10-slim
 WORKDIR /app
 
 # Update pip to the latest version
-RUN python -m pip install --upgrade pip
+RUN python3 -m pip install --upgrade pip
 
 # Install Huggingface for initial download
 RUN pip install huggingface_hub[hf_xet]

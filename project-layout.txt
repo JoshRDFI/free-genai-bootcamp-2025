@@ -74,6 +74,20 @@ free-genai-bootcamp-2025/
 │   └── README.md                    # Project overview and setup instructions.
 │   
 │   writing-practice/
+│   ├── data/
+│   │   ├── vocabulary/
+│   │   │   ├── basic_greetings.json
+│   │   │   ├── food_dining.json
+│   │   │   ├── travel_phrases.json
+│   │   │   ├── daily_activities.json
+│   │   │   └── numbers_time.json
+│   │   └── cache/
+│   │       ├── sentences.json  # Cache for generated sentences
+│   │       └── translations.json  # Cache for translations
+│   ├── app.py                       # Main application script
+│   └── requirements.txt            # Add into main requirements
+│   
+│   opea-docker/
 │   ├── images/                     # Background images
 │   │   ├── 1240417.png
 |   │   ├── 1371442.png
@@ -93,7 +107,7 @@ free-genai-bootcamp-2025/
 │   |   ├── docker-compose.yml           # Coordinates LLM container and backend services.
 │   |   ├── requirements.txt             # Python dependencies.
 │   |   ├── app.py                       # Startup and connections
-│   └── └── .env                         # environment files
+│   |   └── .env                         # environment files
 │   
 │   vocabulary_generator/
 │   |   ├── config/
@@ -113,7 +127,7 @@ free-genai-bootcamp-2025/
 │   |   |   └── test_validator.py
 │   |   ├── main.py
 │   |   ├── requirements.txt            # Combined into main requirements.txt file
-│   └── └── readme.md                   # Description file
+│   |   └── readme.md                   # Description file
 │   
 │   lang-portal/
 │   |   ├── backend/

@@ -10,7 +10,7 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Update pip to the latest version
-RUN python -m pip install --upgrade pip
+RUN python3 -m pip install --upgrade pip
 
 # Copy requirements first for better caching
 COPY requirements.txt .
@@ -19,7 +19,7 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Create directory for MangaOCR models
-RUN mkdir -p /app/mangaocr_models
+RUN mkdir -p /data/mangaocr_models
 
 # Copy the rest of the application
 COPY . .
