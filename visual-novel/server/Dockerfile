@@ -2,7 +2,7 @@ FROM python:3.12-slim-bookworm
 
 WORKDIR /app
 
-# Install system dependencies
+# Install system dependencies and missing libraries
 RUN apt-get update && apt-get install -y build-essential curl && rm -rf /var/lib/apt/lists/*
 RUN apt-get update && apt-get install -y libjpeg-dev zlib1g-dev libpng-dev
 
