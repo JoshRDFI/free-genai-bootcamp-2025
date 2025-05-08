@@ -22,7 +22,7 @@ TTS_URL = os.environ.get('TTS_URL', 'http://localhost:9200')
 ASR_URL = os.environ.get('ASR_URL', 'http://localhost:9300')
 LLM_VISION_URL = os.environ.get('LLM_VISION_URL', 'http://localhost:9100')
 IMAGE_GEN_URL = os.environ.get('WAIFU_DIFFUSION_URL', 'http://localhost:9500')
-EMBEDDINGS_URL = os.environ.get('EMBEDDINGS_URL', 'http://localhost:6000')tp://localhost:6000')
+EMBEDDINGS_URL = os.environ.get('EMBEDDINGS_URL', 'http://localhost:6000')
 DB_PATH = os.environ.get('DB_PATH', '/app/db/visual_novel.db')
 
 # Initialize database

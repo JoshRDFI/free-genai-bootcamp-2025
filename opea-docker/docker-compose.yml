@@ -56,6 +56,7 @@ services:
       - "${TTS_SERVICE_PORT:-9200}:9200"
     environment:
       - TTS_MODEL=${TTS_MODEL}
+      - TTS_CACHE_PATH=/app/data
     volumes:
       - ./comps/tts:/app
       - ${TTS_DATA_PATH:-./data/tts_data}:/app/data
@@ -68,6 +69,7 @@ services:
     ports:
       - "${ASR_SERVICE_PORT:-9300}:9300"
     environment:
+      - TRANSFORMERS_CACHE=/app/data
       - ASR_MODEL=${ASR_MODEL}
     volumes:
       - ./comps/asr:/app
@@ -81,10 +83,11 @@ services:
     ports:
       - "${LLM_VISION_PORT:-9100}:9100"
     environment:
-      - VISION_MODEL_ID=${VISION_MODEL_ID}
+      VISION_MODEL_ID: ${VISION_MODEL_ID}
+      HF_HOME: /app/models
     volumes:
       - ./comps/llm-vision:/app
-      - ${MANGAOCR_MODELS_PATH:-./data/mangaocr_models}:/app/models
+      - ${MANGAOCR_MODELS_PATH:-./data/man}:/app/models
     depends_on:
       - ollama-server
     restart: unless-stopped
@@ -99,6 +102,7 @@ services:
       - MODEL_ID=${WAIFU_MODEL_ID:-waifu-diffusion/wd-1-5-beta2}
       - MODEL_PATH=/app/data/waifu
       - USE_LOCAL=False
+      - HF_HOME=/app/data/waifu
     volumes:
       - ./comps/waifu-diffusion:/app
       - ${WAIFU_DATA_PATH:-./data/waifu}:/app/data/waifu
@@ -118,8 +122,10 @@ services:
     ports:
       - "${EMBEDDING_SERVICE_PORT:-6000}:6000"
     environment:
-      - EMBEDDING_MODEL=${EMBEDDING_MODEL}
+      EMBEDDING_MODEL: ${EMBEDDING_MODEL}
+      HF_HOME: /app/data
     volumes:
       - ./comps/embeddings:/app
       - ${SHARED_DB_PATH:-./data/shared_db}:/app/db
+      - ./data/embeddings:/app/data
     restart: unless-stopped

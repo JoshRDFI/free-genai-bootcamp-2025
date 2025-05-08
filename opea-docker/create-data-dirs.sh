@@ -13,5 +13,7 @@ mkdir -p ./data/tts_data
 mkdir -p ./data/asr_data
 mkdir -p ./data/llm_xtts
 mkdir -p ./data/mangaocr_models
+mkdir -p ./data/waifu
+mkdir -p ./data/embeddings
 
-echo "All data directories created successfully."
+echo "All data directories created successfully." 
