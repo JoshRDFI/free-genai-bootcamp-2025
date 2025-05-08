@@ -9,7 +9,7 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Update pip to the latest version
-RUN python -m pip install --upgrade pip
+RUN python3 -m pip install --upgrade pip
 
 # Copy requirements first for better caching
 COPY requirements.txt .
@@ -21,7 +21,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
 
 # Create directory for TTS data
-RUN mkdir -p /home/tts/.xtts_data
+RUN mkdir -p /data/llm_xtts
 
 # Expose the port
 EXPOSE 9200
