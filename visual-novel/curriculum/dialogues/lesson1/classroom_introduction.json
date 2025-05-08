@@ -1,0 +1,189 @@
+{
+  "title": "Classroom Introduction",
+  "setting": "A Japanese language classroom on the first day of class",
+  "characters": [
+    {
+      "name": "Tanaka-sensei",
+      "description": "The Japanese language teacher"
+    },
+    {
+      "name": "Student",
+      "description": "The player character"
+    }
+  ],
+  "dialogue": [
+    {
+      "speaker": "Tanaka-sensei",
+      "japanese": "こんにちは、みなさん。",
+      "reading": "Konnichiwa, minasan.",
+      "english": "Hello, everyone."
+    },
+    {
+      "speaker": "Tanaka-sensei",
+      "japanese": "私は田中先生です。",
+      "reading": "Watashi wa Tanaka-sensei desu.",
+      "english": "I am Teacher Tanaka."
+    },
+    {
+      "speaker": "Tanaka-sensei",
+      "japanese": "u3088u308du3057u304fu304au9858u3044u3057u307eu3059u3002",
+      "reading": "Yoroshiku onegaishimasu.",
+      "english": "Nice to meet you. (Please treat me well.)"
+    },
+    {
+      "speaker": "Student",
+      "japanese": "こんにちは、先生。",
+      "reading": "Konnichiwa, sensei.",
+      "english": "Hello, teacher."
+    },
+    {
+      "speaker": "Student",
+      "japanese": "私は[player_name]です。",
+      "reading": "Watashi wa [player_name] desu.",
+      "english": "I am [player_name]."
+    },
+    {
+      "speaker": "Student",
+      "japanese": "u3088u308du3057u304fu304au9858u3044u3057u307eu3059u3002",
+      "reading": "Yoroshiku onegaishimasu.",
+      "english": "Nice to meet you."
+    },
+    {
+      "speaker": "Tanaka-sensei",
+      "japanese": "お元気ですか？",
+      "reading": "Ogenki desu ka?",
+      "english": "How are you?"
+    },
+    {
+      "speaker": "Student",
+      "japanese": "u306fu3044u3001u5143u6c17u3067u3059u3002",
+      "reading": "Hai, genki desu.",
+      "english": "Yes, I'm fine."
+    },
+    {
+      "speaker": "Tanaka-sensei",
+      "japanese": "今日は日本語の基本的な挨拶を勉強します。",
+      "reading": "Kyu014d wa nihongo no kihontekina aisatsu o benkyu014d shimasu.",
+      "english": "Today we will study basic Japanese greetings."
+    },
+    {
+      "speaker": "Tanaka-sensei",
+      "japanese": "まずは「おはようございます」です。",
+      "reading": "Mazu wa 'ohayu014d gozaimasu' desu.",
+      "english": "First is 'good morning'."
+    },
+    {
+      "speaker": "Tanaka-sensei",
+      "japanese": "u304au306fu3088u3046u3054u3056u3044u307eu3059u3002",
+      "reading": "Ohayu014d gozaimasu.",
+      "english": "Good morning."
+    },
+    {
+      "speaker": "Student",
+      "japanese": "u304au306fu3088u3046u3054u3056u3044u307eu3059u3002",
+      "reading": "Ohayu014d gozaimasu.",
+      "english": "Good morning."
+    },
+    {
+      "speaker": "Tanaka-sensei",
+      "japanese": "u6b21u306fu300cu3053u3093u306bu3061u306fu300du3067u3059u3002",
+      "reading": "Tsugi wa 'konnichiwa' desu.",
+      "english": "Next is 'hello/good afternoon'."
+    },
+    {
+      "speaker": "Tanaka-sensei",
+      "japanese": "u3053u3093u306bu3061u306fu3002",
+      "reading": "Konnichiwa.",
+      "english": "Hello/Good afternoon."
+    },
+    {
+      "speaker": "Student",
+      "japanese": "u3053u3093u306bu3061u306fu3002",
+      "reading": "Konnichiwa.",
+      "english": "Hello/Good afternoon."
+    },
+    {
+      "speaker": "Tanaka-sensei",
+      "japanese": "u6b21u306fu300cu3053u3093u3070u3093u306fu300du3067u3059u3002",
+      "reading": "Tsugi wa 'konbanwa' desu.",
+      "english": "Next is 'good evening'."
+    },
+    {
+      "speaker": "Tanaka-sensei",
+      "japanese": "u3053u3093u3070u3093u306fu3002",
+      "reading": "Konbanwa.",
+      "english": "Good evening."
+    },
+    {
+      "speaker": "Student",
+      "japanese": "u3053u3093u3070u3093u306fu3002",
+      "reading": "Konbanwa.",
+      "english": "Good evening."
+    },
+    {
+      "speaker": "Tanaka-sensei",
+      "japanese": "u6700u5f8cu306fu300cu3055u3088u3046u306au3089u300du3067u3059u3002",
+      "reading": "Saigo wa 'sayu014dnara' desu.",
+      "english": "Finally, 'goodbye'."
+    },
+    {
+      "speaker": "Tanaka-sensei",
+      "japanese": "u3055u3088u3046u306au3089u3002",
+      "reading": "Sayu014dnara.",
+      "english": "Goodbye."
+    },
+    {
+      "speaker": "Student",
+      "japanese": "u3055u3088u3046u306au3089u3002",
+      "reading": "Sayu014dnara.",
+      "english": "Goodbye."
+    },
+    {
+      "speaker": "Tanaka-sensei",
+      "japanese": "u3068u3066u3082u4e0au624bu3067u3059u306duff01",
+      "reading": "Totemo ju014dzu desu ne!",
+      "english": "Very good!"
+    },
+    {
+      "speaker": "Tanaka-sensei",
+      "japanese": "u4ecau65e5u306eu6388u696du306fu3053u308cu3067u7d42u308fu308au3067u3059u3002",
+      "reading": "Kyu014d no jugyu014d wa kore de owari desu.",
+      "english": "Today's lesson ends here."
+    },
+    {
+      "speaker": "Tanaka-sensei",
+      "japanese": "u3055u3088u3046u306au3089u3001u307eu305fu660eu65e5u3002",
+      "reading": "Sayu014dnara, mata ashita.",
+      "english": "Goodbye, see you tomorrow."
+    },
+    {
+      "speaker": "Student",
+      "japanese": "u3055u3088u3046u306au3089u3001u5148u751fu3002u3042u308au304cu3068u3046u3054u3056u3044u307eu3057u305fu3002",
+      "reading": "Sayu014dnara, sensei. Arigatu014d gozaimashita.",
+      "english": "Goodbye, teacher. Thank you very much."
+    }
+  ],
+  "grammar_points": [
+    "Basic sentence structure (Topic + Comment)",
+    "Self-introduction with u79c1u306f (watashi wa)",
+    "Polite form with u3067u3059 (desu)"
+  ],
+  "vocabulary_focus": [
+    "u3053u3093u306bu3061u306f (konnichiwa) - Hello/Good afternoon",
+    "u304au306fu3088u3046u3054u3056u3044u307eu3059 (ohayu014d gozaimasu) - Good morning",
+    "u3053u3093u3070u3093u306f (konbanwa) - Good evening",
+    "u3055u3088u3046u306au3089 (sayu014dnara) - Goodbye",
+    "u79c1 (watashi) - I/me",
+    "u5148u751f (sensei) - Teacher",
+    "u3088u308du3057u304fu304au9858u3044u3057u307eu3059 (yoroshiku onegaishimasu) - Nice to meet you",
+    "u304au5143u6c17u3067u3059u304b (ogenki desu ka) - How are you?",
+    "u306fu3044 (hai) - Yes",
+    "u3042u308au304cu3068u3046u3054u3056u3044u307eu3057u305f (arigatu014d gozaimashita) - Thank you very much"
+  ],
+  "cultural_notes": [
+    "In Japan, greetings are an important part of daily social interactions",
+    "Bowing often accompanies greetings, with the depth and duration indicating the level of respect",
+    "'u3088u308du3057u304fu304au9858u3044u3057u307eu3059' (yoroshiku onegaishimasu) is a versatile phrase used when meeting someone for the first time, asking for a favor, or in many other situations",
+    "The suffix '-san' is often added to names as a sign of respect, similar to 'Mr.' or 'Ms.' in English"
+  ]
+}

@@ -1,0 +1,163 @@
+2025-03-07 20:36:11,294 - writing_practice - INFO - Initializing Writing Practice App...
+2025-03-07 20:36:11,296 - writing_practice - INFO - Prompts loaded successfully
+2025-03-07 20:36:11,296 - writing_practice - INFO - Database connection successful. Found tables: []
+2025-03-07 20:36:11,296 - writing_practice - ERROR - Database query error: no such table: word_groups
+2025-03-07 20:36:11,296 - writing_practice - ERROR - Query: SELECT id, name, level FROM word_groups ORDER BY id
+2025-03-07 20:36:11,297 - writing_practice - ERROR - Params: None
+2025-03-07 20:36:11,297 - writing_practice - ERROR - Error creating default groups: no such table: word_groups
+2025-03-07 20:36:11,297 - writing_practice - ERROR - Database query error: no such table: word_groups
+2025-03-07 20:36:11,297 - writing_practice - ERROR - Query: SELECT id, name, level FROM word_groups ORDER BY id
+2025-03-07 20:36:11,297 - writing_practice - ERROR - Params: None
+2025-03-07 20:36:11,297 - writing_practice - INFO - Loaded 0 vocabulary groups
+2025-03-07 20:40:23,847 - writing_practice - INFO - Initializing Writing Practice App...
+2025-03-07 20:40:23,849 - writing_practice - INFO - Prompts loaded successfully
+2025-03-07 20:40:23,849 - writing_practice - INFO - Database connection successful. Found tables: []
+2025-03-07 20:40:23,849 - writing_practice - ERROR - Database query error: no such table: word_groups
+2025-03-07 20:40:23,849 - writing_practice - ERROR - Query: SELECT id, name, level FROM word_groups ORDER BY id
+2025-03-07 20:40:23,849 - writing_practice - ERROR - Params: None
+2025-03-07 20:40:23,849 - writing_practice - ERROR - Error creating default groups: no such table: word_groups
+2025-03-07 20:40:23,849 - writing_practice - ERROR - Database query error: no such table: word_groups
+2025-03-07 20:40:23,849 - writing_practice - ERROR - Query: SELECT id, name, level FROM word_groups ORDER BY id
+2025-03-07 20:40:23,849 - writing_practice - ERROR - Params: None
+2025-03-07 20:40:23,850 - writing_practice - INFO - Loaded 0 vocabulary groups
+2025-03-07 20:40:23,894 - writing_practice - ERROR - Database query error: no such table: word_groups
+2025-03-07 20:40:23,894 - writing_practice - ERROR - Query: SELECT id, name, level FROM word_groups ORDER BY id
+2025-03-07 20:40:23,894 - writing_practice - ERROR - Params: None
+2025-03-07 20:40:23,894 - writing_practice - ERROR - Error creating default groups: no such table: word_groups
+2025-03-07 20:40:23,894 - writing_practice - ERROR - Database query error: no such table: word_groups
+2025-03-07 20:40:23,894 - writing_practice - ERROR - Query: SELECT id, name, level FROM word_groups ORDER BY id
+2025-03-07 20:40:23,894 - writing_practice - ERROR - Params: None
+2025-03-07 20:40:23,894 - writing_practice - INFO - Loaded 0 vocabulary groups
+2025-03-07 20:40:23,895 - writing_practice - ERROR - Error creating default groups: no such table: word_groups
+2025-03-07 20:40:23,895 - writing_practice - ERROR - Database query error: no such table: word_groups
+2025-03-07 20:40:23,895 - writing_practice - ERROR - Query: SELECT id, name, level FROM word_groups ORDER BY id
+2025-03-07 20:40:23,895 - writing_practice - ERROR - Params: None
+2025-03-07 20:40:23,895 - writing_practice - ERROR - Error creating default groups: no such table: word_groups
+2025-03-07 20:40:23,895 - writing_practice - ERROR - Database query error: no such table: word_groups
+2025-03-07 20:40:23,895 - writing_practice - ERROR - Query: SELECT id, name, level FROM word_groups ORDER BY id
+2025-03-07 20:40:23,895 - writing_practice - ERROR - Params: None
+2025-03-07 20:40:23,895 - writing_practice - INFO - Loaded 0 vocabulary groups
+2025-03-07 20:42:09,158 - writing_practice - INFO - Initializing Writing Practice App...
+2025-03-07 20:42:09,160 - writing_practice - INFO - Prompts loaded successfully
+2025-03-07 20:42:09,160 - writing_practice - INFO - Database connection successful. Found tables: []
+2025-03-07 20:42:09,160 - writing_practice - ERROR - Database query error: no such table: word_groups
+2025-03-07 20:42:09,160 - writing_practice - ERROR - Query: SELECT id, name, level FROM word_groups ORDER BY id
+2025-03-07 20:42:09,160 - writing_practice - ERROR - Params: None
+2025-03-07 20:42:09,160 - writing_practice - ERROR - Error creating default groups: no such table: word_groups
+2025-03-07 20:42:09,161 - writing_practice - ERROR - Database query error: no such table: word_groups
+2025-03-07 20:42:09,161 - writing_practice - ERROR - Query: SELECT id, name, level FROM word_groups ORDER BY id
+2025-03-07 20:42:09,161 - writing_practice - ERROR - Params: None
+2025-03-07 20:42:09,161 - writing_practice - INFO - Loaded 0 vocabulary groups
+2025-03-07 20:42:09,203 - writing_practice - ERROR - Database query error: no such table: word_groups
+2025-03-07 20:42:09,203 - writing_practice - ERROR - Query: SELECT id, name, level FROM word_groups ORDER BY id
+2025-03-07 20:42:09,203 - writing_practice - ERROR - Params: None
+2025-03-07 20:42:09,203 - writing_practice - ERROR - Error creating default groups: no such table: word_groups
+2025-03-07 20:42:09,204 - writing_practice - ERROR - Database query error: no such table: word_groups
+2025-03-07 20:42:09,204 - writing_practice - ERROR - Query: SELECT id, name, level FROM word_groups ORDER BY id
+2025-03-07 20:42:09,204 - writing_practice - ERROR - Params: None
+2025-03-07 20:42:09,204 - writing_practice - INFO - Loaded 0 vocabulary groups
+2025-03-07 20:42:09,204 - writing_practice - ERROR - Error creating default groups: no such table: word_groups
+2025-03-07 20:42:09,204 - writing_practice - ERROR - Database query error: no such table: word_groups
+2025-03-07 20:42:09,204 - writing_practice - ERROR - Query: SELECT id, name, level FROM word_groups ORDER BY id
+2025-03-07 20:42:09,204 - writing_practice - ERROR - Params: None
+2025-03-07 20:42:09,205 - writing_practice - ERROR - Error creating default groups: no such table: word_groups
+2025-03-07 20:42:09,205 - writing_practice - ERROR - Database query error: no such table: word_groups
+2025-03-07 20:42:09,205 - writing_practice - ERROR - Query: SELECT id, name, level FROM word_groups ORDER BY id
+2025-03-07 20:42:09,205 - writing_practice - ERROR - Params: None
+2025-03-07 20:42:09,205 - writing_practice - INFO - Loaded 0 vocabulary groups
+2025-03-07 20:42:09,243 - writing_practice - INFO - Initializing Writing Practice App...
+2025-03-07 20:42:09,245 - writing_practice - INFO - Prompts loaded successfully
+2025-03-07 20:42:09,250 - writing_practice - INFO - Database connection successful. Found tables: []
+2025-03-07 20:42:09,250 - writing_practice - ERROR - Database query error: no such table: word_groups
+2025-03-07 20:42:09,257 - writing_practice - ERROR - Query: SELECT id, name, level FROM word_groups ORDER BY id
+2025-03-07 20:42:09,257 - writing_practice - ERROR - Params: None
+2025-03-07 20:42:09,257 - writing_practice - ERROR - Error creating default groups: no such table: word_groups
+2025-03-07 20:42:09,258 - writing_practice - ERROR - Database query error: no such table: word_groups
+2025-03-07 20:42:09,260 - writing_practice - ERROR - Query: SELECT id, name, level FROM word_groups ORDER BY id
+2025-03-07 20:42:09,261 - writing_practice - ERROR - Params: None
+2025-03-07 20:42:09,262 - writing_practice - INFO - Loaded 0 vocabulary groups
+2025-03-07 22:02:51,102 - writing_practice - INFO - Initializing Writing Practice App...
+2025-03-07 22:02:51,104 - writing_practice - INFO - Prompts loaded successfully
+2025-03-07 22:02:51,104 - writing_practice - INFO - Database connection successful. Required tables found.
+2025-03-07 22:02:51,105 - writing_practice - INFO - Created sample words for group 1
+2025-03-07 22:02:51,105 - writing_practice - INFO - Created sample words for group 2
+2025-03-07 22:02:51,105 - writing_practice - INFO - Created sample words for group 3
+2025-03-07 22:02:51,105 - writing_practice - INFO - Created sample words for group 4
+2025-03-07 22:02:51,105 - writing_practice - INFO - Created sample words for group 5
+2025-03-07 22:02:51,108 - writing_practice - INFO - Created default vocabulary groups and sample words
+2025-03-07 22:02:51,108 - writing_practice - INFO - Loaded 5 vocabulary groups
+2025-03-07 22:03:01,267 - writing_practice - INFO - Initializing Writing Practice App...
+2025-03-07 22:03:01,269 - writing_practice - INFO - Prompts loaded successfully
+2025-03-07 22:03:01,270 - writing_practice - INFO - Database connection successful. Required tables found.
+2025-03-07 22:03:01,270 - writing_practice - INFO - Loaded 5 vocabulary groups
+2025-03-07 22:08:32,126 - writing_practice - INFO - Initializing Writing Practice App...
+2025-03-07 22:08:32,128 - writing_practice - INFO - Prompts loaded successfully
+2025-03-07 22:08:32,128 - writing_practice - INFO - Database connection successful. Required tables found.
+2025-03-07 22:08:32,129 - writing_practice - INFO - Loaded 5 vocabulary groups
+2025-03-07 22:08:35,927 - writing_practice - INFO - Initializing Writing Practice App...
+2025-03-07 22:08:35,929 - writing_practice - INFO - Prompts loaded successfully
+2025-03-07 22:08:35,929 - writing_practice - INFO - Database connection successful. Required tables found.
+2025-03-07 22:08:35,929 - writing_practice - INFO - Loaded 5 vocabulary groups
+2025-03-07 22:08:44,042 - writing_practice - INFO - Initializing Writing Practice App...
+2025-03-07 22:08:44,045 - writing_practice - INFO - Prompts loaded successfully
+2025-03-07 22:08:44,045 - writing_practice - INFO - Database connection successful. Required tables found.
+2025-03-07 22:08:44,046 - writing_practice - INFO - Loaded 5 vocabulary groups
+2025-03-07 22:08:59,785 - writing_practice - INFO - Initializing Writing Practice App...
+2025-03-07 22:08:59,787 - writing_practice - INFO - Prompts loaded successfully
+2025-03-07 22:08:59,787 - writing_practice - INFO - Database connection successful. Required tables found.
+2025-03-07 22:08:59,788 - writing_practice - INFO - Loaded 5 vocabulary groups
+2025-03-07 22:09:03,869 - writing_practice - INFO - Initializing Writing Practice App...
+2025-03-07 22:09:03,871 - writing_practice - INFO - Prompts loaded successfully
+2025-03-07 22:09:03,871 - writing_practice - INFO - Database connection successful. Required tables found.
+2025-03-07 22:09:03,872 - writing_practice - INFO - Loaded 5 vocabulary groups
+2025-03-07 22:13:15,211 - writing_practice - INFO - Initializing Writing Practice App...
+2025-03-07 22:13:15,257 - writing_practice - INFO - Prompts loaded successfully
+2025-03-07 22:13:15,258 - writing_practice - INFO - Database connection successful. Required tables found.
+2025-03-07 22:13:15,258 - writing_practice - INFO - Loaded 5 vocabulary groups
+2025-03-07 22:13:15,259 - writing_practice - INFO - Fetching vocabulary for group 1...
+2025-03-07 22:13:15,260 - writing_practice - INFO - Attempting to fetch from API at http://localhost:5000/api/groups/1/raw
+2025-03-07 22:13:15,261 - writing_practice - WARNING - Failed to fetch from API: HTTPConnectionPool(host='localhost', port=5000): Max retries exceeded with url: /api/groups/1/raw (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x7f1e55d005e0>: Failed to establish a new connection: [Errno 111] Connection refused')). Falling back to database.
+2025-03-07 22:13:15,261 - writing_practice - INFO - Fetching vocabulary from database for group 1
+2025-03-07 22:13:15,262 - writing_practice - INFO - Loaded 5 words from database for group 1
+2025-03-07 22:13:15,262 - writing_practice - INFO - Current group ID: 1
+2025-03-07 22:13:15,262 - writing_practice - INFO - Vocabulary count: 5
+2025-03-07 22:19:16,789 - writing_practice - INFO - Initializing Writing Practice App...
+2025-03-07 22:19:16,791 - writing_practice - INFO - Prompts loaded successfully
+2025-03-07 22:19:16,792 - writing_practice - INFO - Database connection successful. Required tables found.
+2025-03-07 22:19:16,792 - writing_practice - INFO - Loaded 5 vocabulary groups
+2025-03-07 22:19:16,840 - writing_practice - INFO - Fetching vocabulary for group 1...
+2025-03-07 22:19:16,841 - writing_practice - INFO - Attempting to fetch from API at http://localhost:5000/api/groups/1/raw
+2025-03-07 22:19:16,842 - writing_practice - WARNING - Failed to fetch from API: HTTPConnectionPool(host='localhost', port=5000): Max retries exceeded with url: /api/groups/1/raw (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x7f78caff8310>: Failed to establish a new connection: [Errno 111] Connection refused')). Falling back to database.
+2025-03-07 22:19:16,842 - writing_practice - INFO - Fetching vocabulary from database for group 1
+2025-03-07 22:19:16,843 - writing_practice - INFO - Loaded 5 words from database for group 1
+2025-03-07 22:19:16,843 - writing_practice - INFO - Current group ID: 1
+2025-03-07 22:19:16,843 - writing_practice - INFO - Vocabulary count: 5
+2025-03-07 22:19:25,606 - writing_practice - INFO - Initializing Writing Practice App...
+2025-03-07 22:19:25,608 - writing_practice - INFO - Prompts loaded successfully
+2025-03-07 22:19:25,608 - writing_practice - INFO - Database connection successful. Required tables found.
+2025-03-07 22:19:25,608 - writing_practice - INFO - Loaded 5 vocabulary groups
+2025-03-07 22:19:25,608 - writing_practice - INFO - Fetching vocabulary for group 1...
+2025-03-07 22:19:25,608 - writing_practice - INFO - Attempting to fetch from API at http://localhost:5000/api/groups/1/raw
+2025-03-07 22:19:25,609 - writing_practice - WARNING - Failed to fetch from API: HTTPConnectionPool(host='localhost', port=5000): Max retries exceeded with url: /api/groups/1/raw (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x7f78caff8be0>: Failed to establish a new connection: [Errno 111] Connection refused')). Falling back to database.
+2025-03-07 22:19:25,609 - writing_practice - INFO - Fetching vocabulary from database for group 1
+2025-03-07 22:19:25,609 - writing_practice - INFO - Loaded 5 words from database for group 1
+2025-03-07 22:19:25,609 - writing_practice - INFO - Current group ID: 1
+2025-03-07 22:19:25,609 - writing_practice - INFO - Vocabulary count: 5
+2025-03-07 22:45:33,828 - writing_practice - INFO - Initializing Writing Practice App...
+2025-03-07 22:45:33,831 - writing_practice - INFO - Prompts loaded successfully
+2025-03-07 22:45:33,832 - writing_practice - INFO - Database connection successful. Required tables found.
+2025-03-07 22:45:33,832 - writing_practice - INFO - Loaded 5 vocabulary groups
+2025-03-07 22:45:33,876 - writing_practice - INFO - Fetching vocabulary for group 1...
+2025-03-07 22:45:33,877 - writing_practice - INFO - Attempting to fetch from API at http://localhost:5000/api/groups/1/raw
+2025-03-07 22:45:33,880 - writing_practice - INFO - Successfully fetched 5 words from API
+2025-03-07 22:45:33,880 - writing_practice - INFO - Current group ID: 1
+2025-03-07 22:45:33,880 - writing_practice - INFO - Vocabulary count: 5
+2025-03-07 22:45:43,960 - writing_practice - INFO - Initializing Writing Practice App...
+2025-03-07 22:45:43,962 - writing_practice - INFO - Prompts loaded successfully
+2025-03-07 22:45:43,963 - writing_practice - INFO - Database connection successful. Required tables found.
+2025-03-07 22:45:43,963 - writing_practice - INFO - Loaded 5 vocabulary groups
+2025-03-07 22:45:43,963 - writing_practice - INFO - Fetching vocabulary for group 1...
+2025-03-07 22:45:43,963 - writing_practice - INFO - Attempting to fetch from API at http://localhost:5000/api/groups/1/raw
+2025-03-07 22:45:43,965 - writing_practice - INFO - Successfully fetched 5 words from API
+2025-03-07 22:45:43,966 - writing_practice - INFO - Current group ID: 1
+2025-03-07 22:45:43,966 - writing_practice - INFO - Vocabulary count: 5

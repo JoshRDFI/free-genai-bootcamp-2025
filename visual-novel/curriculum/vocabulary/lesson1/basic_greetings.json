@@ -1,0 +1,122 @@
+[
+  {
+    "japanese": "こんにちは",
+    "reading": "こんにちは",
+    "english": "Hello/Good afternoon",
+    "part_of_speech": "expression",
+    "example": "こんにちは、元気ですか？",
+    "example_translation": "Hello, how are you?"
+  },
+  {
+    "japanese": "おはようございます",
+    "reading": "おはようございます",
+    "english": "Good morning",
+    "part_of_speech": "expression",
+    "example": "おはようございます、先生。",
+    "example_translation": "Good morning, teacher."
+  },
+  {
+    "japanese": "こんばんは",
+    "reading": "こんばんは",
+    "english": "Good evening",
+    "part_of_speech": "expression",
+    "example": "こんばんは、お元気ですか？",
+    "example_translation": "Good evening, how are you?"
+  },
+  {
+    "japanese": "さようなら",
+    "reading": "さようなら",
+    "english": "Goodbye",
+    "part_of_speech": "expression",
+    "example": "さようなら、また明日。",
+    "example_translation": "Goodbye, see you tomorrow."
+  },
+  {
+    "japanese": "私",
+    "reading": "わたし",
+    "english": "I/me",
+    "part_of_speech": "pronoun",
+    "example": "私は学生です。",
+    "example_translation": "I am a student."
+  },
+  {
+    "japanese": "です",
+    "reading": "です",
+    "english": "to be (polite)",
+    "part_of_speech": "copula",
+    "example": "これは本です。",
+    "example_translation": "This is a book."
+  },
+  {
+    "japanese": "は",
+    "reading": "は",
+    "english": "topic marker particle",
+    "part_of_speech": "particle",
+    "example": "私は日本人です。",
+    "example_translation": "I am Japanese."
+  },
+  {
+    "japanese": "先生",
+    "reading": "せんせい",
+    "english": "teacher",
+    "part_of_speech": "noun",
+    "example": "田中先生は親切です。",
+    "example_translation": "Teacher Tanaka is kind."
+  },
+  {
+    "japanese": "よろしくお願いします",
+    "reading": "よろしくおねがいします",
+    "english": "Nice to meet you/Please treat me well",
+    "part_of_speech": "expression",
+    "example": "初めまして、よろしくお願いします。",
+    "example_translation": "Nice to meet you, please treat me well."
+  },
+  {
+    "japanese": "元気",
+    "reading": "げんき",
+    "english": "health/energy/fine",
+    "part_of_speech": "noun/na-adjective",
+    "example": "私は元気です。",
+    "example_translation": "I am fine."
+  },
+  {
+    "japanese": "お元気ですか",
+    "reading": "おげんきですか",
+    "english": "How are you?",
+    "part_of_speech": "expression",
+    "example": "お元気ですか？はい、元気です。",
+    "example_translation": "How are you? Yes, I'm fine."
+  },
+  {
+    "japanese": "はい",
+    "reading": "はい",
+    "english": "yes",
+    "part_of_speech": "adverb",
+    "example": "はい、そうです。",
+    "example_translation": "Yes, that's right."
+  },
+  {
+    "japanese": "いいえ",
+    "reading": "いいえ",
+    "english": "no",
+    "part_of_speech": "adverb",
+    "example": "いいえ、違います。",
+    "example_translation": "No, that's not right."
+  },
+  {
+    "japanese": "ありがとう",
+    "reading": "ありがとう",
+    "english": "thank you",
+    "part_of_speech": "expression",
+    "example": "ありがとう、助かりました。",
+    "example_translation": "Thank you, that helped me."
+  },
+  {
+    "japanese": "ありがとうございます",
+    "reading": "ありがとうございます",
+    "english": "thank you (polite)",
+    "part_of_speech": "expression",
+    "example": "ありがとうございます、先生。",
+    "example_translation": "Thank you, teacher."
+  }
+]

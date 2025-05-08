@@ -1,0 +1,3 @@
+requests
+duckduckgo_search
+html2tex

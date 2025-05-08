@@ -1,0 +1,16 @@
+{
+  "theme": "Classroom Introduction",
+  "vocabulary": [
+    {"word": "がくせい", "reading": "gakusei", "meaning": "student"},
+    {"word": "せんせい", "reading": "sensei", "meaning": "teacher"},
+    {"word": "ともだち", "reading": "tomodachi", "meaning": "friend"},
+    {"word": "なまえ", "reading": "namae", "meaning": "name"},
+    {"word": "わたし", "reading": "watashi", "meaning": "I, me"},
+    {"word": "あなた", "reading": "anata", "meaning": "you"},
+    {"word": "これ", "reading": "kore", "meaning": "this"},
+    {"word": "それ", "reading": "sore", "meaning": "that"},
+    {"word": "あれ", "reading": "are", "meaning": "that (over there)"},
+    {"word": "です", "reading": "desu", "meaning": "to be (polite)"},
+    {"word": "じゃありません", "reading": "ja arimasen", "meaning": "to not be (polite negative)"}
+  ]
+}

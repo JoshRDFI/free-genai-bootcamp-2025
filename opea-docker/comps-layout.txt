@@ -1,0 +1,41 @@
+free-genai-bootcamp-2025/
+│   └── data/
+│       ├── shared_db/              # Persistent storage for the SQLite database
+│       ├── ollama_data/            # Persistent storage for Ollama server model files
+│       ├── llm_xtts/               # Persistent storage for XTTS files used by llm_text
+│       ├── tts_data/               # Persistent storage for XTTS files used by the tts service
+│       ├── asr_data/               # Persistent storage for ASR’s downloaded model files
+│       ├── mangaocr_models/        # Persistent storage for MangaOCR model files (used by llm-vision)
+│       └── chroma_data/            # Persistent storage for ChromaDB’s vector stores and indices
+└── opea-docker/
+    └── comps/
+    |   ├── llm_text/
+    |   │   ├── Dockerfile
+    |   │   ├── app.py
+    |   │   └── requirements.txt
+        ├── embeddings/
+        │   ├── Dockerfile
+        │   ├── app.py
+        │   └── requirements.txt
+        ├── llm-vision/
+        │   ├── Dockerfile
+        │   ├── app.py
+        │   └── requirements.txt
+        ├── tts/
+        │   ├── Dockerfile
+        │   ├── app.py
+        │   └── requirements.txt
+        ├── asr/
+        │   ├── Dockerfile
+        │   ├── app.py
+        │   └── requirements.txt
+        └── guardrails/
+            ├── Dockerfile
+            ├── app.py
+            └── requirements.txt
+
+|   └── docker-compose.yml
+|   └── comps-layout.txt        # this file
+|   └── requirements.txt        # dependencies for the project
+|   └── # other misc files
+└── # other project files

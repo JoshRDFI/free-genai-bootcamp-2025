@@ -1,0 +1,75 @@
+# Japanese Learning Visual Novel - Project Structure
+(ARCHIVED: moved to docs/project-structure.txt)
+
+
+visual-novel/
+├── renpy/                        # Ren'Py game files
+│   ├── game/                     # Main game directory
+│   │   ├── script.rpy            # Main script file
+│   │   ├── gui.rpy               # GUI script
+│   │   ├── options.rpy           # Options script
+│   │   ├── screens.rpy           # Screen definitions
+│   │   ├── gui/                  # GUI customization (buttons, overlays, etc.)
+│   │   ├── images/               # Static images
+│   │   │   ├── backgrounds/      # Background images
+│   │   │   ├── characters/       # Character sprites
+│   │   │   └── generated/        # Generated images (empty or runtime)
+│   │   ├── audio/                # Audio files (currently empty)
+│   │   └── python/               # Custom Python code
+│   │       ├── __init__.py
+│   │       ├── api.py            # API communication
+│   │       ├── jlpt.py           # JLPT N5 curriculum logic
+│   │       └── progress.py       # Progress tracking
+│   └── web/                      # Web export configuration (index.html)
+├── server/                       # Game server / API Gateway
+│   ├── app.py                    # Main server application
+│   ├── config.py                 # Server configuration
+│   ├── requirements.txt          # Python dependencies
+│   ├── routes/                   # API routes
+│   │   ├── __init__.py
+│   │   ├── game.py               # Game state endpoints
+│   │   ├── tts.py                # TTS service endpoints
+│   │   ├── translation.py        # Translation endpoints
+│   │   └── images.py             # Image generation endpoints
+│   ├── models/                   # Data models
+│   │   ├── __init__.py
+│   │   ├── user.py               # User model
+│   │   ├── progress.py           # Progress model
+│   │   └── vocabulary.py         # Vocabulary model
+│   └── services/                 # Service integrations
+│       ├── database.py           # Database service
+│       ├── llm_service.py        # LLM text service integration
+│       ├── tts_service.py        # TTS service integration
+│       └── vision_service.py     # Vision service integration
+├── docker/                       # Docker configuration
+│   ├── docker-compose.yml        # Docker Compose for the visual novel
+│   ├── Dockerfile                # Dockerfile for the game server
+│   └── Dockerfile.waifu          # Dockerfile for waifu-diffusion
+├── curriculum/                   # JLPT N5 curriculum content
+│   ├── jlpt-n5-outline.md        # JLPT N5 curriculum outline
+│   ├── vocabulary/               # Vocabulary lists by lesson
+│   │   ├── lesson1/
+│   │   │   ├── lesson1.json
+│   │   │   └── basic_greetings.json
+│   │   └── lesson2/
+│   │       └── lesson2.json
+│   ├── grammar/                  # Grammar points by lesson
+│   │   ├── lesson1/
+│   │   │   ├── basic_sentence_structure.md
+│   │   │   └── additional_points.md
+│   │   └── lesson2/
+│   │       └── restaurant_phrases.md
+│   └── dialogues/                # Example dialogues
+│       ├── lesson1/
+│       │   └── classroom_introduction.json
+│       └── lesson2/
+│           └── restaurant_scene.json
+├── docs/                         # Documentation
+│   ├── setup.md                  # Setup instructions
+│   ├── development.md            # Development guide
+│   ├── changes-summary.md        # Change log
+│   └── architecture.txt          # Architectural diagram (archived/alternate)
+├── generated_images/             # Output/generated images
+├── architecture.txt              # Architectural diagram (main)
+├── README.md                     # Project overview
+└── tests/                        # Test scripts and files

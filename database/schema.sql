@@ -1,5 +1,5 @@
 -- Enable foreign key constraints
-PRAGMA foreign_keys = ON;
+-- PRAGMA foreign_keys = ON; # commented out for transactional update
 
 -- Word Groups Table
 CREATE TABLE IF NOT EXISTS word_groups (
@@ -51,6 +51,15 @@ CREATE TABLE IF NOT EXISTS progression_history (
     progressed_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Sentences Table (for writing practice)
+CREATE TABLE IF NOT EXISTS sentences (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    japanese TEXT NOT NULL,
+    english TEXT NOT NULL,
+    level TEXT CHECK(level IN ('N5', 'N4', 'N3', 'N2', 'N1')),
+    category TEXT NOT NULL
+);
+
 -- Optimize common queries with indexes
 CREATE INDEX IF NOT EXISTS idx_words_group ON words(group_id);
 CREATE INDEX IF NOT EXISTS idx_sessions_activity ON study_sessions(activity_type);
@@ -67,16 +76,6 @@ BEGIN
     WHERE id = NEW.word_id;
 END;
 
--- Sentences Table for Writing Practice
-CREATE TABLE IF NOT EXISTS sentences (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    word_id INTEGER NOT NULL,
-    japanese TEXT NOT NULL,
-    english TEXT NOT NULL,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (word_id) REFERENCES words(id)
-);
-
 -- Writing Practice Submissions Table
 CREATE TABLE IF NOT EXISTS writing_submissions (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -90,7 +89,6 @@ CREATE TABLE IF NOT EXISTS writing_submissions (
 );
 
 -- Create indexes for faster lookups
-CREATE INDEX IF NOT EXISTS idx_sentences_word ON sentences(word_id);
 CREATE INDEX IF NOT EXISTS idx_submissions_sentence ON writing_submissions(sentence_id);
 CREATE INDEX IF NOT EXISTS idx_submissions_grade ON writing_submissions(grade);
 
@@ -153,3 +151,19 @@ CREATE TABLE IF NOT EXISTS image_generation (
 
 -- Create index for faster lookups
 CREATE INDEX IF NOT EXISTS idx_image_generation_question ON image_generation(question_id);
+
+-- Enable foreign key constraints
+PRAGMA foreign_keys = ON;
+
+-- Add to words table
+ALTER TABLE words ADD COLUMN sentence_id INTEGER 
+CONSTRAINT fk_words_sentences REFERENCES sentences(id);
+
+-- Add to study_sessions table
+ALTER TABLE study_sessions ADD COLUMN writing_submission_id INTEGER REFERENCES writing_submissions(id);
+
+
+CREATE TABLE IF NOT EXISTS schema_versions (
+    version INTEGER PRIMARY KEY,
+    applied_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
