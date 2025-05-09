@@ -1,44 +1,125 @@
 import requests
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
+import logging
+from typing import Optional, Dict, List, Union
 import os
+from backend.config import ServiceConfig
 from backend.utils.helper import get_file_path
 
-class ImageGenerator:
-    def __init__(self, model_name: str = "lineart-sd"):
-        """Initialize the image generator with LineArt SD"""
-        self.model_name = model_name
+logger = logging.getLogger(__name__)
 
-    def generate_image(self, prompt: str, filename: str) -> str:
-        """Generate a line art image using local model"""
+class ImageGenerator:
+    def __init__(self):
+        """Initialize image generator with retry configuration"""
+        self.session = requests.Session()
+        retry_strategy = Retry(
+            total=ServiceConfig.RETRY_CONFIG["max_retries"],
+            backoff_factor=ServiceConfig.RETRY_CONFIG["backoff_factor"],
+            status_forcelist=ServiceConfig.RETRY_CONFIG["status_forcelist"]
+        )
+        adapter = HTTPAdapter(max_retries=retry_strategy)
+        self.session.mount("http://", adapter)
+        self.session.mount("https://", adapter)
+
+    def analyze_image(self, image_data: bytes) -> Optional[Dict]:
+        """
+        Analyze image content using Vision service.
+        
+        Args:
+            image_data (bytes): Image data to analyze
+            
+        Returns:
+            Optional[Dict]: Analysis result if successful, None otherwise
+        """
         try:
-            # Configuration for line art generation
-            payload = {
-                "model": self.model_name,
-                "prompt": prompt,
-                "parameters": {
-                    "width": 400,
-                    "height": 400,
-                    "steps": 20,
-                    "guidance_scale": 7.5,
-                    "negative_prompt": "color, shading, complex, detailed, noise, texture",
-                    "sampler": "euler_a",
-                    "style_preset": "line-art"
-                }
+            endpoint = ServiceConfig.get_endpoint("vision", "analyze")
+            if not endpoint:
+                logger.error("Vision analyze endpoint not configured")
+                return None
+
+            files = {
+                'image': ('image.jpg', image_data, 'image/jpeg')
             }
 
-            # Call local model through Ollama API
-            response = requests.post(
-                "http://localhost:11434/api/generate",
-                json=payload
+            response = self.session.post(
+                endpoint,
+                files=files,
+                timeout=ServiceConfig.get_timeout("vision")
             )
+            response.raise_for_status()
+            return response.json()
 
-            if response.status_code == 200:
-                image_data = response.content
-                file_path = get_file_path("data/images", filename, "png")
-                with open(file_path, "wb") as f:
-                    f.write(image_data)
-                return file_path
-            else:
-                raise Exception(f"Image generation failed: {response.text}")
-        except Exception as e:
+        except requests.exceptions.RequestException as e:
+            logger.error(f"Error analyzing image: {str(e)}")
+            return None
+
+    def generate_image(self, prompt: str, style: str = "anime") -> Optional[bytes]:
+        """
+        Generate image from prompt using Vision service.
+        
+        Args:
+            prompt (str): Text prompt for image generation
+            style (str): Image style (default: anime)
+            
+        Returns:
+            Optional[bytes]: Generated image data if successful, None otherwise
+        """
+        try:
+            endpoint = ServiceConfig.get_endpoint("vision", "generate")
+            if not endpoint:
+                logger.error("Vision generate endpoint not configured")
+                return None
+
+            response = self.session.post(
+                endpoint,
+                json={
+                    "prompt": prompt,
+                    "style": style
+                },
+                timeout=ServiceConfig.get_timeout("vision")
+            )
+            response.raise_for_status()
+            return response.content
+
+        except requests.exceptions.RequestException as e:
             logger.error(f"Error generating image: {str(e)}")
+            return None
+
+    def save_image(self, image_data: bytes, filepath: str) -> bool:
+        """
+        Save image data to file.
+        
+        Args:
+            image_data (bytes): Image data to save
+            filepath (str): Path to save the image file
+            
+        Returns:
+            bool: True if successful, False otherwise
+        """
+        try:
+            os.makedirs(os.path.dirname(filepath), exist_ok=True)
+            with open(filepath, 'wb') as f:
+                f.write(image_data)
+            return True
+        except Exception as e:
+            logger.error(f"Error saving image file: {str(e)}")
+            return False
+
+    def analyze_file(self, filepath: str) -> Optional[Dict]:
+        """
+        Analyze image from file using Vision service.
+        
+        Args:
+            filepath (str): Path to image file
+            
+        Returns:
+            Optional[Dict]: Analysis result if successful, None otherwise
+        """
+        try:
+            with open(filepath, 'rb') as f:
+                image_data = f.read()
+            return self.analyze_image(image_data)
+        except Exception as e:
+            logger.error(f"Error reading image file: {str(e)}")
             return None

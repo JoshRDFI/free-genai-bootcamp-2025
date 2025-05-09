@@ -1,98 +1,102 @@
-import whisper
+import requests
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
+import logging
+from typing import Optional, Dict, List
 import os
-import subprocess
-from typing import Optional
-import re
+from backend.config import ServiceConfig
+
+logger = logging.getLogger(__name__)
 
 class ASREngine:
-    def __init__(self, model_name: str = "base"):
-        """
-        Initialize the ASR engine with OpenWhisper.
-        Args:
-            model_name (str): Whisper model to use (e.g., "base", "small", "medium", "large").
-        """
-        self.model = whisper.load_model(model_name)
+    def __init__(self):
+        """Initialize ASR engine with retry configuration"""
+        self.session = requests.Session()
+        retry_strategy = Retry(
+            total=ServiceConfig.RETRY_CONFIG["max_retries"],
+            backoff_factor=ServiceConfig.RETRY_CONFIG["backoff_factor"],
+            status_forcelist=ServiceConfig.RETRY_CONFIG["status_forcelist"]
+        )
+        adapter = HTTPAdapter(max_retries=retry_strategy)
+        self.session.mount("http://", adapter)
+        self.session.mount("https://", adapter)
 
-    def convert_to_wav(self, input_file: str, output_file: str) -> bool:
+    def transcribe_audio(self, audio_data: bytes, language: str = "ja") -> Optional[Dict]:
         """
-        Convert audio to WAV format using ffmpeg.
+        Transcribe audio data using ASR service.
+        
         Args:
-            input_file (str): Path to the input audio file.
-            output_file (str): Path to the output WAV file.
+            audio_data (bytes): Audio data to transcribe
+            language (str): Language code (default: Japanese)
+            
         Returns:
-            bool: True if conversion is successful, False otherwise.
+            Optional[Dict]: Transcription result if successful, None otherwise
         """
         try:
-            subprocess.run(
-                ["ffmpeg", "-i", input_file, "-ar", "16000", "-ac", "1", output_file],
-                check=True,
-                stdout=subprocess.DEVNULL,
-                stderr=subprocess.DEVNULL,
+            endpoint = ServiceConfig.get_endpoint("asr", "transcribe")
+            if not endpoint:
+                logger.error("ASR transcribe endpoint not configured")
+                return None
+
+            files = {
+                'audio': ('audio.wav', audio_data, 'audio/wav')
+            }
+            data = {
+                'language': language
+            }
+
+            response = self.session.post(
+                endpoint,
+                files=files,
+                data=data,
+                timeout=ServiceConfig.get_timeout("asr")
             )
-            return True
-        except Exception as e:
-            print(f"Error converting audio to WAV: {str(e)}")
-            return False
+            response.raise_for_status()
+            return response.json()
 
-    def transcribe_audio(self, audio_file: str) -> Optional[str]:
-        """
-        Transcribe audio using OpenWhisper.
-        Args:
-            audio_file (str): Path to the audio file.
-        Returns:
-            Optional[str]: Transcribed text if successful, None otherwise.
-        """
-        try:
-            # Transcribe audio
-            result = self.model.transcribe(audio_file)
-            transcript = result.get("text", "").strip()
-            return transcript
-        except Exception as e:
-            print(f"Error during transcription: {str(e)}")
+        except requests.exceptions.RequestException as e:
+            logger.error(f"Error transcribing audio: {str(e)}")
             return None
 
-    def sanitize_transcription(self, text: str) -> str:
+    def get_supported_languages(self) -> List[str]:
         """
-        Sanitize transcription output using regex guardrails.
-        Args:
-            text (str): Transcribed text.
+        Get list of supported languages from ASR service.
+        
         Returns:
-            str: Sanitized text.
+            List[str]: List of supported language codes
         """
-        # Example regex rules to remove foul language or inappropriate content
-        foul_language_pattern = r"\b(badword1|badword2|badword3)\b"  # Replace with actual words
-        sanitized_text = re.sub(foul_language_pattern, "[REDACTED]", text, flags=re.IGNORECASE)
-
-        # Additional sanitization rules can be added here
-        return sanitized_text
-
-    def process_audio(self, input_file: str) -> Optional[str]:
-        """
-        Process an audio file: convert to WAV, transcribe, and sanitize.
-        Args:
-            input_file (str): Path to the input audio file.
-        Returns:
-            Optional[str]: Sanitized transcription if successful, None otherwise.
-        """
-        # Temporary WAV file
-        temp_wav = "temp_audio.wav"
-
         try:
-            # Convert to WAV
-            if not self.convert_to_wav(input_file, temp_wav):
-                print("Failed to convert audio to WAV format.")
-                return None
+            endpoint = ServiceConfig.get_endpoint("asr", "languages")
+            if not endpoint:
+                logger.error("ASR languages endpoint not configured")
+                return []
 
-            # Transcribe audio
-            transcript = self.transcribe_audio(temp_wav)
-            if not transcript:
-                print("Failed to transcribe audio.")
-                return None
+            response = self.session.get(
+                endpoint,
+                timeout=ServiceConfig.get_timeout("asr")
+            )
+            response.raise_for_status()
+            return response.json().get("languages", [])
 
-            # Sanitize transcription
-            sanitized_transcript = self.sanitize_transcription(transcript)
-            return sanitized_transcript
-        finally:
-            # Clean up temporary WAV file
-            if os.path.exists(temp_wav):
-                os.remove(temp_wav)
+        except requests.exceptions.RequestException as e:
+            logger.error(f"Error getting supported languages: {str(e)}")
+            return []
+
+    def transcribe_file(self, filepath: str, language: str = "ja") -> Optional[Dict]:
+        """
+        Transcribe audio from file using ASR service.
+        
+        Args:
+            filepath (str): Path to audio file
+            language (str): Language code (default: Japanese)
+            
+        Returns:
+            Optional[Dict]: Transcription result if successful, None otherwise
+        """
+        try:
+            with open(filepath, 'rb') as f:
+                audio_data = f.read()
+            return self.transcribe_audio(audio_data, language)
+        except Exception as e:
+            logger.error(f"Error reading audio file: {str(e)}")
+            return None

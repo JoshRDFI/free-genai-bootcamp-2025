@@ -48,7 +48,7 @@ PROJECTS = {
         "name": "Listening & Speaking Practice",
         "description": "Practice Japanese listening and speaking with AI-powered exercises",
         "docker_services": ["llm", "tts", "asr"],
-        "run_command": "cd listening-speaking && streamlit run app.py",
+        "run_command": "cd listening-speaking && python3 run.py --setup && python3 run.py --backend && python3 run.py --frontend",
         "documentation": "listening-speaking/README.md"
     },
     "vocabulary_generator": {
@@ -114,6 +114,99 @@ def verify_services(required_services, vn_services=None):
     
     return True
 
+def run_project(project_name):
+    """Run a specific project"""
+    if project_name not in PROJECTS:
+        st.error(f"Project {project_name} not found!")
+        return
+
+    project = PROJECTS[project_name]
+    
+    # Check if Docker services are required and running
+    if project.get('docker_services'):
+        if not verify_services(project['docker_services'], project.get('vn_services')):
+            st.error("Required Docker services are not running. Please start them first.")
+            return
+
+    # Create a placeholder for status messages
+    status_placeholder = st.empty()
+    
+    try:
+        # Run the project command
+        status_placeholder.info(f"Starting {project_name}...")
+        
+        # For listening-speaking project, run the components in sequence
+        if project_name == "listening-speaking":
+            # Run setup
+            setup_process = subprocess.Popen(
+                ["python3", "run.py", "--setup"],
+                cwd="listening-speaking",
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True
+            )
+            stdout, stderr = setup_process.communicate()
+            if setup_process.returncode != 0:
+                raise Exception(f"Setup failed: {stderr}")
+            
+            # Run backend
+            backend_process = subprocess.Popen(
+                ["python3", "run.py", "--backend"],
+                cwd="listening-speaking",
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True
+            )
+            
+            # Wait a moment for backend to start
+            time.sleep(2)
+            
+            # Run frontend on a different port
+            frontend_process = subprocess.Popen(
+                ["streamlit", "run", "frontend/streamlit_app.py", "--server.port", "8502"],
+                cwd="listening-speaking",
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True
+            )
+            
+            # Store processes for later cleanup
+            project['processes'] = [backend_process, frontend_process]
+            
+            # Wait a moment for frontend to start
+            time.sleep(2)
+            
+            # Check if frontend is running
+            if frontend_process.poll() is not None:
+                stdout, stderr = frontend_process.communicate()
+                raise Exception(f"Frontend failed to start: {stderr}")
+            
+            status_placeholder.success(f"Launched {project_name}!")
+            
+            # Display the URL with the correct port
+            st.info("The application should open in your browser. If it doesn't, you can access it at: http://localhost:8502")
+            
+        else:
+            # For other projects, run the command directly
+            process = subprocess.Popen(
+                project['run_command'],
+                shell=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True
+            )
+            project['processes'] = [process]
+            status_placeholder.success(f"Launched {project_name}!")
+            
+    except Exception as e:
+        status_placeholder.error(f"Error launching {project_name}: {str(e)}")
+        # Clean up any processes that were started
+        if 'processes' in project:
+            for process in project['processes']:
+                if process.poll() is None:  # If process is still running
+                    process.terminate()
+            project['processes'] = []
+
 def main():
     """# Set background image -- uncomment when a good image is found.
     try:
@@ -148,7 +241,7 @@ def main():
             if st.button(f"Launch {project['name']}", key=f"launch_{project_id}"):
                 # For visual novel, check both sets of services
                 if project_id == "visual-novel":
-                    if not verify_services(project['docker_services'], project['vn_services']):
+                    if not verify_services(project['docker_services'], project.get('vn_services')):
                         st.warning("Starting visual novel services...")
                         if not start_docker_services(project_id):
                             st.error("Failed to start visual novel services.")
@@ -158,11 +251,10 @@ def main():
                         st.error("Required services are not running. Please try again.")
                         return
                 
-                try:
-                    subprocess.Popen(project['run_command'], shell=True)
+                if run_project(project_id):
                     st.success(f"Launched {project['name']}!")
-                except Exception as e:
-                    st.error(f"Error launching {project['name']}: {str(e)}")
+                else:
+                    st.error(f"Failed to launch {project['name']}")
 
     # Exit option
     if st.button("Exit All"):

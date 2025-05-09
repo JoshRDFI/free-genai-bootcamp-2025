@@ -1,127 +1,93 @@
-Free GenAI BootCamp 2025
-JPLT Language Tutor Project
+# JLPT Listening Practice - Project Structure
+
+This file details the organization and purpose of files within the listening-speaking project.
 
 listening-speaking/
 ├── backend/
 │   ├── __init__.py
-│   ├── app.py                # Main backend entrypoint.
-|   ├── data/
-|   │   ├── questions/          # Stores question text files 
-|   │   ├── transcripts/        # Stores transcript text files
-|   │   ├── images/             # Stores generated images
-|   │   ├── audio/              # Stores generated audio
-│   │   └── stored_questions.json  # JSON list of questions that is added to with each transcription
+│   ├── app.py                # Main backend entrypoint
+│   ├── data/
+│   │   ├── questions/        # Stores question text files 
+│   │   ├── transcripts/      # Stores transcript text files
+│   │   ├── images/          # Stores generated images
+│   │   ├── audio/           # Stores generated audio
+│   │   └── stored_questions.json  # JSON list of questions
 │   ├── logs/
 │   │   ├── question_generator.log
 │   │   └── errors.json
 │   ├── youtube/
 │   │   ├── __init__.py
-│   │   └── get_transcript.py # Handles YouTube transcript extraction.
+│   │   └── get_transcript.py # YouTube transcript extraction
 │   ├── asr/
 │   │   ├── __init__.py
-│   │   └── asr_engine.py     # OpenWhisper-based ASR implementation.
+│   │   └── asr_engine.py     # OpenWhisper ASR implementation
 │   ├── llm/
 │   │   ├── __init__.py
-│   │   ├── chat.py           # LLM chat interface (API at port 9000).
-│   │   └── question_generator.py  # Generates listening comprehension questions.
+│   │   ├── chat.py           # LLM chat interface (port 9000)
+│   │   └── question_generator.py  # Question generation
 │   ├── images/
 │   │   ├── __init__.py
-│   │   ├── image_generator.py    # Handles image generation
-│   │   └── prompt_generator.py   # Creates image prompts from questions
+│   │   ├── image_generator.py    # Image generation
+│   │   └── prompt_generator.py   # Image prompt creation
 │   ├── tts/
-|   |   ├── XTTS/
-|   |   ├── voices/
-|   |   |   ├── male_voice.wav
-|   |   |   └── female_voice.wav
+│   │   ├── XTTS/            # XTTS model files
+│   │   ├── voices/          # Voice samples
+│   │   │   ├── male_voice.wav
+│   │   │   └── female_voice.wav
 │   │   ├── __init__.py
-│   │   ├── audio_generator.py   # Generates audio using Coqui TTS.
-│   │   ├── test_tts.py          # Tests to make sure Coqui TTS with XTTS is working.
-│   │   └── tts_engine.py        # Wrapper for TTS engines.
+│   │   ├── audio_generator.py   # Audio generation
+│   │   ├── test_tts.py         # TTS testing
+│   │   └── tts_engine.py        # TTS engine wrapper
 │   ├── database/
-|   |   ├── migrations/         # possibly unneeded
+│   │   ├── migrations/         # Database migrations
 │   │   │   └── add_image_links.sql 
 │   │   ├── __init__.py
-│   │   └── knowledge_base.py    # SQLite3 integration for transcripts, questions, etc.
+│   │   └── knowledge_base.py    # SQLite3 integration
 │   ├── agent/
 │   │   ├── __init__.py
-│   │   └── task_agent.py        # Coordinates ASR, transcript, LLM, and TTS tasks.
+│   │   └── task_agent.py        # Task coordination
 │   ├── guardrails/
 │   │   ├── __init__.py
-│   │   └── rules.py             # Guardrails for filtering inappropriate content.
+│   │   └── rules.py             # Content filtering
 │   └── utils/
 │       ├── __init__.py
-│       └── helper.py            # Common helper functions.
-├── run.py                       # run frontend.
-└── README.md                    # Project overview and setup instructions.
+│       └── helper.py            # Helper functions
+├── frontend/
+│   └── streamlit_app.py         # Streamlit frontend
+├── run.py                       # Application launcher
+├── requirements.txt             # Python dependencies
+└── README.md                    # Project documentation
 
-writing-practice/
-├──
-└──
+## Key Components
 
-opea-docker/
-|   ├── Dockerfile                   # Dockerfile.
-|   ├── docker-compose.yml           # Coordinates LLM container and backend services.
-|   ├── requirements.txt             # Python dependencies.
-|   ├── app.py                       # Startup and connections
-|   └── .env                         # environment files
+### Backend Services
+- **app.py**: FastAPI backend server
+- **youtube/**: YouTube transcript handling
+- **asr/**: Speech recognition
+- **llm/**: Question generation
+- **tts/**: Text-to-speech
+- **images/**: Image generation
+- **database/**: Data storage
+- **guardrails/**: Content filtering
 
-vocabulary_generator/
-|   ├── config/
-│   │   └── config.json
-|   ├── data/
-│   │   └── imports/
-│   │   └── json_output/
-|   ├── src/
-|   |   ├── converter.py
-|   |   ├── database.py
-|   |   ├── generator.py
-|   |   ├── sentence_gen.py
-|   |   └── validator.py
-|   ├── tests/
-|   |   ├── test_database.py
-|   |   ├── test_generator.py
-|   |   └── test_validator.py
-|   ├── main.py
-|   ├── requirements.txt            # Combined into main requirements.txt file
-|   └── readme.md                   # Description file
+### Frontend
+- **streamlit_app.py**: Main user interface
 
-lang-portal/
-|   ├── backend/
-|   |   ├── api/
-|   │   │   └── main.py
-|   |   ├── db/
-|   |   |   ├── models.py
-|   │   │   └── populate_db.py
-│   │   └── prompt-backend.md
-|   ├── frontend/
-|   |   ├── src/
-|   |   |   ├── components/
-|   |   |   |   ├── Breadcrumbs.tsx
-|   |   |   |   ├── Layout.tsx
-|   |   |   |   ├── Navigation.tsx
-|   |   |   |   ├── PaginationControls.tsx
-|   |   |   |   ├── StudyActivityCard.tsx
-|   |   |   |   └── WordsTable.tsx
-|   |   |   ├── pages/
-|   |   |   |   ├── Dashboard.tsx
-|   |   |   |   ├── SessionShowPage.tsx
-|   |   |   |   ├── SessionsPage.tsx
-|   |   |   |   ├── StudyActivitiesPage.tsx
-|   |   |   |   ├── StudyActivityShowPage.tsx
-|   |   |   |   ├── WordGroupShowPage.tsx
-|   |   |   |   ├── WordGroupsPage.tsx
-|   |   |   |   ├── WordShowPage.tsx
-|   |   |   |   ├── WordsIndex.tsx
-|   |   |   |   └── WordsPage.py
-|   |   |   ├── services/
-|   |   |   |   └── api.ts
-|   |   |   ├── types/
-|   |   |   |   └── sessions.ts
-|   |   |   ├── utils/
-|   |   |   |   └── index.ts
-|   ├── app.tsx
-|   ├── langportal.db               # SQLite3 DB
-|   ├── main.py
-|   ├── schema.sql
-|   ├── prompt-frontend.md          # Prompt used to generate much of this part of the program
-|   └── readme.md                   # Description file
+### Launcher
+- **run.py**: Manages application startup
+  - `--setup`: Database initialization
+  - `--backend`: Start backend server
+  - `--frontend`: Start frontend
+
+### Data Storage
+- **data/**: Application data
+  - questions/: Generated questions
+  - transcripts/: Video transcripts
+  - images/: Generated images
+  - audio/: Generated audio
+  - stored_questions.json: Question database
+
+### Logs
+- **logs/**: Application logs
+  - question_generator.log: Question generation logs
+  - errors.json: Error tracking

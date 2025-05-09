@@ -11,6 +11,8 @@ RUN apt-get update && apt-get install -y \
 # Update pip to the latest version
 RUN python3 -m pip install --upgrade pip
 
+RUN apt-get update && apt-get install -y ffmpeg
+
 # Copy requirements first for better caching
 COPY requirements.txt .
 

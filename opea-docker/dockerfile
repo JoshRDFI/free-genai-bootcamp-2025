@@ -16,6 +16,8 @@ RUN apt-get update && apt-get install -y \
 # Install Huggingface for initial download
 RUN pip install huggingface_hub[hf_xet]
 
+RUN apt-get update && apt-get install -y ffmpeg
+
 # Install Python dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 

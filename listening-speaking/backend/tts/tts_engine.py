@@ -7,21 +7,104 @@ from TTS.api import TTS
 import torch
 import numpy as np
 from datetime import datetime
+import requests
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
+from backend.config import ServiceConfig
+import logging
+
+logger = logging.getLogger(__name__)
 
 class TTSEngine:
-    def __init__(self, model_path: str = "backend/tts/coqui_models"):
-        """Initialize TTS engine with Coqui TTS"""
-        self.model_path = model_path
-        self.device = "cuda" if torch.cuda.is_available() else "cpu"
+    def __init__(self):
+        """Initialize TTS engine with retry configuration"""
+        self.session = requests.Session()
+        retry_strategy = Retry(
+            total=ServiceConfig.RETRY_CONFIG["max_retries"],
+            backoff_factor=ServiceConfig.RETRY_CONFIG["backoff_factor"],
+            status_forcelist=ServiceConfig.RETRY_CONFIG["status_forcelist"]
+        )
+        adapter = HTTPAdapter(max_retries=retry_strategy)
+        self.session.mount("http://", adapter)
+        self.session.mount("https://", adapter)
 
-        # Initialize TTS with XTTS-v2.0.3
+    def synthesize_speech(self, text: str, voice_id: str = "default", language: str = "ja") -> Optional[bytes]:
+        """
+        Synthesize speech from text using TTS service.
+        
+        Args:
+            text (str): Text to synthesize
+            voice_id (str): Voice ID to use
+            language (str): Language code (default: Japanese)
+            
+        Returns:
+            Optional[bytes]: Audio data if successful, None otherwise
+        """
         try:
-            self.tts = TTS("tts_models/multilingual/xtts_v2",
-                           progress_bar=False,
-                           gpu=torch.cuda.is_available())
+            endpoint = ServiceConfig.get_endpoint("tts", "synthesize")
+            if not endpoint:
+                logger.error("TTS synthesize endpoint not configured")
+                return None
+
+            response = self.session.post(
+                endpoint,
+                json={
+                    "text": text,
+                    "voice_id": voice_id,
+                    "language": language
+                },
+                timeout=ServiceConfig.get_timeout("tts")
+            )
+            response.raise_for_status()
+            return response.content
+
+        except requests.exceptions.RequestException as e:
+            logger.error(f"Error synthesizing speech: {str(e)}")
+            return None
+
+    def get_available_voices(self) -> List[Dict]:
+        """
+        Get list of available voices from TTS service.
+        
+        Returns:
+            List[Dict]: List of available voices
+        """
+        try:
+            endpoint = ServiceConfig.get_endpoint("tts", "voices")
+            if not endpoint:
+                logger.error("TTS voices endpoint not configured")
+                return []
+
+            response = self.session.get(
+                endpoint,
+                timeout=ServiceConfig.get_timeout("tts")
+            )
+            response.raise_for_status()
+            return response.json().get("voices", [])
+
+        except requests.exceptions.RequestException as e:
+            logger.error(f"Error getting available voices: {str(e)}")
+            return []
+
+    def save_audio(self, audio_data: bytes, filepath: str) -> bool:
+        """
+        Save audio data to file.
+        
+        Args:
+            audio_data (bytes): Audio data to save
+            filepath (str): Path to save the audio file
+            
+        Returns:
+            bool: True if successful, False otherwise
+        """
+        try:
+            os.makedirs(os.path.dirname(filepath), exist_ok=True)
+            with open(filepath, 'wb') as f:
+                f.write(audio_data)
+            return True
         except Exception as e:
-            print(f"Error initializing TTS: {str(e)}")
-            self.tts = None
+            logger.error(f"Error saving audio file: {str(e)}")
+            return False
 
     def load_speaker_config(self) -> Dict:
         """Load speaker configuration if available"""
