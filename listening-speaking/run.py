@@ -86,6 +86,11 @@ def setup_database():
         sys.exit(1)
 
 if __name__ == "__main__":
+    # Always run environment setup first
+    if not setup_environment():
+        print("Error: Environment setup failed. Please check the error messages above.")
+        sys.exit(1)
+
     parser = argparse.ArgumentParser(description="Run the JLPT Listening Practice application")
     parser.add_argument("--setup", action="store_true", help="Set up the database and environment")
     parser.add_argument("--backend", action="store_true", help="Run the backend server")
@@ -98,15 +103,14 @@ if __name__ == "__main__":
     install_dependencies()
 
     if args.env_only:
-        setup_environment()
+        # Environment already set up, just exit
+        sys.exit(0)
     elif args.setup:
-        # Set up environment first
-        if setup_environment():
-            setup_database()
+        setup_database()
     elif args.backend:
         run_backend()
     elif args.frontend:
         run_streamlit()
     else:
-        print("Please specify an action: --setup, --backend, --frontend, or --env-only")
+        print("Please specify an action: --setup, --backend, or --frontend")
         sys.exit(1)

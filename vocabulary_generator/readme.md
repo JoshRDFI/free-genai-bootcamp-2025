@@ -1,115 +1,116 @@
-vocabulary_generator/
-├── config/
-│   └── config.json       # Configuration settings
-├── data/
-│   ├── json_output/      # Generated JSON files
-│   └── imports/          # Import source files
-├── src/
-│   ├── __init__.py
-│   ├── generator.py      # Main generator class
-│   ├── validator.py      # JLPT level validation
-│   ├── converter.py      # Kanji/romaji conversion
-│   ├── database.py       # Database operations
-│   └── sentence_gen.py   # Example sentence generation
-├── tests/
-│   ├── __init__.py
-│   ├── test_generator.py
-│   ├── test_validator.py
-│   ├── test_converter.py
-│   ├── test_database.py
-│   └── test_sentence_gen.py
-└── main.py              # Entry point
+# Japanese Vocabulary Generator
 
-# Japanese Language Learning System
-
-## Overview
-This project is a comprehensive Japanese language learning system designed to help students master JLPT N5 vocabulary through interactive study sessions and systematic progression tracking. The system consists of a FastAPI backend service that communicates with an ollama-server for AI-assisted content generation and a SQLite database for data persistence.
-
-## Core Components
-
-### Backend Services
-- **FastAPI Application (opea-service)**: Handles HTTP requests and manages the application logic.
-- **Ollama Server**: Provides AI capabilities for generating vocabulary content and example sentences.
-- **SQLite Database**: Stores vocabulary, study sessions, and progression data.
-
-### Key Modules
-1. **VocabularyManager**: Central coordinator for all vocabulary-related operations.
-   - Manages vocabulary entries.
-   - Handles study sessions.
-   - Tracks progression through JLPT levels.
-   - Coordinates with other modules.
-
-2. **Generator Module**: Creates vocabulary entries with AI assistance.
-   - Generates vocabulary content.
-   - Creates example sentences.
-   - Validates JLPT level appropriateness.
-
-3. **Validator Module**: Ensures data quality and JLPT level compliance.
-   - Validates vocabulary entries.
-   - Checks JLPT level requirements.
-   - Maintains data consistency.
-
-4. **Database Module**: Handles all database operations.
-   - Manages word groups and vocabulary.
-   - Tracks study sessions and reviews.
-   - Records progression history.
-
-5. **Converter Module**: Handles Japanese text conversions.
-   - Manages kanji/kana conversions.
-   - Provides romaji translations.
-
-## Data Structure
-- **Word Groups**: Collections of related vocabulary words.
-- **Words**: Individual vocabulary entries with kanji, romaji, and English translations.
-- **Study Sessions**: Records of learning activities.
-- **Word Reviews**: Individual word assessment results.
-- **Progression History**: Tracks advancement through JLPT levels.
+A comprehensive Japanese vocabulary learning system that helps users learn and practice Japanese vocabulary through various interactive features and study tools.
 
 ## Features
-- Vocabulary entry creation and management.
-- Interactive study sessions.
-- Progress tracking and level advancement.
-- Example sentence generation.
-- Data import/export capabilities.
-- Student performance analytics.
 
-## Database Schema
-The system uses SQLite with the following main tables:
-- `word_groups`: Organizes vocabulary into logical groups.
-- `words`: Stores individual vocabulary entries.
-- `study_sessions`: Records learning activities.
-- `word_review_items`: Tracks individual word reviews.
-- `progression_history`: Monitors JLPT level advancement.
+- **Vocabulary Management**
+  - Generate vocabulary entries with kanji, romaji, and English translations
+  - JLPT level-based organization
+  - Example sentence generation
+  - Word grouping and categorization
 
-## Configuration
-The system uses a JSON configuration file (`config.json`) to manage:
-- API endpoints.
-- Database settings.
-- JLPT progression criteria.
-- Storage paths for JSON files.
+- **Study Tools**
+  - Interactive typing tutor
+  - Sentence practice
+  - Progress tracking
+  - Achievement system
+  - Study session scheduling
+
+- **User Experience**
+  - Personalized study reminders
+  - Progress visualization
+  - Customizable preferences
+  - Level progression system
+  - Achievement tracking
+
+## Installation
+
+1. Clone the repository:
+```bash
+git clone https://github.com/yourusername/vocabulary_generator.git
+cd vocabulary_generator
+```
+
+2. Install dependencies:
+```bash
+pip install -r requirements.txt
+```
+
+3. Install test dependencies (optional):
+```bash
+pip install -r requirements-test.txt
+```
 
 ## Usage
-1. Import or create vocabulary groups.
-2. Start study sessions.
-3. Review words and track progress.
-4. Advance through JLPT levels based on performance.
 
-## Development Status
+### Running the Application
 
-### Currently Implemented:
-- Core vocabulary management system.
-- Study session tracking.
-- Progress monitoring.
-- Basic JLPT level progression.
+Start the Streamlit application:
+```bash
+streamlit run main.py
+```
 
-### Planned Features:
-- Enhanced analytics.
-- Additional study activities.
-- Advanced progression tracking.
+### Running Tests
 
-## Dependencies
-- **FastAPI**
-- **SQLite**
-- **Requests**
-- **PyKakasi**
-- **Pytest** (for testing)
+Run the test suite:
+```bash
+python run_tests.py
+```
+
+This will:
+- Run all tests
+- Generate coverage reports
+- Create test logs
+- Clean up test resources
+
+## Configuration
+
+The application can be configured through the `config/default_config.json` file. Key configuration options include:
+
+- Database settings
+- API endpoints
+- Study session parameters
+- User preferences defaults
+- JLPT level requirements
+
+## Development
+
+### Project Structure
+
+See `project-layout.txt` for the complete project structure.
+
+### Adding New Features
+
+1. Create new modules in the `src` directory
+2. Add corresponding tests in the `tests` directory
+3. Update configuration if needed
+4. Run tests to ensure compatibility
+
+### Testing
+
+The project uses pytest for testing. Key testing features include:
+
+- Async test support
+- Coverage reporting
+- Parallel test execution
+- Test data management
+- Mocking and environment control
+
+## Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Run tests
+5. Submit a pull request
+
+## License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
+
+## Acknowledgments
+
+- Japanese language resources
+- Open source contributors
+- Testing framework developers

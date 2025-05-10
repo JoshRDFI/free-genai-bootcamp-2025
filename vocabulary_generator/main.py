@@ -1,14 +1,27 @@
 import asyncio
 import json
+import os
 from pathlib import Path
 from typing import Dict, List, Optional
 from datetime import datetime
+import logging
 
 from src.generator import VocabularyGenerator
 from src.validator import JLPTValidator
 from src.converter import JapaneseConverter
 from src.sentence_gen import SentenceGenerator
 from src.database import DatabaseManager
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.FileHandler('vocabulary_generator.log'),
+        logging.StreamHandler()
+    ]
+)
+logger = logging.getLogger(__name__)
 
 class VocabularyManager:
     def __init__(self, config_path: str = "config/config.json"):
@@ -17,29 +30,84 @@ class VocabularyManager:
         self.validator = JLPTValidator(config_path)
         self.converter = JapaneseConverter()
         self.sentence_gen = SentenceGenerator(self.config['api']['ollama_endpoint'])
-        self.db = DatabaseManager(self.config['database']['path'])
+        
+        # Use absolute paths for database and storage
+        base_dir = os.path.dirname(os.path.abspath(__file__))
+        db_path = os.path.join(base_dir, self.config['database']['path'])
+        self.db = DatabaseManager(db_path)
+        
+        # Update storage paths to be absolute
+        self.config['storage']['json_output_dir'] = os.path.join(base_dir, self.config['storage']['json_output_dir'])
+        self.config['storage']['import_dir'] = os.path.join(base_dir, self.config['storage']['import_dir'])
 
     def _load_config(self, config_path: str) -> Dict:
-        with open(config_path, 'r', encoding='utf-8') as f:
-            return json.load(f)
+        """Load and validate configuration"""
+        try:
+            with open(config_path, 'r', encoding='utf-8') as f:
+                config = json.load(f)
+            
+            # Validate required configuration sections
+            required_sections = ['api', 'database', 'storage', 'jlpt_progression']
+            missing_sections = [section for section in required_sections if section not in config]
+            if missing_sections:
+                raise ValueError(f"Missing required configuration sections: {missing_sections}")
+            
+            return config
+        except json.JSONDecodeError as e:
+            logger.error(f"Invalid JSON in config file: {str(e)}")
+            raise
+        except Exception as e:
+            logger.error(f"Error loading config: {str(e)}")
+            raise
 
     async def initialize(self):
         """Initialize the database and create necessary directories"""
-        await self.db.init_db()
-        Path(self.config['storage']['json_output_dir']).mkdir(parents=True, exist_ok=True)
-        Path(self.config['storage']['import_dir']).mkdir(parents=True, exist_ok=True)
+        try:
+            # Ensure data directory exists
+            data_dir = os.path.dirname(self.config['database']['path'])
+            Path(data_dir).mkdir(parents=True, exist_ok=True)
+            
+            # Initialize database with shared schema
+            schema_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 
+                                     "database", "schema.sql")
+            if not os.path.exists(schema_path):
+                raise FileNotFoundError(f"Schema file not found at {schema_path}")
+                
+            await self.db.init_db(schema_path)
+            
+            # Create other necessary directories
+            Path(self.config['storage']['json_output_dir']).mkdir(parents=True, exist_ok=True)
+            Path(self.config['storage']['import_dir']).mkdir(parents=True, exist_ok=True)
+            
+            # Create initial backup
+            await self.db.backup_database()
+            
+            logger.info("Initialization completed successfully")
+        except Exception as e:
+            logger.error(f"Initialization failed: {str(e)}")
+            raise
 
     async def create_vocabulary_entry(self, word: str, level: str = "N5") -> Dict:
         """Create a new vocabulary entry with validation"""
-        entry = await self.generator.generate_vocabulary_entry(word, level)
+        try:
+            if not isinstance(word, str) or not word.strip():
+                raise ValueError("Word must be a non-empty string")
+            
+            if level not in ['N5', 'N4', 'N3', 'N2', 'N1']:
+                raise ValueError(f"Invalid JLPT level: {level}")
+            
+            entry = await self.generator.generate_vocabulary_entry(word, level)
 
-        if not self.validator.validate_entry(entry, level):
-            raise ValueError(f"Generated entry for '{word}' does not meet {level} requirements")
+            if not self.validator.validate_entry(entry, level):
+                raise ValueError(f"Generated entry for '{word}' does not meet {level} requirements")
 
-        examples = await self.sentence_gen.generate_examples(word, level)
-        entry['examples'] = examples
+            examples = await self.sentence_gen.generate_examples(word, level)
+            entry['examples'] = examples
 
-        return entry
+            return entry
+        except Exception as e:
+            logger.error(f"Error creating vocabulary entry: {str(e)}")
+            raise
 
     async def import_from_json(self, file_path: str, group_name: str) -> List[Dict]:
         """Import vocabulary from JSON file"""

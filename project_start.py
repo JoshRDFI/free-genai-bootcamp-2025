@@ -186,6 +186,23 @@ def run_project(project_name):
             # Display the URL with the correct port
             st.info("The application should open in your browser. If it doesn't, you can access it at: http://localhost:8502")
             
+        elif project_name == "vocabulary_generator":
+            # Initialize database first
+            schema_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "database", "schema.sql")
+            if not os.path.exists(schema_path):
+                raise FileNotFoundError(f"Schema file not found at {schema_path}")
+            
+            # Run the vocabulary generator
+            process = subprocess.Popen(
+                ["streamlit", "run", "app.py"],
+                cwd="vocabulary_generator",
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True
+            )
+            project['processes'] = [process]
+            status_placeholder.success(f"Launched {project_name}!")
+            
         else:
             # For other projects, run the command directly
             process = subprocess.Popen(
@@ -197,7 +214,7 @@ def run_project(project_name):
             )
             project['processes'] = [process]
             status_placeholder.success(f"Launched {project_name}!")
-            
+
     except Exception as e:
         status_placeholder.error(f"Error launching {project_name}: {str(e)}")
         # Clean up any processes that were started
@@ -208,7 +225,8 @@ def run_project(project_name):
             project['processes'] = []
 
 def main():
-    """# Set background image -- uncomment when a good image is found.
+    """
+    # Set background image -- uncomment when a good image is found.
     try:
         background_image = Image.open("writing-practice/images/1240417.png")
         st.image(background_image, use_container_width=True)

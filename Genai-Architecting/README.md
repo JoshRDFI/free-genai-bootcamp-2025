@@ -1,3 +1,5 @@
+![Architecture Diagram](conceptual.svg)
+
 ### Functional Requirements:
 
 1) The hardware would be self-hosted, on-premise
@@ -17,3 +19,5 @@
 
 1) The models we use would be open source licensed with provision for commercial use
 2) Models and site will be updated regularly with newer models to reduce size, latency, and accuracy in response
+
+
