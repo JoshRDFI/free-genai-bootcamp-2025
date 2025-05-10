@@ -1,132 +1,171 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900">
-  <!-- Background grid -->
-  <rect x="0" y="0" width="1600" height="900" fill="#f8fafc"/>
-  <g stroke="#e5e7eb" stroke-width="1">
-    <line x1="0" y1="100" x2="1600" y2="100"/>
-    <line x1="0" y1="200" x2="1600" y2="200"/>
-    <line x1="0" y1="300" x2="1600" y2="300"/>
-    <line x1="0" y1="400" x2="1600" y2="400"/>
-    <line x1="0" y1="500" x2="1600" y2="500"/>
-    <line x1="0" y1="600" x2="1600" y2="600"/>
-    <line x1="0" y1="700" x2="1600" y2="700"/>
-    <line x1="0" y1="800" x2="1600" y2="800"/>
-    <line x1="200" y1="0" x2="200" y2="900"/>
-    <line x1="400" y1="0" x2="400" y2="900"/>
-    <line x1="600" y1="0" x2="600" y2="900"/>
-    <line x1="800" y1="0" x2="800" y2="900"/>
-    <line x1="1000" y1="0" x2="1000" y2="900"/>
-    <line x1="1200" y1="0" x2="1200" y2="900"/>
-    <line x1="1400" y1="0" x2="1400" y2="900"/>
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1800 1000">
+  <!-- Background -->
+  <rect x="0" y="0" width="1800" height="1000" fill="#f8fafc"/>
+  
+  <!-- Subtle grid (reduced opacity) -->
+  <g stroke="#e5e7eb" stroke-width="1" opacity="0.5">
+    <line x1="0" y1="100" x2="1800" y2="100"/>
+    <line x1="0" y1="200" x2="1800" y2="200"/>
+    <line x1="0" y1="300" x2="1800" y2="300"/>
+    <line x1="0" y1="400" x2="1800" y2="400"/>
+    <line x1="0" y1="500" x2="1800" y2="500"/>
+    <line x1="0" y1="600" x2="1800" y2="600"/>
+    <line x1="0" y1="700" x2="1800" y2="700"/>
+    <line x1="0" y1="800" x2="1800" y2="800"/>
+    <line x1="200" y1="0" x2="200" y2="1000"/>
+    <line x1="400" y1="0" x2="400" y2="1000"/>
+    <line x1="600" y1="0" x2="600" y2="1000"/>
+    <line x1="800" y1="0" x2="800" y2="1000"/>
+    <line x1="1000" y1="0" x2="1000" y2="1000"/>
+    <line x1="1200" y1="0" x2="1200" y2="1000"/>
+    <line x1="1400" y1="0" x2="1400" y2="1000"/>
+    <line x1="1600" y1="0" x2="1600" y2="1000"/>
   </g>
+
+  <!-- Title -->
+  <text x="900" y="50" font-size="32" font-family="sans-serif" fill="#1e293b" text-anchor="middle" font-weight="bold">Japanese Writing Practice System Architecture</text>
+
   <!-- Input Layer -->
-  <rect x="60" y="250" width="180" height="220" rx="20" fill="#e0e7ef" stroke="#3b82f6" stroke-width="2"/>
-  <text x="150" y="275" font-size="22" font-family="sans-serif" fill="#1e293b" text-anchor="middle" font-weight="bold">User Input</text>
-  <!-- Drawing Canvas -->
-  <rect x="80" y="300" width="140" height="50" rx="10" fill="#fff" stroke="#3b82f6" stroke-width="1.5"/>
-  <text x="150" y="330" font-size="16" font-family="sans-serif" fill="#1e293b" text-anchor="middle">Drawing Canvas</text>
-  <!-- Pen Icon -->
-  <path d="M95 320 l20 20 l20 -20 l-20 -20 z" fill="#3b82f6"/>
-  <!-- Image Upload -->
-  <rect x="80" y="360" width="140" height="50" rx="10" fill="#fff" stroke="#3b82f6" stroke-width="1.5"/>
-  <text x="150" y="390" font-size="16" font-family="sans-serif" fill="#1e293b" text-anchor="middle">Image Upload</text>
-  <!-- File Icon -->
-  <rect x="100" y="370" width="20" height="25" fill="#60a5fa" stroke="#2563eb" stroke-width="1"/>
-  <polyline points="120,370 120,395 110,395" fill="none" stroke="#2563eb" stroke-width="1"/>
-  <!-- Webcam Capture -->
-  <rect x="80" y="420" width="140" height="50" rx="10" fill="#fff" stroke="#3b82f6" stroke-width="1.5"/>
-  <text x="150" y="450" font-size="16" font-family="sans-serif" fill="#1e293b" text-anchor="middle">Webcam Capture</text>
-  <!-- Camera Icon -->
-  <circle cx="110" cy="445" r="10" fill="#60a5fa" stroke="#2563eb" stroke-width="1"/>
-  <rect x="105" y="440" width="10" height="5" fill="#2563eb"/>
+  <rect x="60" y="100" width="280" height="400" rx="20" fill="#e0e7ef" stroke="#3b82f6" stroke-width="2"/>
+  <text x="200" y="130" font-size="24" font-family="sans-serif" fill="#1e293b" text-anchor="middle" font-weight="bold">User Input</text>
+  
+  <!-- Input Methods -->
+  <g transform="translate(80, 150)">
+    <!-- Drawing Canvas -->
+    <rect x="0" y="0" width="240" height="60" rx="10" fill="#fff" stroke="#3b82f6" stroke-width="1.5"/>
+    <text x="120" y="35" font-size="16" font-family="sans-serif" fill="#1e293b" text-anchor="middle">Drawing Canvas</text>
+    <path d="M20 25 l20 20 l20 -20 l-20 -20 z" fill="#3b82f6"/>
+    
+    <!-- Image Upload -->
+    <rect x="0" y="70" width="240" height="60" rx="10" fill="#fff" stroke="#3b82f6" stroke-width="1.5"/>
+    <text x="120" y="105" font-size="16" font-family="sans-serif" fill="#1e293b" text-anchor="middle">Image Upload</text>
+    <rect x="20" y="80" width="20" height="25" fill="#60a5fa" stroke="#2563eb" stroke-width="1"/>
+    <polyline points="40,80 40,105 30,105" fill="none" stroke="#2563eb" stroke-width="1"/>
+    
+    <!-- Webcam Capture -->
+    <rect x="0" y="140" width="240" height="60" rx="10" fill="#fff" stroke="#3b82f6" stroke-width="1.5"/>
+    <text x="120" y="175" font-size="16" font-family="sans-serif" fill="#1e293b" text-anchor="middle">Webcam Capture</text>
+    <circle cx="30" cy="170" r="10" fill="#60a5fa" stroke="#2563eb" stroke-width="1"/>
+    <rect x="25" y="165" width="10" height="5" fill="#2563eb"/>
+    
+    <!-- Text Input -->
+    <rect x="0" y="210" width="240" height="60" rx="10" fill="#fff" stroke="#3b82f6" stroke-width="1.5"/>
+    <text x="120" y="245" font-size="16" font-family="sans-serif" fill="#1e293b" text-anchor="middle">Text Input</text>
+    <text x="30" y="245" font-size="20" font-family="sans-serif" fill="#3b82f6">Aa</text>
+  </g>
+
+  <!-- Learning Modules -->
+  <rect x="60" y="520" width="280" height="200" rx="20" fill="#e0e7ef" stroke="#3b82f6" stroke-width="2"/>
+  <text x="200" y="550" font-size="24" font-family="sans-serif" fill="#1e293b" text-anchor="middle" font-weight="bold">Learning Modules</text>
+  
+  <g transform="translate(80, 570)">
+    <rect x="0" y="0" width="240" height="40" rx="8" fill="#fff" stroke="#3b82f6" stroke-width="1.5"/>
+    <text x="120" y="25" font-size="14" font-family="sans-serif" fill="#1e293b" text-anchor="middle">Hiragana Practice</text>
+    
+    <rect x="0" y="50" width="240" height="40" rx="8" fill="#fff" stroke="#3b82f6" stroke-width="1.5"/>
+    <text x="120" y="75" font-size="14" font-family="sans-serif" fill="#1e293b" text-anchor="middle">Katakana Practice</text>
+    
+    <rect x="0" y="100" width="240" height="40" rx="8" fill="#fff" stroke="#3b82f6" stroke-width="1.5"/>
+    <text x="120" y="125" font-size="14" font-family="sans-serif" fill="#1e293b" text-anchor="middle">Kanji Practice</text>
+  </g>
+
   <!-- Arrows to Preprocessing -->
   <g stroke="#2563eb" stroke-width="3" fill="none" marker-end="url(#arrowhead)">
-    <line x1="220" y1="325" x2="340" y2="325"/>
-    <line x1="220" y1="385" x2="340" y2="385"/>
-    <line x1="220" y1="445" x2="340" y2="445"/>
+    <line x1="340" y1="200" x2="460" y2="200"/>
+    <line x1="340" y1="270" x2="460" y2="270"/>
+    <line x1="340" y1="340" x2="460" y2="340"/>
+    <line x1="340" y1="410" x2="460" y2="410"/>
   </g>
+
   <!-- Preprocessing Block -->
-  <rect x="350" y="300" width="180" height="170" rx="20" fill="#e0e7ef" stroke="#3b82f6" stroke-width="2"/>
-  <text x="440" y="325" font-size="22" font-family="sans-serif" fill="#1e293b" text-anchor="middle" font-weight="bold">Preprocessing</text>
-  <text x="440" y="360" font-size="16" font-family="sans-serif" fill="#1e293b" text-anchor="middle">Image Processing</text>
-  <text x="440" y="390" font-size="16" font-family="sans-serif" fill="#1e293b" text-anchor="middle">OCR Processing</text>
-  <text x="440" y="420" font-size="16" font-family="sans-serif" fill="#1e293b" text-anchor="middle">Text Normalization</text>
+  <rect x="470" y="150" width="280" height="300" rx="20" fill="#e0e7ef" stroke="#3b82f6" stroke-width="2"/>
+  <text x="610" y="180" font-size="24" font-family="sans-serif" fill="#1e293b" text-anchor="middle" font-weight="bold">Preprocessing</text>
+  
+  <g transform="translate(490, 200)">
+    <rect x="0" y="0" width="240" height="50" rx="10" fill="#fff" stroke="#3b82f6" stroke-width="1.5"/>
+    <text x="120" y="30" font-size="16" font-family="sans-serif" fill="#1e293b" text-anchor="middle">Image Processing</text>
+    
+    <rect x="0" y="60" width="240" height="50" rx="10" fill="#fff" stroke="#3b82f6" stroke-width="1.5"/>
+    <text x="120" y="90" font-size="16" font-family="sans-serif" fill="#1e293b" text-anchor="middle">OCR Processing</text>
+    
+    <rect x="0" y="120" width="240" height="50" rx="10" fill="#fff" stroke="#3b82f6" stroke-width="1.5"/>
+    <text x="120" y="150" font-size="16" font-family="sans-serif" fill="#1e293b" text-anchor="middle">Text Normalization</text>
+  </g>
+
   <!-- Arrow to AI Models -->
   <g stroke="#2563eb" stroke-width="3" fill="none" marker-end="url(#arrowhead)">
-    <line x1="530" y1="385" x2="700" y2="385"/>
+    <line x1="750" y1="300" x2="920" y2="300"/>
   </g>
+
   <!-- AI Models Block -->
-  <rect x="710" y="250" width="220" height="270" rx="20" fill="#e0e7ef" stroke="#3b82f6" stroke-width="2"/>
-  <text x="820" y="275" font-size="22" font-family="sans-serif" fill="#1e293b" text-anchor="middle" font-weight="bold">AI Models</text>
-  <rect x="740" y="300" width="160" height="50" rx="10" fill="#fff" stroke="#3b82f6" stroke-width="1.5"/>
-  <text x="820" y="330" font-size="16" font-family="sans-serif" fill="#1e293b" text-anchor="middle">Vision Model</text>
-  <rect x="740" y="360" width="160" height="50" rx="10" fill="#fff" stroke="#3b82f6" stroke-width="1.5"/>
-  <text x="820" y="390" font-size="16" font-family="sans-serif" fill="#1e293b" text-anchor="middle">LLM</text>
-  <rect x="740" y="420" width="160" height="50" rx="10" fill="#fff" stroke="#3b82f6" stroke-width="1.5"/>
-  <text x="820" y="450" font-size="16" font-family="sans-serif" fill="#1e293b" text-anchor="middle">Embeddings Model</text>
+  <rect x="930" y="150" width="280" height="300" rx="20" fill="#e0e7ef" stroke="#3b82f6" stroke-width="2"/>
+  <text x="1070" y="180" font-size="24" font-family="sans-serif" fill="#1e293b" text-anchor="middle" font-weight="bold">AI Models</text>
+  
+  <g transform="translate(950, 200)">
+    <rect x="0" y="0" width="240" height="50" rx="10" fill="#fff" stroke="#3b82f6" stroke-width="1.5"/>
+    <text x="120" y="30" font-size="16" font-family="sans-serif" fill="#1e293b" text-anchor="middle">Vision Model</text>
+    
+    <rect x="0" y="60" width="240" height="50" rx="10" fill="#fff" stroke="#3b82f6" stroke-width="1.5"/>
+    <text x="120" y="90" font-size="16" font-family="sans-serif" fill="#1e293b" text-anchor="middle">LLM</text>
+    
+    <rect x="0" y="120" width="240" height="50" rx="10" fill="#fff" stroke="#3b82f6" stroke-width="1.5"/>
+    <text x="120" y="150" font-size="16" font-family="sans-serif" fill="#1e293b" text-anchor="middle">Embeddings Model</text>
+  </g>
+
   <!-- Sub-blocks below AI Models -->
-  <rect x="730" y="530" width="80" height="40" rx="8" fill="#fff" stroke="#60a5fa" stroke-width="1.5"/>
-  <text x="770" y="555" font-size="13" font-family="sans-serif" fill="#1e293b" text-anchor="middle">Prompt Engineering</text>
-  <rect x="820" y="530" width="80" height="40" rx="8" fill="#fff" stroke="#60a5fa" stroke-width="1.5"/>
-  <text x="860" y="555" font-size="13" font-family="sans-serif" fill="#1e293b" text-anchor="middle">Model Fine-tuning</text>
-  <rect x="910" y="530" width="80" height="40" rx="8" fill="#fff" stroke="#60a5fa" stroke-width="1.5"/>
-  <text x="950" y="555" font-size="13" font-family="sans-serif" fill="#1e293b" text-anchor="middle">Caching Layer</text>
-  <!-- Arrows to Response Generation -->
-  <g stroke="#2563eb" stroke-width="3" fill="none" marker-end="url(#arrowhead)">
-    <line x1="930" y1="385" x2="1100" y2="385"/>
+  <g transform="translate(930, 470)">
+    <rect x="0" y="0" width="90" height="40" rx="8" fill="#fff" stroke="#60a5fa" stroke-width="1.5"/>
+    <text x="45" y="25" font-size="14" font-family="sans-serif" fill="#1e293b" text-anchor="middle">Prompt Engineering</text>
+    
+    <rect x="95" y="0" width="90" height="40" rx="8" fill="#fff" stroke="#60a5fa" stroke-width="1.5"/>
+    <text x="140" y="25" font-size="14" font-family="sans-serif" fill="#1e293b" text-anchor="middle">Model Fine-tuning</text>
+    
+    <rect x="190" y="0" width="90" height="40" rx="8" fill="#fff" stroke="#60a5fa" stroke-width="1.5"/>
+    <text x="235" y="25" font-size="14" font-family="sans-serif" fill="#1e293b" text-anchor="middle">Caching Layer</text>
   </g>
+
+  <!-- Arrow to Response Generation -->
+  <g stroke="#2563eb" stroke-width="3" fill="none" marker-end="url(#arrowhead)">
+    <line x1="1210" y1="300" x2="1380" y2="300"/>
+  </g>
+
   <!-- Response Generation Block -->
-  <rect x="1110" y="300" width="180" height="170" rx="20" fill="#e0e7ef" stroke="#3b82f6" stroke-width="2"/>
-  <text x="1200" y="325" font-size="22" font-family="sans-serif" fill="#1e293b" text-anchor="middle" font-weight="bold">Response Generation</text>
-  <text x="1200" y="360" font-size="16" font-family="sans-serif" fill="#1e293b" text-anchor="middle">Translation Service</text>
-  <text x="1200" y="390" font-size="16" font-family="sans-serif" fill="#1e293b" text-anchor="middle">Grading System</text>
-  <text x="1200" y="420" font-size="16" font-family="sans-serif" fill="#1e293b" text-anchor="middle">Feedback Generation</text>
-  <!-- Arrow to User Interface -->
-  <g stroke="#2563eb" stroke-width="3" fill="none" marker-end="url(#arrowhead)">
-    <line x1="1290" y1="385" x2="1460" y2="385"/>
+  <rect x="1390" y="150" width="280" height="300" rx="20" fill="#e0e7ef" stroke="#3b82f6" stroke-width="2"/>
+  <text x="1530" y="180" font-size="24" font-family="sans-serif" fill="#1e293b" text-anchor="middle" font-weight="bold">Response Generation</text>
+  
+  <g transform="translate(1410, 200)">
+    <rect x="0" y="0" width="240" height="50" rx="10" fill="#fff" stroke="#3b82f6" stroke-width="1.5"/>
+    <text x="120" y="30" font-size="16" font-family="sans-serif" fill="#1e293b" text-anchor="middle">Translation Service</text>
+    
+    <rect x="0" y="60" width="240" height="50" rx="10" fill="#fff" stroke="#3b82f6" stroke-width="1.5"/>
+    <text x="120" y="90" font-size="16" font-family="sans-serif" fill="#1e293b" text-anchor="middle">Grading System</text>
+    
+    <rect x="0" y="120" width="240" height="50" rx="10" fill="#fff" stroke="#3b82f6" stroke-width="1.5"/>
+    <text x="120" y="150" font-size="16" font-family="sans-serif" fill="#1e293b" text-anchor="middle">Feedback Generation</text>
   </g>
-  <!-- User Interface Block -->
-  <rect x="1470" y="300" width="120" height="170" rx="20" fill="#e0e7ef" stroke="#3b82f6" stroke-width="2"/>
-  <text x="1530" y="325" font-size="22" font-family="sans-serif" fill="#1e293b" text-anchor="middle" font-weight="bold">User Interface</text>
-  <text x="1530" y="360" font-size="16" font-family="sans-serif" fill="#1e293b" text-anchor="middle">Real-time Feedback</text>
-  <text x="1530" y="390" font-size="16" font-family="sans-serif" fill="#1e293b" text-anchor="middle">Progress Tracking</text>
-  <text x="1530" y="420" font-size="16" font-family="sans-serif" fill="#1e293b" text-anchor="middle">Performance Analytics</text>
-  <!-- Top Section: Testing Infrastructure -->
-  <rect x="600" y="60" width="400" height="80" rx="20" fill="#f1f5f9" stroke="#64748b" stroke-width="2" />
-  <text x="800" y="90" font-size="20" font-family="sans-serif" fill="#334155" text-anchor="middle" font-weight="bold">Testing Infrastructure</text>
-  <text x="800" y="115" font-size="15" font-family="sans-serif" fill="#334155" text-anchor="middle">Unit Tests   |   Integration Tests   |   Performance Tests</text>
-  <!-- Dotted lines from Testing Infrastructure -->
-  <g stroke="#64748b" stroke-width="2" stroke-dasharray="6,6" fill="none">
-    <line x1="800" y1="140" x2="440" y2="300"/>
-    <line x1="800" y1="140" x2="820" y2="250"/>
-    <line x1="800" y1="140" x2="1200" y2="300"/>
-    <line x1="800" y1="140" x2="1530" y2="300"/>
-  </g>
-  <!-- Bottom Section: System Components -->
-  <rect x="600" y="720" width="400" height="80" rx="20" fill="#f1f5f9" stroke="#64748b" stroke-width="2" />
-  <text x="800" y="750" font-size="20" font-family="sans-serif" fill="#334155" text-anchor="middle" font-weight="bold">System Components</text>
-  <text x="800" y="775" font-size="15" font-family="sans-serif" fill="#334155" text-anchor="middle">Logging   |   Error Handling   |   Config Management</text>
-  <!-- Dotted lines from System Components -->
-  <g stroke="#64748b" stroke-width="2" stroke-dasharray="6,6" fill="none">
-    <line x1="800" y1="720" x2="440" y2="470"/>
-    <line x1="800" y1="720" x2="820" y2="520"/>
-    <line x1="800" y1="720" x2="1200" y2="470"/>
-    <line x1="800" y1="720" x2="1530" y2="470"/>
-  </g>
+
+  <!-- Testing Infrastructure -->
+  <rect x="600" y="60" width="500" height="80" rx="20" fill="#f1f5f9" stroke="#64748b" stroke-width="2" />
+  <text x="850" y="90" font-size="24" font-family="sans-serif" fill="#334155" text-anchor="middle" font-weight="bold">Testing Infrastructure</text>
+  <text x="850" y="120" font-size="16" font-family="sans-serif" fill="#334155" text-anchor="middle">Unit Tests   |   Integration Tests   |   Performance Tests</text>
+
+  <!-- System Components -->
+  <rect x="600" y="820" width="500" height="80" rx="20" fill="#f1f5f9" stroke="#64748b" stroke-width="2" />
+  <text x="850" y="850" font-size="24" font-family="sans-serif" fill="#334155" text-anchor="middle" font-weight="bold">System Components</text>
+  <text x="850" y="880" font-size="16" font-family="sans-serif" fill="#334155" text-anchor="middle">Logging   |   Error Handling   |   Config Management</text>
+
   <!-- External Integration -->
-  <rect x="1200" y="600" width="300" height="80" rx="20" fill="#f1f5f9" stroke="#64748b" stroke-width="2" />
-  <text x="1350" y="630" font-size="18" font-family="sans-serif" fill="#334155" text-anchor="middle" font-weight="bold">External Integration</text>
-  <text x="1350" y="655" font-size="15" font-family="sans-serif" fill="#334155" text-anchor="middle">Local API   |   External Services   |   Data Storage</text>
-  <!-- Lines to main blocks -->
-  <g stroke="#64748b" stroke-width="2" stroke-dasharray="4,6" fill="none">
-    <line x1="1200" y1="600" x2="1200" y2="470"/>
-    <line x1="1350" y1="600" x2="820" y2="520"/>
-    <line x1="1500" y1="600" x2="1530" y2="470"/>
-  </g>
-  <!-- Feedback Loop (Curved Arrow) -->
-  <path d="M 1530 470 Q 1600 600 800 800 Q 0 600 440 470" fill="none" stroke="#f59e42" stroke-width="5" marker-end="url(#arrowhead)" />
-  <text x="1550" y="600" font-size="15" font-family="sans-serif" fill="#f59e42" text-anchor="start" font-weight="bold">User Feedback Collection</text>
-  <text x="800" y="830" font-size="15" font-family="sans-serif" fill="#f59e42" text-anchor="middle" font-weight="bold">Model Performance Monitoring</text>
-  <text x="250" y="600" font-size="15" font-family="sans-serif" fill="#f59e42" text-anchor="end" font-weight="bold">System Optimization</text>
+  <rect x="1390" y="600" width="280" height="80" rx="20" fill="#f1f5f9" stroke="#64748b" stroke-width="2" />
+  <text x="1530" y="630" font-size="20" font-family="sans-serif" fill="#334155" text-anchor="middle" font-weight="bold">External Integration</text>
+  <text x="1530" y="660" font-size="16" font-family="sans-serif" fill="#334155" text-anchor="middle">Local API   |   External Services   |   Data Storage</text>
+
+  <!-- Feedback Loop -->
+  <path d="M 1670 450 Q 1800 600 850 900 Q 0 600 340 450" fill="none" stroke="#f59e42" stroke-width="5" marker-end="url(#arrowhead)" />
+  <text x="1700" y="580" font-size="16" font-family="sans-serif" fill="#f59e42" text-anchor="start" font-weight="bold">User Feedback Collection</text>
+  <text x="850" y="930" font-size="16" font-family="sans-serif" fill="#f59e42" text-anchor="middle" font-weight="bold">Model Performance Monitoring</text>
+  <text x="200" y="580" font-size="16" font-family="sans-serif" fill="#f59e42" text-anchor="end" font-weight="bold">System Optimization</text>
+
   <!-- Arrowhead marker definition -->
   <defs>
     <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
