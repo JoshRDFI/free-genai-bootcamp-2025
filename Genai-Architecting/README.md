@@ -1,4 +1,4 @@
-![Architecture Diagram](conceptual.svg)
+<img src="conceptual.svg" alt="Architecture Diagram" width="100%" />
 
 ### Functional Requirements:
 
