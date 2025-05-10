@@ -73,7 +73,7 @@
     <text x="120" y="175" font-size="14" font-family="sans-serif" fill="#1e293b" text-anchor="middle">Visual Novel Learning</text>
 
     <rect x="0" y="200" width="240" height="40" rx="8" fill="#fff" stroke="#3b82f6" stroke-width="1.5"/>
-    <text x="120" y="225" font-size="14" font-family="sans-serif" fill="#1e293b" text-anchor="middle">Listening & Speaking</text>
+    <text x="120" y="225" font-size="14" font-family="sans-serif" fill="#1e293b" text-anchor="middle">Listening &amp; Speaking</text>
   </g>
 
   <!-- Guardrails Block -->
