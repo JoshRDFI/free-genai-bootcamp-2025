@@ -8,6 +8,7 @@ sqlalchemy==2.0.28
 pydantic==2.6.3
 python-multipart==0.0.9
 requests==2.31.0
+chromadb==0.4.24
 
 # Audio Processing
 numpy==1.24.4

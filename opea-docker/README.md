@@ -36,6 +36,30 @@ This repository contains a set of microservices for the OPEA (Open Platform for 
 docker-compose up -d
 ```
 
+### TTS Service Setup
+
+Before starting the TTS service, you need to download the XTTS v2 model files:
+
+1. Install the setup requirements:
+   ```bash
+   pip install -r setup_requirements.txt
+   ```
+
+2. Run the setup script:
+   ```bash
+   python setup_tts.py
+   ```
+
+This will download the required model files to `./data/tts_data/`. The files will be automatically mounted into the TTS service container.
+
+### Starting Services
+
+After setting up the TTS service, you can start all services:
+
+```bash
+docker compose up -d
+```
+
 ## Service Endpoints
 
 - LLM Text Service: http://localhost:9000/v1/chat/completions

@@ -4,15 +4,27 @@ from typing import Optional
 import os
 import base64
 import tempfile
-from TTS.api import TTS
+from TTS.tts.configs.xtts_config import XttsConfig
+from TTS.tts.models.xtts import Xtts
+from contextlib import asynccontextmanager
+import torch
+import logging
 
-# Constants
-TTS_MODEL = os.getenv("TTS_MODEL", "xtts-v2")
-TTS_DATA_PATH = os.getenv("TTS_DATA_PATH", "/home/tts/.xtts_data")
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+TTS_DATA_PATH = os.getenv("TTS_DATA_PATH", "/app/data/tts_data")
+XTTS_CONFIG_PATH = os.path.join(TTS_DATA_PATH, "config.json")
+XTTS_CHECKPOINT_DIR = TTS_DATA_PATH
+
+os.makedirs(TTS_DATA_PATH, exist_ok=True)
+logger.info(f"TTS data path: {TTS_DATA_PATH}")
+logger.info(f"Directory contents: {os.listdir(TTS_DATA_PATH)}")
 
 class TTSRequest(BaseModel):
     text: str
-    voice: Optional[str] = "default"
+    voice: Optional[str] = None  # path to speaker wav
     language: Optional[str] = "en"
     speed: Optional[float] = 1.0
 
@@ -20,61 +32,80 @@ class TTSResponse(BaseModel):
     audio: str  # base64 encoded audio
     format: str = "wav"
 
-# Initialize FastAPI app
-app = FastAPI()
+_xtts_model = None
 
-# Initialize TTS model
-_tts_model = None
-
-def get_tts_model():
-    global _tts_model
-    if _tts_model is None:
+def get_xtts_model():
+    global _xtts_model
+    if _xtts_model is None:
         try:
-            print(f"Initializing TTS model: {TTS_MODEL}")
-            _tts_model = TTS(model_name=TTS_MODEL)
-            print("TTS model initialized successfully")
+            logger.info("Loading XTTS v2 model...")
+            config = XttsConfig()
+            config.load_json(XTTS_CONFIG_PATH)
+            model = Xtts.init_from_config(config)
+            model.load_checkpoint(config, checkpoint_dir=XTTS_CHECKPOINT_DIR, eval=True)
+            model.cuda()  # or .cpu() if no GPU
+            _xtts_model = (model, config)
+            logger.info("XTTS v2 model loaded successfully.")
         except Exception as e:
-            print(f"Error initializing TTS model: {e}")
-    return _tts_model
+            logger.error(f"Failed to load XTTS v2: {e}")
+            raise
+    return _xtts_model
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup
+    logger.info("Starting up TTS service...")
+    try:
+        get_xtts_model()
+        logger.info("TTS model initialized during startup")
+    except Exception as e:
+        logger.error(f"Failed to initialize TTS model during startup: {e}")
+    yield
+    # Shutdown
+    logger.info("Shutting down TTS service...")
+
+# Initialize FastAPI app with lifespan
+app = FastAPI(lifespan=lifespan)
 
 @app.post("/tts")
 async def text_to_speech(request: TTSRequest):
     try:
-        # Get the TTS model
-        tts = get_tts_model()
-        if tts is None:
-            raise Exception("TTS model failed to initialize")
-            
-        # Create a temporary file for the audio output
+        (model, config) = get_xtts_model()
         with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as temp_file:
             temp_filename = temp_file.name
-        
-        # Generate speech with XTTS
-        tts.tts_to_file(
-            text=request.text,
-            file_path=temp_filename,
-            speaker=request.voice,
+
+        # XTTS requires a speaker wav for voice cloning; if not provided, use a default or skip
+        speaker_wav = request.voice if request.voice else None
+
+        outputs = model.synthesize(
+            request.text,
+            config,
+            speaker_wav=speaker_wav,
+            gpt_cond_len=3,
             language=request.language,
-            speed=request.speed
         )
-        
-        # Read the generated audio file
+        # Save the output waveform to file
+        model.save_wav(outputs["wav"], temp_filename, sample_rate=outputs["sample_rate"])
+
         with open(temp_filename, "rb") as audio_file:
             audio_data = audio_file.read()
-        
-        # Encode to base64
         audio_base64 = base64.b64encode(audio_data).decode("utf-8")
-        
-        # Clean up
         os.unlink(temp_filename)
-        
         return TTSResponse(audio=audio_base64, format="wav")
     except Exception as e:
+        logger.error(f"Error in text_to_speech: {e}")
         raise HTTPException(status_code=500, detail=f"Error generating speech: {str(e)}")
 
 @app.get("/health")
 async def health_check():
-    return {"status": "healthy", "model": TTS_MODEL}
+    model_files = os.listdir(TTS_DATA_PATH) if os.path.exists(TTS_DATA_PATH) else []
+    return {
+        "status": "healthy",
+        "model_files": model_files,
+        "tts_home": os.environ.get("TTS_HOME", "not set"),
+        "directory_exists": os.path.exists(TTS_DATA_PATH),
+        "directory_permissions": oct(os.stat(TTS_DATA_PATH).st_mode)[-3:] if os.path.exists(TTS_DATA_PATH) else "N/A"
+    }
 
 @app.get("/voices")
 async def list_voices():

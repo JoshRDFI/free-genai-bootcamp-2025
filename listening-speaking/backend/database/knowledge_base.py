@@ -52,21 +52,57 @@ class KnowledgeBase:
             )
             """)
 
-            # Create questions table
-            cursor.execute("""
-            CREATE TABLE IF NOT EXISTS questions (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                video_id TEXT NOT NULL,
-                section_num INTEGER NOT NULL,
-                introduction TEXT,
-                conversation TEXT,
-                question TEXT NOT NULL,
-                options TEXT NOT NULL,
-                correct_answer INTEGER NOT NULL DEFAULT 1,
-                image_path TEXT,
-                created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-            )
-            """)
+            # Check if old questions table exists
+            cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='questions'")
+            if cursor.fetchone():
+                # Check if we need to migrate the schema
+                cursor.execute("PRAGMA table_info(questions)")
+                columns = {row[1] for row in cursor.fetchall()}
+                
+                # If old schema exists, migrate to new schema
+                if 'transcript_id' in columns:
+                    # Create temporary table with new schema
+                    cursor.execute("""
+                    CREATE TABLE questions_new (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        video_id TEXT NOT NULL,
+                        section_num INTEGER NOT NULL,
+                        introduction TEXT,
+                        conversation TEXT,
+                        question TEXT NOT NULL,
+                        options TEXT NOT NULL,
+                        correct_answer INTEGER NOT NULL DEFAULT 1,
+                        image_path TEXT,
+                        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+                    )
+                    """)
+                    
+                    # Migrate data from old table to new table
+                    cursor.execute("""
+                    INSERT INTO questions_new (id, question, options, correct_answer, image_path, created_at)
+                    SELECT id, question, options, correct_option, image_path, created_at
+                    FROM questions
+                    """)
+                    
+                    # Drop old table and rename new table
+                    cursor.execute("DROP TABLE questions")
+                    cursor.execute("ALTER TABLE questions_new RENAME TO questions")
+            else:
+                # Create new questions table
+                cursor.execute("""
+                CREATE TABLE questions (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    video_id TEXT NOT NULL,
+                    section_num INTEGER NOT NULL,
+                    introduction TEXT,
+                    conversation TEXT,
+                    question TEXT NOT NULL,
+                    options TEXT NOT NULL,
+                    correct_answer INTEGER NOT NULL DEFAULT 1,
+                    image_path TEXT,
+                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+                )
+                """)
 
             # Create image_generation table if it doesn't exist
             cursor.execute("""

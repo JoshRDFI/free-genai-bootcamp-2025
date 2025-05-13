@@ -2,130 +2,157 @@
 
 services:
   ollama-server:
-    image: ollama/ollama
+    image: ollama/ollama:latest
     container_name: ollama-server
     ports:
-      - "${LLM_ENDPOINT_PORT:-8008}:11434"
+      - "11434:11434"
     volumes:
-      - ${OLLAMA_DATA_PATH:-./data/ollama_data}:/root/.ollama
-      - ${SHARED_DB_PATH:-./data/shared_db}:/app/db
-    restart: unless-stopped
-
-  llm_text:
-    build:
-      context: ./comps/llm_text
-    container_name: llm_text
-    ports:
-      - "${LLM_TEXT_PORT:-9000}:9000"
-    environment:
-      - LLM_ENDPOINT=${LLM_ENDPOINT}
-      - LLM_MODEL_ID=${LLM_MODEL_ID}
-    volumes:
-      - ./comps/llm_text:/app
-      - ${SHARED_DB_PATH:-./data/shared_db}:/app/db
-      - ${LLM_XTTS_DATA_PATH:-./data/llm_xtts}:/app/data/xtts
-    depends_on:
-      - ollama-server
-    restart: unless-stopped
-
-  guardrails:
-    build:
-      context: ./comps/guardrails
-    container_name: guardrails
-    ports:
-      - "${GUARDRAILS_SERVICE_PORT:-9400}:9400"
-    volumes:
-      - ./comps/guardrails:/app
-      - ${SHARED_DB_PATH:-./data/shared_db}:/app/db
-    restart: unless-stopped
-
-  chromadb:
-    image: ghcr.io/chroma-core/chroma:latest
-    container_name: chromadb
-    ports:
-      - "${CHROMADB_PORT:-8050}:8000"
-    volumes:
-      - ${CHROMA_DATA_PATH:-./data/chroma_data}:/chroma/chroma
-    restart: unless-stopped
-
-  tts:
-    build:
-      context: ./comps/tts
-    container_name: tts
-    ports:
-      - "${TTS_SERVICE_PORT:-9200}:9200"
-    environment:
-      - TTS_MODEL=${TTS_MODEL}
-      - TTS_CACHE_PATH=/app/data
-    volumes:
-      - ./comps/tts:/app
-      - ${TTS_DATA_PATH:-./data/tts_data}:/app/data
-    restart: unless-stopped
-
-  asr:
-    build:
-      context: ./comps/asr
-    container_name: asr
-    ports:
-      - "${ASR_SERVICE_PORT:-9300}:9300"
-    environment:
-      - TRANSFORMERS_CACHE=/app/data
-      - ASR_MODEL=${ASR_MODEL}
-    volumes:
-      - ./comps/asr:/app
-      - ${ASR_DATA_PATH:-./data/asr_data}:/app/data
-    restart: unless-stopped
-
-  llm-vision:
-    build:
-      context: ./comps/llm-vision
-    container_name: llm-vision
-    ports:
-      - "${LLM_VISION_PORT:-9100}:9100"
-    environment:
-      VISION_MODEL_ID: ${VISION_MODEL_ID}
-      HF_HOME: /app/models
-    volumes:
-      - ./comps/llm-vision:/app
-      - ${MANGAOCR_MODELS_PATH:-./data/man}:/app/models
-    depends_on:
-      - ollama-server
-    restart: unless-stopped
-
-  waifu-diffusion:
-    build:
-      context: ./comps/waifu-diffusion
-    container_name: waifu-diffusion
-    ports:
-      - "${WAIFU_DIFFUSION_PORT:-9500}:9500"
-    environment:
-      - MODEL_ID=${WAIFU_MODEL_ID:-waifu-diffusion/wd-1-5-beta2}
-      - MODEL_PATH=/app/data/waifu
-      - USE_LOCAL=False
-      - HF_HOME=/app/data/waifu
-    volumes:
-      - ./comps/waifu-diffusion:/app
-      - ${WAIFU_DATA_PATH:-./data/waifu}:/app/data/waifu
+      - ../data/ollama_data:/root/.ollama
     deploy:
       resources:
         reservations:
           devices:
             - driver: nvidia
-              count: 1
+              count: all
               capabilities: [gpu]
-    restart: unless-stopped
+
+  llm_text:
+    image: opea-docker-llm-text:latest
+    container_name: llm_text
+    ports:
+      - "9000:9000"
+    volumes:
+      - ../data/ollama_data:/root/.ollama
+      - ../data/shared_db:/app/db
+    environment:
+      - OLLAMA_HOST=ollama-server
+    depends_on:
+      - ollama-server
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+
+  guardrails:
+    image: opea-docker-guardrails:latest
+    container_name: guardrails
+    ports:
+      - "9001:9001"
+    volumes:
+      - ../data/ollama_data:/root/.ollama
+      - ../data/shared_db:/app/db
+    environment:
+      - OLLAMA_HOST=ollama-server
+    depends_on:
+      - ollama-server
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+
+  chromadb:
+    image: opea-docker-chromadb:latest
+    container_name: chromadb
+    ports:
+      - "9002:9002"
+    volumes:
+      - ../data/chroma_data:/app/chromadb
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+
+  tts:
+    image: opea-docker-tts:latest
+    container_name: tts
+    ports:
+      - "9003:9003"
+    volumes:
+      - ../data/tts_data:/app/data/tts_data
+    environment:
+      - TTS_HOME=/app/data/tts_data
+      - TTS_DATA_PATH=/app/data/tts_data
+      - TTS_MODEL=xtts_v2
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+
+  asr:
+    image: opea-docker-asr:latest
+    container_name: asr
+    ports:
+      - "9004:9004"
+    volumes:
+      - ../data/asr_data:/app/data/whisper
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+
+  llm-vision:
+    image: opea-docker-llm-vision:latest
+    container_name: llm-vision
+    ports:
+      - "9100:9100"
+    volumes:
+      - ../data/mangaocr_models:/app/data/mangaocr_models
+    environment:
+      - MANGAOCR_MODEL_PATH=/app/data/mangaocr_models
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+
+  waifu-diffusion:
+    image: opea-docker-waifu-diffusion:latest
+    container_name: waifu-diffusion
+    ports:
+      - "9101:9101"
+    volumes:
+      - ../data/waifu:/app/data/waifu-diffusion
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
 
   embeddings:
-    build:
-      context: ./comps/embeddings
+    image: opea-docker-embeddings:latest
     container_name: embeddings
     ports:
-      - "${EMBEDDING_SERVICE_PORT:-6000}:6000"
-    environment:
-      EMBEDDING_MODEL: ${EMBEDDING_MODEL}
-      HF_HOME: /app/data
+      - "9102:9102"
     volumes:
-      - ./comps/embeddings:/app
-      - ${SHARED_DB_PATH:-./data/shared_db}:/app/db
-      - ./data/embeddings:/app/data
-    restart: unless-stopped
+      - ../data/embeddings:/app/data/embeddings
+      - ../data/shared_db:/app/db
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+
+networks:
+  default:
+    name: opea-docker_default

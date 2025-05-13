@@ -92,24 +92,27 @@ CREATE TABLE IF NOT EXISTS writing_submissions (
 CREATE INDEX IF NOT EXISTS idx_submissions_sentence ON writing_submissions(sentence_id);
 CREATE INDEX IF NOT EXISTS idx_submissions_grade ON writing_submissions(grade);
 
--- Transcripts Table
+-- Transcripts Table (Updated for listening-speaking module)
 CREATE TABLE IF NOT EXISTS transcripts (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     video_id TEXT NOT NULL UNIQUE,
-    transcript TEXT NOT NULL,
+    content TEXT NOT NULL,
+    language TEXT NOT NULL DEFAULT 'ja',
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
--- Generated Questions Table
+-- Generated Questions Table (Updated for listening-speaking module)
 CREATE TABLE IF NOT EXISTS questions (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    transcript_id INTEGER NOT NULL,
+    video_id TEXT NOT NULL,
+    section_num INTEGER NOT NULL,
+    introduction TEXT,
+    conversation TEXT,
     question TEXT NOT NULL,
-    options TEXT NOT NULL, -- JSON array of options
-    correct_option INTEGER NOT NULL, -- Index of the correct option (1-4)
-    image_path TEXT, -- Path to associated image
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (transcript_id) REFERENCES transcripts(id)
+    options TEXT NOT NULL,
+    correct_answer INTEGER NOT NULL DEFAULT 1,
+    image_path TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Embeddings Table
@@ -161,7 +164,6 @@ CONSTRAINT fk_words_sentences REFERENCES sentences(id);
 
 -- Add to study_sessions table
 ALTER TABLE study_sessions ADD COLUMN writing_submission_id INTEGER REFERENCES writing_submissions(id);
-
 
 CREATE TABLE IF NOT EXISTS schema_versions (
     version INTEGER PRIMARY KEY,

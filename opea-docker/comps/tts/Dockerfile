@@ -22,8 +22,14 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy the rest of the application
 COPY . .
 
-# Create directory for TTS data
-RUN mkdir -p /data/llm_xtts
+# Create and set permissions for TTS data directory
+RUN mkdir -p /app/data/tts_data && \
+    chmod -R 777 /app/data/tts_data
+
+# Set environment variables
+ENV TTS_HOME=/app/data/tts_data
+ENV TTS_DATA_PATH=/app/data/tts_data
+ENV PYTHONUNBUFFERED=1
 
 # Expose the port
 EXPOSE 9200

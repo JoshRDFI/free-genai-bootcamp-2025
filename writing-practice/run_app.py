@@ -12,7 +12,6 @@ import signal
 import logging
 import webbrowser
 from pathlib import Path
-import platform
 
 # Setup logging
 logging.basicConfig(
@@ -57,30 +56,10 @@ def start_api_server():
         # Change to API directory
         os.chdir(API_DIR)
         
-        # Determine which script to run based on OS
-        if platform.system() == "Windows":
-            if os.path.exists("start_api.bat"):
-                api_process = subprocess.Popen(["start_api.bat"], 
-                                              shell=True,
-                                              stdout=subprocess.PIPE,
-                                              stderr=subprocess.PIPE)
-            else:
-                # Direct Python execution if batch file not available
-                api_process = subprocess.Popen([sys.executable, "server.py"],
-                                              stdout=subprocess.PIPE,
-                                              stderr=subprocess.PIPE)
-        else:  # Linux/Mac
-            if os.path.exists("start_api.sh"):
-                # Make sure the script is executable
-                os.chmod("start_api.sh", 0o755)
-                api_process = subprocess.Popen(["./start_api.sh"],
-                                              stdout=subprocess.PIPE,
-                                              stderr=subprocess.PIPE)
-            else:
-                # Direct Python execution if shell script not available
-                api_process = subprocess.Popen([sys.executable, "server.py"],
-                                              stdout=subprocess.PIPE,
-                                              stderr=subprocess.PIPE)
+        # Start API server
+        api_process = subprocess.Popen([sys.executable, "server.py"],
+                                     stdout=subprocess.PIPE,
+                                     stderr=subprocess.PIPE)
         
         # Change back to base directory
         os.chdir(BASE_DIR)
@@ -112,8 +91,8 @@ def start_streamlit_app():
         
         # Start Streamlit app
         app_process = subprocess.Popen([sys.executable, "-m", "streamlit", "run", "app.py"],
-                                      stdout=subprocess.PIPE,
-                                      stderr=subprocess.PIPE)
+                                     stdout=subprocess.PIPE,
+                                     stderr=subprocess.PIPE)
         
         # Wait a moment for Streamlit to start
         time.sleep(2)

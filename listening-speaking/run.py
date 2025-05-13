@@ -48,21 +48,29 @@ def run_backend():
         sys.exit(1)
 
 def check_database_exists():
-    """Check if database already exists in shared location"""
-    shared_db_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 
-                                 "opea-docker", "data", "shared_db", "shared.db")
-    if os.path.exists(shared_db_path):
-        try:
-            # Try to connect to the database
-            conn = sqlite3.connect(shared_db_path)
-            cursor = conn.cursor()
-            # Check if our tables exist
-            cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='questions'")
-            if cursor.fetchone():
-                conn.close()
-                return True
-        except sqlite3.Error:
-            pass
+    """Check if database already exists in the correct location"""
+    # Get the project root directory
+    project_root = os.path.dirname(os.path.abspath(__file__))
+    
+    # Check both possible database locations
+    db_paths = [
+        os.path.join(project_root, "backend", "database", "knowledge_base.db"),
+        os.path.join(os.path.dirname(project_root), "opea-docker", "data", "shared_db", "shared.db")
+    ]
+    
+    for db_path in db_paths:
+        if os.path.exists(db_path):
+            try:
+                # Try to connect to the database
+                conn = sqlite3.connect(db_path)
+                cursor = conn.cursor()
+                # Check if our tables exist
+                cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='questions'")
+                if cursor.fetchone():
+                    conn.close()
+                    return True
+            except sqlite3.Error:
+                continue
     return False
 
 def setup_database():
@@ -70,7 +78,7 @@ def setup_database():
     try:
         # Check if database already exists
         if check_database_exists():
-            print("Database already exists in shared location. Skipping setup.")
+            print("Database and tables already exist. Skipping setup.")
             return
 
         # Get the project root directory
@@ -80,7 +88,11 @@ def setup_database():
         setup_script = os.path.join(project_root, "setup", "setup_db.py")
 
         # Run setup script
-        subprocess.run(["python3", setup_script])
+        subprocess.run(["python3", setup_script], check=True)
+        print("Database setup completed successfully.")
+    except subprocess.CalledProcessError as e:
+        print(f"Error setting up database: {str(e)}")
+        sys.exit(1)
     except Exception as e:
         print(f"Error setting up database: {str(e)}")
         sys.exit(1)
