@@ -7,6 +7,7 @@ import io
 from typing import Optional
 import base64
 from PIL import Image
+from io import BytesIO
 
 # Initialize FastAPI app
 app = FastAPI()
@@ -20,7 +21,9 @@ USE_LOCAL = os.getenv("USE_LOCAL", "True").lower() in ("true", "1", "t")
 device = "cuda" if torch.cuda.is_available() else "cpu"
 print(f"Using device: {device}")
 
-# Load the Waifu Diffusion model
+# Global variable to store the pipeline
+pipe = None
+
 def load_model():
     try:
         if USE_LOCAL and os.path.exists(MODEL_PATH):
@@ -44,21 +47,18 @@ def load_model():
                 
         return pipe
     except Exception as e:
-        print(f"Error loading model: {e}")
+        print(f"Error loading model: {str(e)}")
         raise e
 
 # Request model
 class ImageRequest(BaseModel):
     prompt: str
-    negative_prompt: Optional[str] = None
-    num_inference_steps: Optional[int] = 50
-    guidance_scale: Optional[float] = 7.5
+    negative_prompt: str = ""
+    num_inference_steps: int = 50
+    guidance_scale: float = 7.5
     width: Optional[int] = 512
     height: Optional[int] = 512
     return_format: Optional[str] = "base64"  # 'base64' or 'binary'
-
-# Initialize the model
-pipe = None
 
 @app.on_event("startup")
 async def startup_event():
@@ -67,10 +67,8 @@ async def startup_event():
 
 @app.post("/generate")
 async def generate_image(request: ImageRequest):
-    global pipe
-    
     if pipe is None:
-        pipe = load_model()
+        raise HTTPException(status_code=500, detail="Model not loaded")
     
     try:
         # Generate the image

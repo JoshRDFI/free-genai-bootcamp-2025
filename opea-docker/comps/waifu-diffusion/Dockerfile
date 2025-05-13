@@ -12,20 +12,15 @@ RUN apt-get update && apt-get install -y \
 # Update pip to the latest version
 RUN python3 -m pip install --upgrade pip
 
-# Install PyTorch with CUDA support
-RUN pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
-
-# Install FastAPI and other dependencies
-RUN pip3 install fastapi uvicorn pydantic httpx pillow
-
-# Install Hugging Face diffusers and other dependencies
-RUN pip3 install diffusers transformers accelerate scipy ftfy
-
-# Create directories
-RUN mkdir -p /data/waifu
+# Copy requirements first for better caching
+COPY requirements.txt .
+RUN pip3 install -r requirements.txt
 
 # Copy the application code
 COPY . .
+
+# Download the model during build
+RUN python3 download_model.py
 
 # Expose the API port
 EXPOSE 9500

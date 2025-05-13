@@ -1,4 +1,5 @@
 chromadb==0.4.22
 fastapi==0.109.2
 uvicorn==0.27.1
-pydantic==2.6.1 
+pydantic==2.6.1
+numpy<2.0.0 
