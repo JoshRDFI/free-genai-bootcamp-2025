@@ -51,7 +51,8 @@ def create_data_directories():
         "data/embeddings",
         "data/chroma_data",
         "data/ollama_data",
-        "data/shared_db"
+        "data/shared_db",
+        "data/vocabulary_generator"
     ]
     
     for dir_path in data_dirs:
@@ -73,17 +74,48 @@ def setup_models():
             logger.error(f"Failed to run {script}")
             return False
     
-    # Pull Ollama model
-    logger.info("Pulling Ollama model...")
-    if not run_command("docker exec ollama-server ollama pull llama3.2"):
-        logger.error("Failed to pull Ollama model")
-        return False
-    
-    # Download ASR model
+    # Download ASR model directly
     logger.info("Downloading ASR model...")
-    if not run_command("docker exec asr python3 -c 'from transformers import WhisperForConditionalGeneration; WhisperForConditionalGeneration.from_pretrained(\"openai/whisper-base\")'"):
-        logger.error("Failed to download ASR model")
-        return False
+    asr_data_dir = Path("data/asr_data")
+    asr_data_dir.mkdir(parents=True, exist_ok=True)
+    
+    # Check if model already exists
+    if (asr_data_dir / "config.json").exists():
+        logger.info("ASR model already exists, skipping download...")
+    else:
+        # Create a temporary Python script to download the model
+        download_script = """
+import os
+from pathlib import Path
+from transformers import WhisperForConditionalGeneration, WhisperProcessor
+
+# Set the cache directory to our data directory
+os.environ['TRANSFORMERS_CACHE'] = str(Path('data/asr_data'))
+
+# Download model and processor
+model = WhisperForConditionalGeneration.from_pretrained('openai/whisper-base')
+processor = WhisperProcessor.from_pretrained('openai/whisper-base')
+
+# Save them explicitly to our data directory
+model.save_pretrained('data/asr_data')
+processor.save_pretrained('data/asr_data')
+"""
+        
+        # Write and execute the download script
+        script_path = "download_asr.py"
+        try:
+            with open(script_path, "w") as f:
+                f.write(download_script)
+            
+            if not run_command(f"python3 {script_path}"):
+                logger.error("Failed to download ASR model")
+                return False
+            
+            # Clean up the temporary script
+            os.remove(script_path)
+        except Exception as e:
+            logger.error(f"Error downloading ASR model: {e}")
+            return False
     
     return True
 
@@ -105,8 +137,16 @@ def start_docker_services():
     """Start all Docker services."""
     logger.info("Starting Docker services...")
     
-    # Stop any existing Ollama service
-    run_command("sudo systemctl stop ollama", check=False)
+    # Check if Ollama is running as a container and stop it if it is
+    ollama_container = subprocess.run(
+        ["docker", "ps", "--filter", "name=ollama", "--format", "{{.Names}}"],
+        capture_output=True,
+        text=True
+    )
+    
+    if ollama_container.stdout.strip():
+        logger.info("Stopping existing Ollama container...")
+        run_command("docker stop ollama", check=False)
     
     # Start services
     if not run_command("docker compose up -d", cwd="opea-docker"):
@@ -131,7 +171,8 @@ def verify_services():
         "asr",
         "llm-vision",
         "waifu-diffusion",
-        "embeddings"
+        "embeddings",
+        "vocabulary_generator"
     ]
     
     for service in required_services:
@@ -166,6 +207,12 @@ def main():
         # Start Docker services
         if not start_docker_services():
             logger.error("Failed to start Docker services")
+            return 1
+        
+        # Pull Ollama model after services are started
+        logger.info("Pulling Ollama model...")
+        if not run_command("docker exec ollama-server ollama pull llama3.2"):
+            logger.error("Failed to pull Ollama model")
             return 1
         
         # Verify services

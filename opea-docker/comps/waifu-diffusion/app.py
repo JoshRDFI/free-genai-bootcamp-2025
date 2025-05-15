@@ -122,4 +122,5 @@ async def health_check():
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=9500)
+    port = int(os.getenv("WAIFU_DIFFUSION_PORT", 9500))
+    uvicorn.run(app, host="0.0.0.0", port=port)

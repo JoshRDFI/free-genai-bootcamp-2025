@@ -5,14 +5,20 @@ import os
 import base64
 import tempfile
 from TTS.tts.configs.xtts_config import XttsConfig
-from TTS.tts.models.xtts import Xtts
+from TTS.tts.models.xtts import Xtts, XttsAudioConfig, XttsArgs
 from contextlib import asynccontextmanager
 import torch
 import logging
+import torch.serialization
+from TTS.config.shared_configs import BaseDatasetConfig
+import traceback
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+# Add XttsConfig, XttsAudioConfig to safe globals for PyTorch 2.6+
+torch.serialization.add_safe_globals([XttsConfig, XttsAudioConfig, BaseDatasetConfig, XttsArgs])
 
 TTS_DATA_PATH = os.getenv("TTS_DATA_PATH", "/app/data/tts_data")
 XTTS_CONFIG_PATH = os.path.join(TTS_DATA_PATH, "config.json")
@@ -43,11 +49,19 @@ def get_xtts_model():
             config.load_json(XTTS_CONFIG_PATH)
             model = Xtts.init_from_config(config)
             model.load_checkpoint(config, checkpoint_dir=XTTS_CHECKPOINT_DIR, eval=True)
-            model.cuda()  # or .cpu() if no GPU
+            
+            # Check if CUDA is available and use it if possible
+            if torch.cuda.is_available():
+                logger.info("Using CUDA for TTS model")
+                model.cuda()
+            else:
+                logger.info("CUDA not available, using CPU for TTS model")
+                model.cpu()
+                
             _xtts_model = (model, config)
             logger.info("XTTS v2 model loaded successfully.")
         except Exception as e:
-            logger.error(f"Failed to load XTTS v2: {e}")
+            logger.error(f"Failed to load XTTS v2: {e}\n{traceback.format_exc()}")
             raise
     return _xtts_model
 
@@ -93,7 +107,7 @@ async def text_to_speech(request: TTSRequest):
         os.unlink(temp_filename)
         return TTSResponse(audio=audio_base64, format="wav")
     except Exception as e:
-        logger.error(f"Error in text_to_speech: {e}")
+        logger.error(f"Error in text_to_speech: {e}\n{traceback.format_exc()}")
         raise HTTPException(status_code=500, detail=f"Error generating speech: {str(e)}")
 
 @app.get("/health")
@@ -114,4 +128,5 @@ async def list_voices():
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=9200)
+    port = int(os.getenv("TTS_SERVICE_PORT", 9200))
+    uvicorn.run(app, host="0.0.0.0", port=port)

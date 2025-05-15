@@ -89,16 +89,17 @@ def start_streamlit_app():
         # Change to base directory
         os.chdir(BASE_DIR)
         
-        # Start Streamlit app
-        app_process = subprocess.Popen([sys.executable, "-m", "streamlit", "run", "app.py"],
-                                     stdout=subprocess.PIPE,
-                                     stderr=subprocess.PIPE)
+        # Start Streamlit app with custom port
+        app_process = subprocess.Popen([
+            sys.executable, "-m", "streamlit", "run", "app.py",
+            "--server.port", "8503"
+        ], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         
         # Wait a moment for Streamlit to start
         time.sleep(2)
         
         # Open browser
-        webbrowser.open("http://localhost:8501")
+        webbrowser.open("http://localhost:8503")
         
         logger.info("Streamlit app started successfully")
         return True

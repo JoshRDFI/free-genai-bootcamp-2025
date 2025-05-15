@@ -3,4 +3,8 @@ uvicorn>=0.15.0
 pydantic>=1.8.2
 numpy>=1.20.0
 scipy>=1.7.0
-TTS>=0.10.0
+TTS==0.17.6
+torch>=2.0.0
+torchaudio>=2.0.0
+soundfile>=0.12.1
+librosa>=0.10.0

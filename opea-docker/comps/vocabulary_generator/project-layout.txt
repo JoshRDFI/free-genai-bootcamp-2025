@@ -1,0 +1,40 @@
+vocabulary_generator/
+├── src/                    # Source code directory
+│   ├── __init__.py
+│   ├── database.py        # Database management
+│   ├── japanese_converter.py
+│   ├── jlpt_validator.py
+│   ├── sentence_generator.py
+│   ├── vocabulary_generator.py
+│   ├── user_preferences.py
+│   ├── study_scheduler.py
+│   ├── progress_tracker.py
+│   ├── reminder_system.py
+│   ├── progress_visualization.py
+│   └── user_interface.py
+├── tests/                  # Test files directory
+│   ├── __init__.py
+│   ├── test_data/         # Test data directory
+│   ├── test_database.py
+│   ├── test_japanese_converter.py
+│   ├── test_jlpt_validator.py
+│   ├── test_sentence_generator.py
+│   ├── test_vocabulary_generator.py
+│   ├── test_user_preferences.py
+│   ├── test_study_scheduler.py
+│   ├── test_progress_tracker.py
+│   ├── test_reminder_system.py
+│   ├── test_progress_visualization.py
+│   ├── test_user_interface.py
+│   └── test_app.py
+├── config/                 # Configuration files
+│   ├── default_config.json
+│   └── test_config.json
+├── data/                   # Data storage
+│   ├── json_output/       # Generated JSON files
+│   └── imports/          # Import data files
+├── main.py                # Main application entry point
+├── run_tests.py          # Test runner script
+├── requirements.txt       # Main project dependencies
+├── requirements-test.txt  # Test dependencies
+└── readme.md             # Project documentation 

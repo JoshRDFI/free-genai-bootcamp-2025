@@ -4,11 +4,13 @@
       "timeout": 30
     },
     "database": {
-      "path": "data/vocabulary.db"
+      "path": "data/shared_db/db.sqlite3"
     },
     "storage": {
-      "json_output_dir": "data/json_output",
-      "import_dir": "data/imports"
+      "json_output_dir": "data/vocabulary_generator/json_output",
+      "import_dir": "data/vocabulary_generator/imports",
+      "backup_dir": "data/vocabulary_generator/backups",
+      "data_verbs_file": "data/vocabulary_generator/data_verbs.json"
     },
     "jlpt_progression": {
       "N5": {
@@ -22,9 +24,27 @@
         "next_level": "N3"
       }
     },
-    "jlpt_words": {
-      "N5": [],  // This would be populated with actual N5 words
-      "N4": []   // This would be populated with actual N4 words
+  "jlpt_words": {
+    "N5": [
+      "食べる", "飲む", "見る", "聞く", "話す", "読む", 
+      "書く", "行く", "来る", "帰る",
+      "寝る", "起きる", "勉強する", "働く", "遊ぶ",
+      "買う", "売る", "使う", "作る", "待つ",
+      "持つ", "立つ", "座る", "歩く", "走る",
+      "開ける", "閉める", "入る", "出る", "乗る",
+      "降りる", "教える", "習う", "分かる", "会う",
+      "住む", "住んでいる", "始める", "終わる", "洗う"
+    ],
+      "N4": [
+        "続ける", "止める", "決める", "選ぶ", "変える",
+        "比べる", "集める", "送る", "受ける", "落ちる",
+        "拾う", "運ぶ", "助ける", "負ける", "勝つ",
+        "慣れる", "育てる", "太る", "痩せる", "見つける",
+        "申し込む", "知らせる", "伝える", "残る", "残す",
+        "足りる", "間違える", "謝る", "遅れる", "急ぐ",
+        "迎える", "届ける", "届ける", "届ける", "届ける",
+        "届ける", "届ける", "届ける", "届ける", "届ける"
+      ]
     },
     "study_settings": {
       "daily_word_limit": 20,

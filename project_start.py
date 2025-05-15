@@ -90,16 +90,16 @@ PROJECTS = {
         "requires_gpu": True
     },
     "vocabulary_generator": {
-        "name": "Vocabulary Generator",
+        "name": "Vocabulary Generator and Practice Excercises",
         "description": "Generate vocabulary lists and practice exercises",
-        "run_command": "cd vocabulary_generator && streamlit run main.py",
+        "run_command": "cd vocabulary_generator && streamlit run main.py --server.port 8503",
         "docker_services": ["llm", "embeddings", "chromadb", "guardrails"],
         "requires_gpu": True
     },
     "writing-practice": {
         "name": "Writing Practice",
         "description": "Practice writing with AI feedback",
-        "run_command": "cd writing-practice && streamlit run run_app.py",
+        "run_command": "cd writing-practice && streamlit run run_app.py --server.port 8504",
         "docker_services": ["llm", "vision", "embeddings", "chromadb", "guardrails"],
         "requires_gpu": True
     },
@@ -193,6 +193,15 @@ def validate_project(project_name: str, project: dict) -> tuple[bool, str]:
         if not os.path.exists(project_name):
             return False, f"Project directory '{project_name}' not found"
 
+        # Install project-specific requirements if they exist
+        requirements_file = os.path.join(project_name, "requirements.txt")
+        if os.path.exists(requirements_file):
+            try:
+                subprocess.run([sys.executable, "-m", "pip", "install", "-r", requirements_file], 
+                             check=True, capture_output=True, text=True)
+            except subprocess.CalledProcessError as e:
+                return False, f"Failed to install project requirements: {e.stderr}"
+
         # Check for required files based on project type
         if project_name == "listening-speaking":
             required_files = [
@@ -203,8 +212,7 @@ def validate_project(project_name: str, project: dict) -> tuple[bool, str]:
             ]
         elif project_name == "vocabulary_generator":
             required_files = [
-                "main.py",
-                "database/schema.sql"
+                "main.py"
             ]
         elif project_name == "writing-practice":
             required_files = [
@@ -375,7 +383,7 @@ def run_project(project_name):
                 
                 status_placeholder.success(f"Launched {project_name}!")
                 if is_wsl():
-                    st.info("""
+                    st.info(f"""
                     The application is running! Since you're using WSL, please open this URL in your Windows browser:
                     http://localhost:8502
                     
@@ -385,7 +393,7 @@ def run_project(project_name):
                     3. You're using 'localhost' and not the WSL IP address
                     """)
                 else:
-                    st.info("The application should open in your browser. If it doesn't, you can access it at: http://localhost:8502")
+                    st.info(f"The application should open in your browser. If it doesn't, you can access it at: http://localhost:8502")
                 return True
             else:
                 # For other projects, run the command directly
@@ -406,18 +414,23 @@ def run_project(project_name):
                 
                 # For Streamlit apps, provide URL information
                 if "streamlit" in project['run_command']:
+                    # Extract port from run command
+                    port = "8501"  # default port
+                    if "--server.port" in project['run_command']:
+                        port = project['run_command'].split("--server.port")[1].strip().split()[0]
+                    
                     if is_wsl():
-                        st.info("""
+                        st.info(f"""
                         The application is running! Since you're using WSL, please open this URL in your Windows browser:
-                        http://localhost:8501
+                        http://localhost:{port}
                         
                         Note: If you can't access the application, make sure:
                         1. You're using the Windows browser (not WSL)
-                        2. The port 8501 is not blocked by your firewall
+                        2. The port {port} is not blocked by your firewall
                         3. You're using 'localhost' and not the WSL IP address
                         """)
                     else:
-                        st.info("The application should open in your browser. If it doesn't, you can access it at: http://localhost:8501")
+                        st.info(f"The application should open in your browser. If it doesn't, you can access it at: http://localhost:{port}")
                 
                 status_placeholder.success(f"Launched {project_name}!")
                 return True

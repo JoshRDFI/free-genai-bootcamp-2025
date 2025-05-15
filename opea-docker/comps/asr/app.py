@@ -95,4 +95,5 @@ async def health_check():
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=9300)
+    port = int(os.getenv("ASR_SERVICE_PORT", 9300))
+    uvicorn.run(app, host="0.0.0.0", port=port)

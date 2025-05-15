@@ -20,10 +20,13 @@ class AudioGenerator:
 
         if tts_engine == "coqui":
             try:
+                # Set the TTS model path to data/tts_data
+                os.environ["COQUI_TTS_MODEL_PATH"] = os.path.abspath("data/tts_data")
+                
                 # Initialize Coqui TTS with XTTS-v2.0.3
                 self.tts = TTS("tts_models/multilingual/xtts_v2",
-                               progress_bar=False,
-                               gpu=True)
+                             progress_bar=True,  # Show progress bar during download
+                             gpu=True)
             except Exception as e:
                 print(f"Error initializing Coqui TTS: {str(e)}")
                 print("Make sure you have installed TTS with: pip install TTS")

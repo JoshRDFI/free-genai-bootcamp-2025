@@ -5,7 +5,7 @@ services:
     image: ollama/ollama:latest
     container_name: ollama-server
     ports:
-      - "11434:11434"
+      - "8008:11434"
     volumes:
       - ../data/ollama_data:/root/.ollama
     deploy:
@@ -26,6 +26,7 @@ services:
       - ../data/shared_db:/app/db
     environment:
       - OLLAMA_HOST=ollama-server
+      - LLM_SERVICE_PORT=9000
     depends_on:
       - ollama-server
     deploy:
@@ -40,12 +41,13 @@ services:
     image: opea-docker-guardrails:latest
     container_name: guardrails
     ports:
-      - "9001:9001"
+      - "9400:9400"
     volumes:
       - ../data/ollama_data:/root/.ollama
       - ../data/shared_db:/app/db
     environment:
       - OLLAMA_HOST=ollama-server
+      - GUARDRAILS_SERVICE_PORT=9400
     depends_on:
       - ollama-server
     deploy:
@@ -60,9 +62,11 @@ services:
     image: opea-docker-chromadb:latest
     container_name: chromadb
     ports:
-      - "9002:9002"
+      - "8050:8050"
     volumes:
       - ../data/chroma_data:/app/chromadb
+    environment:
+      - CHROMA_SERVER_PORT=8050
     deploy:
       resources:
         reservations:
@@ -75,13 +79,14 @@ services:
     image: opea-docker-tts:latest
     container_name: tts
     ports:
-      - "9003:9003"
+      - "9200:9200"
     volumes:
       - ../data/tts_data:/app/data/tts_data
     environment:
       - TTS_HOME=/app/data/tts_data
       - TTS_DATA_PATH=/app/data/tts_data
       - TTS_MODEL=xtts_v2
+      - TTS_SERVICE_PORT=9200
     deploy:
       resources:
         reservations:
@@ -94,9 +99,11 @@ services:
     image: opea-docker-asr:latest
     container_name: asr
     ports:
-      - "9004:9004"
+      - "9300:9300"
     volumes:
       - ../data/asr_data:/app/data/whisper
+    environment:
+      - ASR_SERVICE_PORT=9300
     deploy:
       resources:
         reservations:
@@ -114,6 +121,7 @@ services:
       - ../data/mangaocr_models:/app/data/mangaocr_models
     environment:
       - MANGAOCR_MODEL_PATH=/app/data/mangaocr_models
+      - VISION_SERVICE_PORT=9100
     deploy:
       resources:
         reservations:
@@ -126,9 +134,11 @@ services:
     image: opea-docker-waifu-diffusion:latest
     container_name: waifu-diffusion
     ports:
-      - "9101:9101"
+      - "9500:9500"
     volumes:
       - ../data/waifu:/app/data/waifu-diffusion
+    environment:
+      - WAIFU_DIFFUSION_PORT=9500
     deploy:
       resources:
         reservations:
@@ -141,10 +151,30 @@ services:
     image: opea-docker-embeddings:latest
     container_name: embeddings
     ports:
-      - "9102:9102"
+      - "6000:6000"
     volumes:
       - ../data/embeddings:/app/data/embeddings
       - ../data/shared_db:/app/db
+    environment:
+      - EMBEDDING_SERVICE_HOST_IP=0.0.0.0
+      - EMBEDDING_SERVICE_PORT=6000
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+
+  vocabulary_generator:
+    build:
+      context: ./comps/vocabulary_generator
+      dockerfile: Dockerfile
+    container_name: vocabulary_generator
+    ports:
+      - "9103:9103"
+    volumes:
+      - ../data/shared_db:/app/data/shared_db
     deploy:
       resources:
         reservations:
