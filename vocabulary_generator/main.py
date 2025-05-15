@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import Dict, List, Optional
 from datetime import datetime
 import logging
+import random # Added for MUD ingredient selection
 import streamlit as st
 
 from src.generator import VocabularyGenerator
@@ -33,6 +34,15 @@ DEFAULT_USER_LEVEL = 'N5'
 # Determine Project Root once, assuming main.py is in a subdirectory like 'vocabulary_generator'
 # PROJECT_ROOT will be /home/sage/free-genai-bootcamp-2025
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+# --- Adventure MUD Constants ---
+DEFAULT_RAMEN_INGREDIENTS_TO_COLLECT = 3
+RAMEN_INGREDIENT_NAMES = [
+    "Mystic Noodles", "Sun-dried Nori", "Dragon's Breath Chili Oil", 
+    "Golden Egg", "Celestial Chashu", "Umami Bomb Broth Starter",
+    "Whispering Bamboo Shoots", "Seven Spice Shichimi"
+]
+# ---
 
 class VocabularyManager:
     def __init__(self, config_path: str = "config/config.json"):
@@ -435,134 +445,269 @@ st.title("Vocabulary Generator App")
 if manager and 'user_id' in st.session_state:
     st.success(f"Vocabulary Manager initialized. User ID: {st.session_state.user_id}")
 
-    st.subheader("User Stats")
-    if st.button("Refresh Stats"):
-        stats = asyncio.run(manager.get_user_stats())
-        if stats:
-            st.metric(label="Current JLPT Level", value=stats['current_level'])
-            st.metric(label="Total Study Sessions", value=stats['total_sessions'])
-            st.metric(label="Total Reviews", value=stats['total_reviews'])
-            st.metric(label="Overall Accuracy", value=f"{stats['accuracy']:.2f}%")
-            st.metric(label="Total Study Time (minutes)", value=stats['study_time'])
-        else:
-            st.write("Could not load user stats.")
+    col1, col2 = st.columns([3, 7])
+
+    with col1:
+        st.subheader("User Stats")
+        if st.button("Refresh Stats"):
+            stats = asyncio.run(manager.get_user_stats())
+            if stats:
+                st.metric(label="Current JLPT Level", value=stats['current_level'])
+                st.metric(label="Total Study Sessions", value=stats['total_sessions'])
+                st.metric(label="Total Reviews", value=stats['total_reviews'])
+                st.metric(label="Overall Accuracy", value=f"{stats['accuracy']:.2f}%")
+                st.metric(label="Total Study Time (minutes)", value=stats['study_time'])
+            else:
+                st.write("Could not load user stats.")
     
-    st.subheader("Progression History")
-    if st.button("Show Progression History"):
-        history = asyncio.run(manager.get_progression_history())
-        if history:
-            st.dataframe(history)
-        else:
-            st.write("No progression history found or error loading.")
+        st.subheader("Progression History")
+        if st.button("Show Progression History"):
+            history = asyncio.run(manager.get_progression_history())
+            if history:
+                st.dataframe(history)
+            else:
+                st.write("No progression history found or error loading.")
 
-    st.subheader("Vocabulary Import")
-    # Get the configured absolute path for data_verbs.json
-    data_verbs_path = manager.config['storage'].get('data_verbs_file') 
-    if st.button("Import Core Verbs"):
-        if data_verbs_path and os.path.exists(data_verbs_path):
-            with st.spinner("Importing Core Verbs..."):
-                try:
-                    imported_verbs = asyncio.run(manager.import_from_json(data_verbs_path, 'Core Verbs'))
-                    st.success(f"Imported {len(imported_verbs)} verbs from Core Verbs.")
-                except Exception as e:
-                    st.error(f"Error importing Core Verbs: {e}")
-                    logger.error(f"Error importing Core Verbs: {e}")
-        else:
-            st.error(f"Core Verbs file not found at: {data_verbs_path}")
-
-    # --- Study Session Management ---
-    if 'active_session_id' not in st.session_state:
-        st.session_state.active_session_id = None
-        st.session_state.current_session_details = {}
-        st.session_state.session_words = []
-        st.session_state.current_word_index = 0
-
-    if st.session_state.active_session_id is None:
-        st.subheader("Start New Study Session")
-        
-        # Fetch word groups
-        word_groups_raw = asyncio.run(manager.db.get_all_word_groups()) 
-        group_options = {}
-        if word_groups_raw:
-            for group in word_groups_raw:
-                group_options[f"{group['name']} ({group.get('words_count', 0)} words)"] = group['id']
-        
-        activity_types = ['typing_tutor', 'flashcards', 'adventure_mud'] # Example types
-        
-        with st.form("start_session_form"):
-            selected_activity = st.selectbox("Select Activity Type:", options=activity_types)
-            selected_group_name = st.selectbox("Select Word Group:", options=list(group_options.keys()))
-            submitted = st.form_submit_button("Start Session")
-
-            if submitted and selected_group_name:
-                selected_group_id = group_options[selected_group_name]
-                with st.spinner("Starting session..."):
+        st.subheader("Vocabulary Import")
+        # Get the configured absolute path for data_verbs.json
+        data_verbs_path = manager.config['storage'].get('data_verbs_file') 
+        if st.button("Import Core Verbs"):
+            if data_verbs_path and os.path.exists(data_verbs_path):
+                with st.spinner("Importing Core Verbs..."):
                     try:
-                        session_info = asyncio.run(manager.create_study_session(selected_activity, selected_group_id))
-                        if session_info and 'session_id' in session_info:
-                            st.session_state.active_session_id = session_info['session_id']
-                            st.session_state.current_session_details = session_info
-                            # Fetch words for the session
-                            # Assuming get_words_by_group returns a list of word dicts
-                            st.session_state.session_words = asyncio.run(manager.db.get_words_by_group(selected_group_id))
-                            st.session_state.current_word_index = 0
-                            logger.info(f"Started session {st.session_state.active_session_id} with {len(st.session_state.session_words)} words.")
-                            st.experimental_rerun() # Rerun to update UI for active session
-                        else:
-                            st.error("Failed to create session. Please check logs.")
+                        imported_verbs = asyncio.run(manager.import_from_json(data_verbs_path, 'Core Verbs'))
+                        st.success(f"Imported {len(imported_verbs)} verbs from Core Verbs.")
                     except Exception as e:
-                        st.error(f"Error starting session: {e}")
-                        logger.error(f"Error starting session: {e}", exc_info=True)
-    else:
-        # --- UI for Active Study Session ---
-        st.subheader(f"Active Study Session: {st.session_state.current_session_details.get('activity_type')}")
-        st.write(f"Session ID: {st.session_state.active_session_id}")
-        st.write(f"Studying Group ID: {st.session_state.current_session_details.get('group_id')}")
-        st.write(f"Words in session: {len(st.session_state.session_words)}")
+                        st.error(f"Error importing Core Verbs: {e}")
+                        logger.error(f"Error importing Core Verbs: {e}")
+            else:
+                st.error(f"Core Verbs file not found at: {data_verbs_path}")
 
-        if not st.session_state.session_words:
-            st.warning("No words found for this session group. Ending session.")
-            # Potentially auto-end session or allow user to pick another group
-            if st.button("End Session (No Words)"):
-                if st.session_state.active_session_id:
-                     with st.spinner("Ending session..."):
-                        asyncio.run(manager.end_study_session(st.session_state.active_session_id))
-                st.session_state.active_session_id = None
-                st.session_state.current_session_details = {}
-                st.session_state.session_words = []
-                st.experimental_rerun()
-        elif st.session_state.current_word_index < len(st.session_state.session_words):
-            current_word = st.session_state.session_words[st.session_state.current_word_index]
-            st.write(f"Current word: {current_word['kanji']} ({current_word['romaji']}) - {current_word['english']}")
-            # Display parts if available
-            if 'parts' in current_word and current_word['parts']:
-                try:
-                    parts_data = json.loads(current_word['parts'])
-                    st.json(parts_data, expanded=False) # Display JSON, collapsed by default
-                except json.JSONDecodeError:
-                    st.text(f"Parts of speech (raw): {current_word['parts']}") # Fallback for invalid JSON
-            
-            # TODO: Add interactive elements based on activity_type (typing_tutor, flashcards)
-            
-            # Example: Next word button (simple navigation for now)
-            if st.button("Next Word"):
-                st.session_state.current_word_index += 1
-                st.experimental_rerun()
-        else:
-            st.success("All words in this session completed!")
-            # TODO: Progression check can happen here
-
-        # Always show End Session button if a session is active
-        if st.button("End Current Session"):
-            with st.spinner("Ending session..."):
-                asyncio.run(manager.end_study_session(st.session_state.active_session_id))
-                # Optionally, show session summary before clearing
-                st.success(f"Session {st.session_state.active_session_id} ended.")
+    with col2:
+        # --- Study Session Management ---
+        if 'active_session_id' not in st.session_state:
             st.session_state.active_session_id = None
             st.session_state.current_session_details = {}
             st.session_state.session_words = []
             st.session_state.current_word_index = 0
-            st.experimental_rerun()
+            st.session_state.feedback_message = None # Initialize feedback message state
+            st.session_state.feedback_type = None # Initialize feedback type state
+
+        if st.session_state.active_session_id is None:
+            st.subheader("Start New Study Session")
+            
+            # Fetch word groups
+            word_groups_raw = asyncio.run(manager.db.get_all_word_groups()) 
+            group_options = {}
+            if word_groups_raw:
+                for group in word_groups_raw:
+                    group_options[f"{group['name']} ({group.get('words_count', 0)} words)"] = group['id']
+            
+            activity_types = ['typing_tutor', 'flashcards', 'adventure_mud'] # Example types
+            
+            with st.form("start_session_form"):
+                selected_activity = st.radio("Select Activity Type:", options=activity_types, horizontal=True)
+                selected_group_name = st.selectbox("Select Word Group:", options=list(group_options.keys()))
+                submitted = st.form_submit_button("Start Session")
+
+                if submitted and selected_group_name:
+                    selected_group_id = group_options[selected_group_name]
+                    with st.spinner("Starting session..."):
+                        try:
+                            session_info = asyncio.run(manager.create_study_session(selected_activity, selected_group_id))
+                            if session_info and 'session_id' in session_info:
+                                st.session_state.active_session_id = session_info['session_id']
+                                st.session_state.current_session_details = session_info
+                                # Fetch words for the session
+                                # Assuming get_words_by_group returns a list of word dicts
+                                st.session_state.session_words = asyncio.run(manager.db.get_words_by_group(selected_group_id))
+                                st.session_state.current_word_index = 0
+                                st.session_state.feedback_message = None # Clear feedback from any previous session
+                                st.session_state.feedback_type = None
+
+                                # --- MUD Specific Initialization ---
+                                if selected_activity == 'adventure_mud':
+                                    st.session_state.collected_ingredients = []
+                                    st.session_state.mud_target_ingredients = DEFAULT_RAMEN_INGREDIENTS_TO_COLLECT
+                                    # Shuffle ingredients for variety if we have more names than needed
+                                    available_ingredients = random.sample(RAMEN_INGREDIENT_NAMES, k=min(len(RAMEN_INGREDIENT_NAMES), len(st.session_state.session_words), DEFAULT_RAMEN_INGREDIENTS_TO_COLLECT))
+                                    st.session_state.ingredient_names_for_session = available_ingredients
+                                    st.session_state.current_mud_scenario = ""
+                                # ---
+
+                                logger.info(f"Started session {st.session_state.active_session_id} with {len(st.session_state.session_words)} words. Activity: {selected_activity}")
+                                st.rerun() # Rerun to update UI for active session
+                            else:
+                                st.error("Failed to create session. Please check logs.")
+                        except Exception as e:
+                            st.error(f"Error starting session: {e}")
+                            logger.error(f"Error starting session: {e}", exc_info=True)
+        else:
+            # --- UI for Active Study Session ---
+            st.subheader(f"Active Study Session: {st.session_state.current_session_details.get('activity_type')}")
+            st.write(f"Session ID: {st.session_state.active_session_id}")
+            st.write(f"Studying Group ID: {st.session_state.current_session_details.get('group_id')}")
+            st.write(f"Words in session: {len(st.session_state.session_words)}")
+
+            if not st.session_state.session_words:
+                st.warning("No words found for this session group. Ending session.")
+                # Potentially auto-end session or allow user to pick another group
+                if st.button("End Session (No Words)"):
+                    if st.session_state.active_session_id:
+                         with st.spinner("Ending session..."):
+                            asyncio.run(manager.end_study_session(st.session_state.active_session_id))
+                    st.session_state.active_session_id = None
+                    st.session_state.current_session_details = {}
+                    st.session_state.session_words = []
+                    st.session_state.current_word_index = 0
+                    st.session_state.feedback_message = None # Clear feedback when session ends
+                    st.session_state.feedback_type = None 
+                    st.rerun()
+            elif st.session_state.current_word_index < len(st.session_state.session_words):
+                current_word = st.session_state.session_words[st.session_state.current_word_index]
+                
+                # --- Display Feedback from Previous Answer ---
+                if st.session_state.get('feedback_message'):
+                    if st.session_state.get('feedback_type') == 'success':
+                        st.success(st.session_state.feedback_message)
+                    elif st.session_state.get('feedback_type') == 'error':
+                        st.error(st.session_state.feedback_message)
+                    # Clear feedback after displaying so it doesn't show again unintentionally
+                    # Only clear if we are about to show a new word and form
+                    # If we just completed the session, the feedback for the last word should persist until new session
+
+                st.write(f"Current word: {current_word['kanji']} ({current_word['romaji']}) - {current_word['english']}")
+                # Display parts if available
+                if 'parts' in current_word and current_word['parts']:
+                    try:
+                        parts_data = json.loads(current_word['parts'])
+                        st.json(parts_data, expanded=False) # Display JSON, collapsed by default
+                    except json.JSONDecodeError:
+                        st.text(f"Parts of speech (raw): {current_word['parts']}") # Fallback for invalid JSON
+                
+                # --- Typing Tutor specific UI ---
+                if st.session_state.current_session_details.get('activity_type') == 'typing_tutor':
+                    with st.form(key=f"typing_tutor_form_{current_word['id']}"): # Ensure unique form key per word
+                        user_answer = st.text_input("Type the romaji (e.g., 'sakura', 'tabemasu'):", key=f"word_input_{current_word['id']}")
+                        submit_answer = st.form_submit_button("Submit Answer")
+
+                        if submit_answer:
+                            is_correct = user_answer.strip().lower() == current_word['romaji'].lower()
+                            asyncio.run(manager.add_word_review(
+                                word_id=current_word['id'],
+                                session_id=st.session_state.active_session_id,
+                                correct=is_correct
+                            ))
+                            if is_correct:
+                                st.session_state.feedback_message = "Correct!"
+                                st.session_state.feedback_type = "success"
+                            else:
+                                st.session_state.feedback_message = f"Incorrect. The correct answer was: {current_word['romaji']}"
+                                st.session_state.feedback_type = "error"
+                            
+                            st.session_state.current_word_index += 1
+                            # Clear the input field for the next word by rerunning. Feedback will be displayed on next run.
+                            st.rerun()
+
+                # --- Adventure MUD specific UI ---
+                elif st.session_state.current_session_details.get('activity_type') == 'adventure_mud':
+                    current_word_index = st.session_state.current_word_index
+                    total_words_in_session = len(st.session_state.session_words)
+                    collected_count = len(st.session_state.collected_ingredients)
+                    target_count = st.session_state.mud_target_ingredients
+
+                    st.subheader("The Quest for the Ultimate Ramen!")
+                    st.write(f"Collected Ingredients: {collected_count}/{target_count}")
+                    if st.session_state.collected_ingredients:
+                        st.write(", ".join(st.session_state.collected_ingredients))
+                    st.progress(collected_count / target_count if target_count > 0 else 0)
+
+                    # --- Display Feedback from Previous Answer ---
+                    if st.session_state.get('feedback_message'):
+                        if st.session_state.get('feedback_type') == 'success':
+                            st.success(st.session_state.feedback_message)
+                        elif st.session_state.get('feedback_type') == 'error':
+                            st.error(st.session_state.feedback_message)
+                    
+                    if collected_count >= target_count:
+                        st.balloons()
+                        st.header("🍜 Ramen Mastered! 🍜")
+                        st.write("You have collected all the ingredients for the Ultimate Bowl of Ramen!")
+                        # No more words to process, just show end session button
+                    elif current_word_index < total_words_in_session:
+                        current_word = st.session_state.session_words[current_word_index]
+                        
+                        # Simple scenario generation for now
+                        scenarios = [
+                            f"An old gatekeeper at the town entrance presents you with a scroll. It shows: **{current_word['kanji']}**. What does it mean in Romaji to pass?",
+                            f"A mischievous Kitsune jumps out! It will only let you pass if you can read this word: **{current_word['kanji']}**. What is its Romaji?",
+                            f"You find a locked chest. The keyhole is shaped like the word **{current_word['kanji']}**. Whisper its Romaji to unlock it.",
+                            f"A street food vendor offers you a tasty-looking takoyaki, but first, you must read this sign: **{current_word['kanji']}**. What's the Romaji?"
+                        ]
+                        if not st.session_state.current_mud_scenario or st.session_state.current_word_id_for_scenario != current_word['id']:
+                            st.session_state.current_mud_scenario = random.choice(scenarios)
+                            st.session_state.current_word_id_for_scenario = current_word['id'] # Track word for scenario generation
+
+                        st.write(st.session_state.current_mud_scenario)
+                        # st.write(f"The word is: {current_word['kanji']} ({current_word['english']})") # Display word info
+
+                        with st.form(key=f"mud_form_{current_word['id']}"):
+                            user_answer = st.text_input(f"Enter the Romaji for {current_word['kanji']}:", key=f"mud_input_{current_word['id']}")
+                            submit_answer = st.form_submit_button("Submit Romaji")
+
+                            if submit_answer:
+                                is_correct = user_answer.strip().lower() == current_word['romaji'].lower()
+                                asyncio.run(manager.add_word_review(
+                                    word_id=current_word['id'],
+                                    session_id=st.session_state.active_session_id,
+                                    correct=is_correct
+                                ))
+                                if is_correct:
+                                    ingredient_to_add = st.session_state.ingredient_names_for_session[collected_count % len(st.session_state.ingredient_names_for_session)]
+                                    st.session_state.collected_ingredients.append(ingredient_to_add)
+                                    st.session_state.feedback_message = f"Correct! You obtained: {ingredient_to_add}!"
+                                    st.session_state.feedback_type = "success"
+                                else:
+                                    st.session_state.feedback_message = f"Incorrect. The correct Romaji for {current_word['kanji']} was: {current_word['romaji']}. No ingredient this time."
+                                    st.session_state.feedback_type = "error"
+                                
+                                st.session_state.current_word_index += 1
+                                st.rerun()
+                    else: # No more words, but not all ingredients collected yet
+                        st.warning("You've reviewed all available words, but haven't collected all ramen ingredients yet!")
+                        st.write("Consider adding more words to this group or starting a new session.")
+
+                elif st.button("Next Word (Non-Tutor/Flashcard)"): # Fallback for other activity types
+                    st.session_state.feedback_message = None # Clear any lingering feedback
+                    st.session_state.feedback_type = None
+                    st.session_state.current_word_index += 1
+                    st.rerun()
+            else:
+                # --- Display Feedback for the Last Answer before showing completion message ---
+                if st.session_state.get('feedback_message'):
+                    if st.session_state.get('feedback_type') == 'success':
+                        st.success(st.session_state.feedback_message)
+                    elif st.session_state.get('feedback_type') == 'error':
+                        st.error(st.session_state.feedback_message)
+                
+                st.success("All words in this session completed!")
+                st.session_state.feedback_message = None # Clear feedback after session completion message
+                st.session_state.feedback_type = None
+                # TODO: Progression check can happen here
+
+            # Always show End Session button if a session is active
+            if st.button("End Current Session"):
+                with st.spinner("Ending session..."):
+                    asyncio.run(manager.end_study_session(st.session_state.active_session_id))
+                    # Optionally, show session summary before clearing
+                    st.success(f"Session {st.session_state.active_session_id} ended.")
+                st.session_state.active_session_id = None
+                st.session_state.current_session_details = {}
+                st.session_state.session_words = []
+                st.session_state.current_word_index = 0
+                st.session_state.feedback_message = None # Clear feedback when session ends
+                st.session_state.feedback_type = None 
+                st.rerun()
 
 else:
     st.error("Vocabulary Manager failed to initialize. Application cannot start. Please check server logs for critical errors.")
