@@ -39,6 +39,7 @@ class TTSResponse(BaseModel):
     format: str = "wav"
 
 _xtts_model = None
+_voice_cache = {}
 
 def get_xtts_model():
     global _xtts_model
@@ -54,6 +55,8 @@ def get_xtts_model():
             if torch.cuda.is_available():
                 logger.info("Using CUDA for TTS model")
                 model.cuda()
+                # Enable CUDA optimizations
+                torch.backends.cudnn.benchmark = True
             else:
                 logger.info("CUDA not available, using CPU for TTS model")
                 model.cpu()
@@ -64,6 +67,21 @@ def get_xtts_model():
             logger.error(f"Failed to load XTTS v2: {e}\n{traceback.format_exc()}")
             raise
     return _xtts_model
+
+def load_voice_reference(voice_path: str) -> Optional[str]:
+    """Load and cache voice reference file."""
+    if voice_path in _voice_cache:
+        return _voice_cache[voice_path]
+    
+    try:
+        if os.path.exists(voice_path):
+            _voice_cache[voice_path] = voice_path
+            return voice_path
+        logger.warning(f"Voice reference file not found: {voice_path}")
+        return None
+    except Exception as e:
+        logger.error(f"Error loading voice reference: {e}")
+        return None
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -88,8 +106,12 @@ async def text_to_speech(request: TTSRequest):
         with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as temp_file:
             temp_filename = temp_file.name
 
-        # XTTS requires a speaker wav for voice cloning; if not provided, use a default or skip
-        speaker_wav = request.voice if request.voice else None
+        # Load voice reference if provided
+        speaker_wav = None
+        if request.voice:
+            speaker_wav = load_voice_reference(request.voice)
+            if not speaker_wav:
+                logger.warning(f"Voice reference not found: {request.voice}")
 
         outputs = model.synthesize(
             request.text,
@@ -123,8 +145,12 @@ async def health_check():
 
 @app.get("/voices")
 async def list_voices():
-    # This would list available voices in a real implementation
-    return {"voices": ["default", "male1", "female1", "child1"]}
+    """List available voice references."""
+    voices_dir = os.path.join(TTS_DATA_PATH, "voices")
+    voices = []
+    if os.path.exists(voices_dir):
+        voices = [f for f in os.listdir(voices_dir) if f.endswith('.wav')]
+    return {"voices": voices}
 
 if __name__ == "__main__":
     import uvicorn

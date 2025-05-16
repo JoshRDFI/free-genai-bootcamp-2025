@@ -1,14 +1,15 @@
 from TTS.api import TTS
 import os
+import torch
 
 # Define base paths
 BASE_DIR = "/home/sage/free-genai-bootcamp-2025/listening-speaking/backend/tts"
 VOICES_DIR = os.path.join(BASE_DIR, "voices")
-MODEL_DIR = os.path.join(BASE_DIR, "XTTS")  # Custom directory for model storage
 
 try:
-    # Initialize TTS with model name and custom download directory
-    tts = TTS("tts_models/multilingual/xtts_v2", progress_bar=True, gpu=True)
+    # Initialize TTS with local model path
+    tts = TTS(model_path=BASE_DIR, progress_bar=True)
+    tts.to("cuda" if torch.cuda.is_available() else "cpu")
     print("Model loaded successfully!")
 
     # Test with male voice reference
@@ -39,14 +40,5 @@ try:
 
 except Exception as e:
     print(f"Error occurred: {str(e)}")
-    print("\nTrying alternative approach...")
-
-    # Try loading with different model name format
-    try:
-        tts = TTS("tts_models--ja--kokoro--tacotron2-DDC", progress_bar=True, gpu=True, output_path=MODEL_DIR)
-        print("Model loaded successfully with alternative name!")
-        # ... rest of the code would repeat here ...
-    except Exception as e2:
-        print(f"Alternative approach also failed: {str(e2)}")
 
 print("\nScript completed.")

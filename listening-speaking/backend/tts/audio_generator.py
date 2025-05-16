@@ -5,7 +5,8 @@ import subprocess
 from typing import List, Optional
 import tempfile
 import re
-from TTS.api import TTS  # For Coqui TTS
+import requests
+import torch
 
 class AudioGenerator:
     def __init__(self, tts_engine: str = "coqui", language: str = "ja"):
@@ -17,25 +18,10 @@ class AudioGenerator:
         """
         self.tts_engine = tts_engine
         self.language = language
+        self.tts_api_url = "http://localhost:9200/tts"
 
-        if tts_engine == "coqui":
-            try:
-                # Set the TTS model path to data/tts_data
-                os.environ["COQUI_TTS_MODEL_PATH"] = os.path.abspath("data/tts_data")
-                
-                # Initialize Coqui TTS with XTTS-v2.0.3
-                self.tts = TTS("tts_models/multilingual/xtts_v2",
-                             progress_bar=True,  # Show progress bar during download
-                             gpu=True)
-            except Exception as e:
-                print(f"Error initializing Coqui TTS: {str(e)}")
-                print("Make sure you have installed TTS with: pip install TTS")
-                raise
-        else:
-            raise ValueError("Unsupported TTS engine. Use 'coqui'.")
-        
         # Define the base directory for TTS
-        tts_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "tts")
+        tts_dir = os.path.dirname(os.path.abspath(__file__))
 
         # Define paths to voice reference files
         self.male_voice_path = os.path.join(tts_dir, "voices", "male_voice.wav")
@@ -45,72 +31,12 @@ class AudioGenerator:
         self.audio_dir = os.path.abspath(os.path.join(os.getcwd(), "audio_output"))
         os.makedirs(self.audio_dir, exist_ok=True)
 
-    def generate_audio_with_male_voice(self, text: str, output_file: str) -> Optional[str]:
-        """
-        Generate audio using the male voice reference.
-
-        Args:
-            text (str): The text to convert to speech
-            output_file (str): Path to save the generated audio
-
-        Returns:
-            Optional[str]: Path to the generated audio file, or None if failed
-        """
-        try:
-            # Ensure the male voice reference file exists
-            if not os.path.exists(self.male_voice_path):
-                print(f"Male voice reference file not found: {self.male_voice_path}")
-                return None
-
-            return self.generate_audio(text, output_file, speaker_wav=self.male_voice_path)
-        except Exception as e:
-            print(f"Error generating audio with male voice: {str(e)}")
-            return None
-
-    def generate_audio_with_female_voice(self, text: str, output_file: str) -> Optional[str]:
-        """
-        Generate audio using the female voice reference.
-
-        Args:
-            text (str): The text to convert to speech
-            output_file (str): Path to save the generated audio
-
-        Returns:
-            Optional[str]: Path to the generated audio file, or None if failed
-        """
-        try:
-            # Ensure the female voice reference file exists
-            if not os.path.exists(self.female_voice_path):
-                print(f"Female voice reference file not found: {self.female_voice_path}")
-                return None
-
-            return self.generate_audio(text, output_file, speaker_wav=self.female_voice_path)
-        except Exception as e:
-            print(f"Error generating audio with female voice: {str(e)}")
-            return None
-
-    def sanitize_text(self, text: str) -> str:
-        """
-        Sanitize text to remove inappropriate content and normalize for TTS.
-        Args:
-        text (str): Input text.
-        Returns:
-        str: Sanitized text.
-        """
-        # Remove inappropriate content
-        foul_language_pattern = r"\b(badword1|badword2|badword3)\b"
-        text = re.sub(foul_language_pattern, "[REDACTED]", text, flags=re.IGNORECASE)
-
-        # Normalize text for better TTS processing
-        text = text.strip()
-        text = re.sub(r'\s+', ' ', text)  # Normalize whitespace
-        text = re.sub(r'[^\w\s。、？！」]', '', text)  # Keep only Japanese punctuation
-
-        return text
+        # Guardrails API configuration - using port 9400 from docker-compose.yml
+        self.guardrails_api_url = "http://localhost:9400/api/guardrails/sanitize"
 
     def generate_audio(self, text: str, output_file: str, speaker_wav: Optional[str] = None) -> Optional[str]:
         """
-        Generate audio from text using the TTS engine.
+        Generate audio from text using the TTS service.
         Args:
         text (str): Input text.
         output_file (str): Path to save the generated audio.
@@ -126,12 +52,29 @@ class AudioGenerator:
             if not sanitized_text:
                 raise ValueError("Empty text after sanitization")
 
-            self.tts.tts_to_file(
-                text=sanitized_text,
-                file_path=output_file,
-                speaker_wav=speaker_wav,
-                language=self.language
+            # Prepare request payload
+            payload = {
+                "text": sanitized_text,
+                "language": self.language
+            }
+
+            # Add voice reference if provided
+            if speaker_wav and os.path.exists(speaker_wav):
+                payload["voice"] = speaker_wav
+
+            # Call TTS service
+            response = requests.post(
+                self.tts_api_url,
+                json=payload,
+                headers={"Content-Type": "application/json"}
             )
+
+            if response.status_code != 200:
+                raise Exception(f"TTS service returned status code {response.status_code}")
+
+            # Save the audio file
+            with open(output_file, 'wb') as f:
+                f.write(response.content)
 
             # Verify the file was created
             if not os.path.exists(output_file):
@@ -145,6 +88,73 @@ class AudioGenerator:
             if os.path.exists(output_file):
                 os.remove(output_file)
             return None
+
+    def generate_audio_with_male_voice(self, text: str, output_file: str) -> Optional[str]:
+        """
+        Generate audio using the male voice reference.
+        """
+        try:
+            # Ensure the male voice reference file exists
+            if not os.path.exists(self.male_voice_path):
+                print(f"Male voice reference file not found: {self.male_voice_path}")
+                return None
+
+            return self.generate_audio(text, output_file, speaker_wav=self.male_voice_path)
+        except Exception as e:
+            print(f"Error generating audio with male voice: {str(e)}")
+            return None
+
+    def generate_audio_with_female_voice(self, text: str, output_file: str) -> Optional[str]:
+        """
+        Generate audio using the female voice reference.
+        """
+        try:
+            # Ensure the female voice reference file exists
+            if not os.path.exists(self.female_voice_path):
+                print(f"Female voice reference file not found: {self.female_voice_path}")
+                return None
+
+            return self.generate_audio(text, output_file, speaker_wav=self.female_voice_path)
+        except Exception as e:
+            print(f"Error generating audio with female voice: {str(e)}")
+            return None
+
+    def sanitize_text(self, text: str) -> str:
+        """
+        Sanitize text using the guardrails service.
+        Args:
+        text (str): Input text.
+        Returns:
+        str: Sanitized text.
+        """
+        try:
+            # Call guardrails API for text sanitization
+            response = requests.post(
+                self.guardrails_api_url,
+                json={"text": text},
+                headers={"Content-Type": "application/json"}
+            )
+            
+            if response.status_code == 200:
+                sanitized_text = response.json().get("sanitized_text", text)
+            else:
+                print(f"Warning: Guardrails API returned status code {response.status_code}")
+                sanitized_text = text
+
+            # Basic text normalization for TTS processing
+            sanitized_text = sanitized_text.strip()
+            sanitized_text = re.sub(r'\s+', ' ', sanitized_text)  # Normalize whitespace
+            sanitized_text = re.sub(r'[^\w\s。、？！」]', '', sanitized_text)  # Keep only Japanese punctuation
+
+            return sanitized_text
+
+        except Exception as e:
+            print(f"Error calling guardrails API: {str(e)}")
+            # Fallback to basic sanitization if guardrails service is unavailable
+            text = text.strip()
+            text = re.sub(r'\s+', ' ', text)
+            text = re.sub(r'[^\w\s。、？！」]', '', text)
+            return text
 
     def combine_audio_files(self, audio_files: List[str], output_file: str) -> bool:
         """
