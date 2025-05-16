@@ -109,6 +109,13 @@ PROJECTS = {
         "run_command": "cd visual-novel && python3 app.py",
         "docker_services": ["llm", "tts", "asr", "vision", "embeddings", "chromadb", "guardrails", "waifu-diffusion"],
         "requires_gpu": True
+    },
+    "lang-portal": {
+        "name": "Language Portal",
+        "description": "Vocabulary management and study portal",
+        "run_command": "cd lang-portal && python3 start_portal.py",
+        "docker_services": [],  # No docker services needed
+        "requires_gpu": False
     }
 }
 

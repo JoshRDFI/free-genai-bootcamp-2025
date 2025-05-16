@@ -7,7 +7,6 @@ listening-speaking/backend/youtube/__pycache__/get_transcript.cpython-310.pyc
 
 # Environment files
 .env
-.env.*
 !.env.example
 # Python cache files
 __pycache__/
@@ -32,7 +31,6 @@ ehthumbs.db
 Thumbs.db
 
 # Data directories
-data/
 logs/
 *.db
 *.sqlite3
@@ -602,3 +600,5 @@ backup/writing-practice/images/1371443.png:Zone.Identifier
 visual-novel/renpy/progressive_download.txt
 visual-novel/web/visualnovel-1.0-web/pwa_catalog.json
 visual-novel/web/visualnovel-1.0-web/pwa_catalog.json
+blank.txt
+sha256*

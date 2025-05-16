@@ -7,6 +7,7 @@ import time
 from pathlib import Path
 import logging
 import shutil
+import sqlite3
 
 # Configure logging
 logging.basicConfig(
@@ -188,11 +189,63 @@ def verify_services():
     
     return True
 
+def initialize_database():
+    """Initialize the SQLite database with schema and default user."""
+    logger.info("Initializing database...")
+    
+    db_path = Path("data/shared_db/db.sqlite3")
+    schema_path = Path("data/shared_db/schema.sql")
+    populate_path = Path("data/shared_db/populate_default_user.sql")
+    
+    # Ensure the database directory exists
+    db_path.parent.mkdir(parents=True, exist_ok=True)
+    
+    try:
+        # Create/connect to the database
+        conn = sqlite3.connect(db_path)
+        cursor = conn.cursor()
+        
+        # Read and execute schema.sql
+        logger.info("Creating database schema...")
+        with open(schema_path, 'r') as f:
+            schema_sql = f.read()
+            cursor.executescript(schema_sql)
+        
+        # Read and execute populate_default_user.sql
+        logger.info("Setting up default user...")
+        with open(populate_path, 'r') as f:
+            populate_sql = f.read()
+            cursor.executescript(populate_sql)
+        
+        conn.commit()
+        logger.info("Database initialization completed successfully")
+        
+        # Initialize basic words
+        logger.info("Initializing basic words...")
+        from data.shared_db.initialize_basic_words import initialize_basic_words
+        if not initialize_basic_words():
+            logger.error("Failed to initialize basic words")
+            return False
+            
+        return True
+        
+    except Exception as e:
+        logger.error(f"Database initialization failed: {e}")
+        return False
+    finally:
+        if 'conn' in locals():
+            conn.close()
+
 def main():
     """Main function to run the entire setup process."""
     try:
         # Create data directories
         create_data_directories()
+        
+        # Initialize database
+        if not initialize_database():
+            logger.error("Failed to initialize database")
+            return 1
         
         # Setup models
         if not setup_models():

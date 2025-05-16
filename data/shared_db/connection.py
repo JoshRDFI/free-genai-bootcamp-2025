@@ -12,8 +12,8 @@ load_dotenv()
 ROOT_DIR = Path(__file__).parent.parent
 
 # Database paths from environment variables or defaults
-DB_PATH = os.path.join(ROOT_DIR, os.getenv("DB_PATH", "data/db.sqlite3"))
-VECTOR_DB_PATH = os.path.join(ROOT_DIR, os.getenv("VECTOR_DB_PATH", "data/vector_indices"))
+DB_PATH = os.path.join(ROOT_DIR, os.getenv("DB_PATH", "data/shared_db/db.sqlite3"))
+VECTOR_DB_PATH = os.path.join(ROOT_DIR, os.getenv("VECTOR_DB_PATH", "data/chroma_data"))
 
 # Ensure directories exist
 os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
@@ -38,7 +38,7 @@ class SQLiteConnection:
             self._initialize_schema()
 
     def _initialize_schema(self):
-        schema_path = os.path.join(ROOT_DIR, "database", "schema.sql")
+        schema_path = os.path.join(ROOT_DIR, "data", "shared_db", "schema.sql")
         with open(schema_path, 'r') as f:
             schema_script = f.read()
         self._connection.executescript(schema_script)

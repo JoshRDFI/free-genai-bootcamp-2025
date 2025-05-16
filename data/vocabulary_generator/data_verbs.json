@@ -1,0 +1,77 @@
+[
+    {
+        "kanji": "食べる",
+        "romaji": "taberu",
+        "english": "to eat"
+    },
+    {
+        "kanji": "飲む",
+        "romaji": "nomu",
+        "english": "to drink"
+    },
+    {
+        "kanji": "見る",
+        "romaji": "miru",
+        "english": "to see, to watch"
+    },
+    {
+        "kanji": "聞く",
+        "romaji": "kiku",
+        "english": "to hear, to listen"
+    },
+    {
+        "kanji": "話す",
+        "romaji": "hanasu",
+        "english": "to speak, to talk"
+    },
+    {
+        "kanji": "読む",
+        "romaji": "yomu",
+        "english": "to read"
+    },
+    {
+        "kanji": "書く",
+        "romaji": "kaku",
+        "english": "to write"
+    },
+    {
+        "kanji": "行く",
+        "romaji": "iku",
+        "english": "to go"
+    },
+    {
+        "kanji": "来る",
+        "romaji": "kuru",
+        "english": "to come"
+    },
+    {
+        "kanji": "帰る",
+        "romaji": "kaeru",
+        "english": "to return, to go home"
+    },
+    {
+        "kanji": "寝る",
+        "romaji": "neru",
+        "english": "to sleep"
+    },
+    {
+        "kanji": "起きる",
+        "romaji": "okiru",
+        "english": "to wake up"
+    },
+    {
+        "kanji": "勉強する",
+        "romaji": "benkyou suru",
+        "english": "to study"
+    },
+    {
+        "kanji": "働く",
+        "romaji": "hataraku",
+        "english": "to work"
+    },
+    {
+        "kanji": "遊ぶ",
+        "romaji": "asobu",
+        "english": "to play"
+    }
+] 

@@ -5,7 +5,7 @@ from flask_sqlalchemy import SQLAlchemy
 from db.models import db, Word, Group, WordGroup, StudyActivity, StudySession, WordReviewItem
 
 app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///words.db'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///../langportal.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db.init_app(app)
 
