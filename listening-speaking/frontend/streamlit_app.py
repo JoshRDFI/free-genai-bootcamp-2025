@@ -115,7 +115,50 @@ def render_youtube_input():
                         st.text_area("Transcript", transcript, height=200)
                     if st.button("Generate Questions from Transcript"):
                         with st.spinner("Generating questions..."):
-                            st.info("Question generation will be implemented soon!")
+                            video_id = st.session_state.transcript_downloader.extract_video_id(youtube_url)
+                            if video_id:
+                                # Convert transcript text to list of dicts format expected by generate_questions
+                                transcript_items = [{"text": line} for line in transcript.split("\n")]
+                                questions = st.session_state.question_generator.generate_questions(
+                                    transcript_items,
+                                    video_id,
+                                    num_questions=3
+                                )
+                                if questions:
+                                    # Store all questions in session state
+                                    st.session_state.generated_questions = questions
+                                    st.session_state.current_question = questions[0]  # Show first question
+                                    st.success(f"Generated {len(questions)} questions!")
+                                    
+                                    # Display the first question
+                                    st.write("**Question 1:**")
+                                    st.write("**Introduction:**")
+                                    st.write(questions[0]['Introduction'])
+                                    st.write("**Conversation:**")
+                                    st.write(questions[0]['Conversation'])
+                                    st.write("**Question:**")
+                                    st.write(questions[0]['Question'])
+                                    st.write("**Options:**")
+                                    for i, option in enumerate(questions[0]['Options'], 1):
+                                        st.write(f"{i}. {option}")
+                                    
+                                    # Add navigation buttons for questions
+                                    col1, col2 = st.columns(2)
+                                    with col1:
+                                        if len(questions) > 1:
+                                            if st.button("Next Question"):
+                                                current_index = questions.index(st.session_state.current_question)
+                                                st.session_state.current_question = questions[(current_index + 1) % len(questions)]
+                                                st.rerun()
+                                    with col2:
+                                        if st.button("Previous Question"):
+                                            current_index = questions.index(st.session_state.current_question)
+                                            st.session_state.current_question = questions[(current_index - 1) % len(questions)]
+                                            st.rerun()
+                                else:
+                                    st.error("Failed to generate questions. Please try again.")
+                            else:
+                                st.error("Invalid YouTube URL")
 
 def render_interactive_practice():
     """Render the interactive practice section"""
@@ -155,7 +198,7 @@ def render_interactive_practice():
                     st.session_state.current_question,
                     selected_index
                 )
-                st.experimental_rerun()
+                st.rerun()
     with col2:
         st.write("**Audio Controls**")
         if st.session_state.current_audio:
@@ -168,7 +211,7 @@ def render_interactive_practice():
                     )
                     if audio_file:
                         st.session_state.current_audio = audio_file
-                        st.experimental_rerun()
+                        st.rerun()
 
 def render_sidebar():
     """Render sidebar with saved questions"""
@@ -184,7 +227,7 @@ def render_sidebar():
                     st.session_state.current_topic = qdata['topic']
                     st.session_state.current_audio = qdata.get('audio_file')
                     st.session_state.feedback = None
-                    st.experimental_rerun()
+                    st.rerun()
         else:
             st.info("No saved questions yet. Process a video or generate questions to see them here!")
 

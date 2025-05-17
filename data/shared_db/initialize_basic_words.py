@@ -2,6 +2,7 @@
 import sqlite3
 from pathlib import Path
 import logging
+import json
 
 # Configure logging
 logging.basicConfig(
@@ -220,29 +221,82 @@ def initialize_basic_words():
             cursor.execute("PRAGMA foreign_keys = ON;")
             
             for category in WORD_CATEGORIES:
-                # Insert word group
+                # Check if word group exists
                 cursor.execute(
-                    "INSERT INTO word_groups (name, level) VALUES (?, ?)",
-                    (category["name"], category["level"])
+                    "SELECT id FROM word_groups WHERE name = ?",
+                    (category["name"],)
                 )
-                group_id = cursor.lastrowid
+                result = cursor.fetchone()
+                
+                if result:
+                    # Group exists, get its ID
+                    group_id = result[0]
+                    logger.info(f"Word group '{category['name']}' already exists")
+                else:
+                    # Insert new word group
+                    cursor.execute(
+                        "INSERT INTO word_groups (name, level) VALUES (?, ?)",
+                        (category["name"], category["level"])
+                    )
+                    group_id = cursor.lastrowid
+                    logger.info(f"Created new word group '{category['name']}'")
                 
                 # Insert words
-                cursor.executemany(
-                    """INSERT INTO words 
-                    (kanji, romaji, english, group_id) 
-                    VALUES (?, ?, ?, ?)""",
-                    [(w[0], w[1], w[2], group_id) for w in category["words"]]
-                )
-                
-                # Update word count in word_groups
-                cursor.execute(
-                    "UPDATE word_groups SET words_count = ? WHERE id = ?",
-                    (len(category["words"]), group_id)
-                )
+                for word in category["words"]:
+                    # Check if word exists
+                    cursor.execute(
+                        "SELECT id FROM words WHERE kanji = ? AND romaji = ?",
+                        (word[0], word[1])
+                    )
+                    result = cursor.fetchone()
+                    
+                    if result:
+                        word_id = result[0]
+                        # Update the word's parts if it exists
+                        cursor.execute(
+                            """UPDATE words 
+                            SET parts = ? 
+                            WHERE id = ?""",
+                            (json.dumps({
+                                "type": "word",
+                                "level": category["level"],
+                                "category": category["name"]
+                            }), word_id)
+                        )
+                        logger.info(f"Updated word '{word[0]}'")
+                    else:
+                        # Insert the word
+                        cursor.execute(
+                            """INSERT INTO words 
+                            (kanji, romaji, english, parts) 
+                            VALUES (?, ?, ?, ?)""",
+                            (word[0], word[1], word[2], json.dumps({
+                                "type": "word",
+                                "level": category["level"],
+                                "category": category["name"]
+                            }))
+                        )
+                        word_id = cursor.lastrowid
+                        logger.info(f"Created new word '{word[0]}'")
+                    
+                    # Check if word-group relationship exists
+                    cursor.execute(
+                        """SELECT 1 FROM word_to_group_join 
+                        WHERE word_id = ? AND group_id = ?""",
+                        (word_id, group_id)
+                    )
+                    if not cursor.fetchone():
+                        # Create the many-to-many relationship
+                        cursor.execute(
+                            """INSERT INTO word_to_group_join 
+                            (word_id, group_id) 
+                            VALUES (?, ?)""",
+                            (word_id, group_id)
+                        )
+                        logger.info(f"Added word '{word[0]}' to group '{category['name']}'")
             
             conn.commit()
-            logger.info(f"Successfully inserted {len(WORD_CATEGORIES)} categories with basic words")
+            logger.info(f"Successfully processed {len(WORD_CATEGORIES)} categories with basic words")
             return True
             
     except sqlite3.Error as e:

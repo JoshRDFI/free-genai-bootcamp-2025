@@ -142,13 +142,16 @@ class QuestionGenerator:
 
             # Extract text from transcript
             transcript_text = "\n".join(item["text"] for item in transcript)
+            logger.info(f"Extracted transcript text for video {video_id}")
 
             # Initialize chat interface
             chat = ChatInterface()
+            logger.info("Initialized ChatInterface")
 
             # Generate questions using the chat interface
             logger.info(f"Generating {num_questions} questions for video {video_id}")
             raw_questions = chat.generate_questions(transcript_text, num_questions)
+            logger.info(f"Received {len(raw_questions)} raw questions from LLM")
 
             if not raw_questions:
                 logger.error("Failed to generate questions")
@@ -159,22 +162,27 @@ class QuestionGenerator:
             processed_questions = []
             for i, raw_question in enumerate(raw_questions, 1):
                 try:
+                    logger.info(f"Processing question {i}")
                     # Format the question
                     question = self._process_raw_question(raw_question, video_id, i)
                     if question:
+                        logger.info(f"Successfully formatted question {i}")
                         # Save the question
                         if self.save_question(question, video_id, i):
+                            logger.info(f"Successfully saved question {i}")
                             processed_questions.append(question)
                         else:
                             logger.error(f"Failed to save question {i}")
+                    else:
+                        logger.error(f"Failed to format question {i}")
                 except Exception as e:
-                    logger.error(f"Error processing question {i}: {str(e)}")
+                    logger.error(f"Error processing question {i}: {str(e)}", exc_info=True)
                     self._log_error("process_question", str(e), video_id, section_num=i)
 
             logger.info(f"Generated {len(processed_questions)} questions for video {video_id}")
             return processed_questions
         except Exception as e:
-            logger.error(f"Error generating questions: {str(e)}")
+            logger.error(f"Error generating questions: {str(e)}", exc_info=True)
             self._log_error("generate_questions", str(e), video_id)
             return []
 

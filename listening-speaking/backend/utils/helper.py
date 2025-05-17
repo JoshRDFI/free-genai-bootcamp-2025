@@ -6,15 +6,16 @@ import json
 from datetime import datetime
 from typing import Dict, Any, Optional
 
-sys.path.insert(0, '/home/sage/free-genai-bootcamp-2025/listening-speaking')
+# Get the project root directory
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 def ensure_directories_exist():
     """Ensure all required directories exist"""
-    base_dir = sys.path.dirname(sys.path.dirname(sys.path.abspath(__file__)))
     directories = [
-        os.path.join(base_dir, "data", "questions"),
-        os.path.join(base_dir, "data", "transcripts"),
-        os.path.join(base_dir, "frontend", "static", "audio")
+        os.path.join(PROJECT_ROOT, "backend", "data", "questions"),
+        os.path.join(PROJECT_ROOT, "backend", "data", "transcripts"),
+        os.path.join(PROJECT_ROOT, "backend", "data", "audio"),
+        os.path.join(PROJECT_ROOT, "backend", "data", "images")
     ]
 
     for directory in directories:
@@ -35,6 +36,7 @@ def load_json_file(file_path: str) -> Optional[Dict]:
 def save_json_file(file_path: str, data: Dict) -> bool:
     """Save data to a JSON file"""
     try:
+        os.makedirs(os.path.dirname(file_path), exist_ok=True)
         with open(file_path, 'w', encoding='utf-8') as f:
             json.dump(data, f, ensure_ascii=False, indent=2)
         return True
@@ -56,5 +58,9 @@ def sanitize_filename(filename: str) -> str:
 
 def get_file_path(directory: str, filename: str, extension: str) -> str:
     """Generate a full file path"""
-    base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    return os.path.join(base_dir, directory, f"{sanitize_filename(filename)}.{extension}")
+    # Ensure the directory exists
+    full_dir = os.path.join(PROJECT_ROOT, "backend", directory)
+    os.makedirs(full_dir, exist_ok=True)
+    
+    # Return the full path
+    return os.path.join(full_dir, f"{sanitize_filename(filename)}.{extension}")

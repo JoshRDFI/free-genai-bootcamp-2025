@@ -36,6 +36,21 @@ This repository contains a comprehensive system for learning Japanese, focusing 
 ---
 
 ## **Services**
+### **Language Portal** (Standalone)
+- Original vocabulary management and study portal (superseded by Vocabulary Generator)
+- Available at http://localhost:5173
+- **Note**: This is a standalone program that requires its own setup and runs independently of the main application
+- Setup:
+  ```bash
+  cd lang-portal
+  chmod +x setup.sh
+  ./setup.sh
+  ```
+- Run:
+  ```bash
+  ./start_portal.py
+  ```
+
 ### **opea-docker Microservices**
 - **LLM Text Service**: http://localhost:9000/v1/chat/completions
 - **TTS Service**: http://localhost:9200/tts

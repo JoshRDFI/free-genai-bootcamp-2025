@@ -7,10 +7,20 @@ import os
 from typing import List, Dict, Optional, Any
 from datetime import datetime
 import requests
-from chromadb import Client, Settings
+from chromadb import Client, Settings, PersistentClient
+import sys
+sys.path.insert(0, '/home/sage/free-genai-bootcamp-2025/listening-speaking/backend')
+from backend.utils.helper import get_file_path
 
 # Configure logging
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.FileHandler("backend/logs/knowledge_base.log"),
+        logging.StreamHandler()
+    ]
+)
 logger = logging.getLogger(__name__)
 
 class KnowledgeBase:
@@ -27,10 +37,8 @@ class KnowledgeBase:
         chroma_dir = os.path.join(os.path.dirname(self.db_path), "chroma")
         os.makedirs(chroma_dir, exist_ok=True)
 
-        self.chroma_client = Client(Settings(
-            chroma_db_impl="duckdb+parquet",
-            persist_directory=chroma_dir
-        ))
+        # Initialize ChromaDB with new configuration
+        self.chroma_client = PersistentClient(path=chroma_dir)
 
         # Create or get collections
         self.transcript_collection = self.chroma_client.get_or_create_collection("transcripts")
@@ -46,7 +54,7 @@ class KnowledgeBase:
             CREATE TABLE IF NOT EXISTS transcripts (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 video_id TEXT NOT NULL UNIQUE,
-                content TEXT NOT NULL,
+                transcript TEXT NOT NULL,
                 language TEXT NOT NULL DEFAULT 'ja',
                 created_at DATETIME DEFAULT CURRENT_TIMESTAMP
             )
@@ -128,6 +136,20 @@ class KnowledgeBase:
     def save_transcript(self, video_id: str, content: str, language: str = "ja") -> bool:
         """Save transcript to both SQLite and ChromaDB"""
         try:
+            # First check if JSON file exists
+            json_file = get_file_path("data/transcripts", video_id, "json")
+            logger.info(f"Looking for transcript JSON file at: {json_file}")
+            
+            if os.path.exists(json_file):
+                try:
+                    with open(json_file, 'r', encoding='utf-8') as f:
+                        transcript_data = json.load(f)
+                        content = transcript_data.get('transcript', content)
+                        language = transcript_data.get('language', language)
+                    logger.info(f"Successfully read transcript from JSON file: {json_file}")
+                except Exception as e:
+                    logger.error(f"Error reading transcript JSON file: {str(e)}")
+
             # Save to SQLite
             success = self._save_transcript_sqlite(video_id, content, language)
             if not success:
@@ -151,7 +173,7 @@ class KnowledgeBase:
             with sqlite3.connect(self.db_path) as conn:
                 cursor = conn.cursor()
                 cursor.execute(
-                    "INSERT OR REPLACE INTO transcripts (video_id, content, language) VALUES (?, ?, ?)",
+                    "INSERT OR REPLACE INTO transcripts (video_id, transcript, language) VALUES (?, ?, ?)",
                     (video_id, content, language)
                 )
                 conn.commit()
@@ -224,7 +246,7 @@ class KnowledgeBase:
             with sqlite3.connect(self.db_path) as conn:
                 cursor = conn.cursor()
                 cursor.execute(
-                    "SELECT content, language, created_at FROM transcripts WHERE video_id = ?",
+                    "SELECT transcript, language, created_at FROM transcripts WHERE video_id = ?",
                     (video_id,)
                 )
                 result = cursor.fetchone()
@@ -308,15 +330,17 @@ class KnowledgeBase:
             return []
 
     def generate_embedding(self, text: str) -> Optional[List[float]]:
-        """Generate embedding using Ollama API"""
+        """Generate embedding using the embeddings service"""
         try:
-            # Use the Docker service name instead of localhost
+            # Use the dedicated embeddings service
             response = requests.post(
-                "http://ollama-server:11434/api/embed",
-                json={"model": "llama-3.2", "prompt": text}
+                "http://localhost:6000/embed",  # Note: removed /api/
+                json={"texts": [text]}  # Note: expects a list of texts
             )
             response.raise_for_status()
-            return response.json()["embedding"]
+            result = response.json()
+            # Return the first embedding since we only sent one text
+            return result["embeddings"][0]
         except Exception as e:
             logger.error(f"Error generating embedding: {str(e)}")
             return None
