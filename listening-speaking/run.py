@@ -6,6 +6,9 @@ import sys
 import argparse
 import sqlite3
 from setup_env import setup_environment
+import threading
+import logging
+import socket
 
 def install_dependencies():
     """Install required dependencies"""
@@ -32,31 +35,126 @@ def run_streamlit():
         print(f"Error running Streamlit app: {str(e)}")
         sys.exit(1)
 
+def check_port_available(port):
+    """Check if a port is available"""
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    try:
+        sock.bind(('0.0.0.0', port))
+        sock.close()
+        return True
+    except:
+        return False
+
 def run_backend():
     """Run the backend FastAPI server"""
     try:
         # Get the project root directory
         project_root = os.path.dirname(os.path.abspath(__file__))
 
-        # Backend app path
-        backend_app = os.path.join(project_root, "backend", "app.py")
+        # Set required environment variables
+        backend_port = 8000
+        os.environ["BACKEND_PORT"] = str(backend_port)
+        os.environ["LLM_TEXT_PORT"] = "9000"
+        os.environ["TTS_SERVICE_PORT"] = "9200"
+        os.environ["ASR_SERVICE_PORT"] = "9300"
+        os.environ["LLM_VISION_PORT"] = "9100"
+        os.environ["EMBEDDING_SERVICE_PORT"] = "6000"
+        
+        # Set TTS data path if not already set
+        if "TTS_DATA_PATH" not in os.environ:
+            tts_data_path = os.path.join(os.path.dirname(project_root), "data", "tts_data")
+            os.environ["TTS_DATA_PATH"] = tts_data_path
 
-        # Run backend
-        subprocess.run(["python3", backend_app])
+        # Add the project root to Python path
+        sys.path.insert(0, project_root)
+
+        # Create logs directory if it doesn't exist
+        logs_dir = os.path.join(project_root, "backend", "logs")
+        os.makedirs(logs_dir, exist_ok=True)
+
+        # Configure logging
+        logging.basicConfig(
+            level=logging.DEBUG,
+            format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+            handlers=[
+                logging.FileHandler(os.path.join(logs_dir, "backend.log")),
+                logging.StreamHandler()
+            ]
+        )
+        logger = logging.getLogger(__name__)
+
+        # Check if port is available
+        if not check_port_available(backend_port):
+            logger.error(f"Port {backend_port} is already in use. Please free up the port and try again.")
+            sys.exit(1)
+
+        # Import and run uvicorn directly
+        try:
+            import uvicorn
+            from backend.app import app
+
+            logger.info("Starting backend server...")
+            
+            # Run uvicorn with proper configuration
+            uvicorn.run(
+                "backend.app:app",  # Use import string for reload to work
+                host="0.0.0.0",
+                port=backend_port,
+                log_level="debug",
+                reload=True,
+                reload_dirs=[os.path.join(project_root, "backend")],  # Only watch backend directory
+                timeout_keep_alive=30,  # Increase keep-alive timeout
+                access_log=True,  # Enable access logging
+                use_colors=False  # Disable colors for better log parsing
+            )
+        except ImportError as e:
+            logger.error(f"Failed to import required modules: {str(e)}")
+            raise
+        except Exception as e:
+            logger.error(f"Failed to start backend server: {str(e)}")
+            raise
+
     except Exception as e:
-        print(f"Error running backend: {str(e)}")
+        logger.error(f"Error running backend: {str(e)}")
+        import traceback
+        traceback.print_exc()
         sys.exit(1)
+
+def log_process_output(process, name):
+    """Log process output"""
+    try:
+        while True:
+            line = process.stdout.readline()
+            if not line and process.poll() is not None:
+                break
+            if line:
+                print(f"{name}: {line.strip()}")
+            
+            error_line = process.stderr.readline()
+            if error_line:
+                print(f"{name} error: {error_line.strip()}")
+    except Exception as e:
+        print(f"Error in log_process_output: {str(e)}")
+
+def get_database_paths():
+    """Get possible database paths from environment or default locations"""
+    project_root = os.path.dirname(os.path.abspath(__file__))
+    
+    # Get custom path from environment variable if set
+    custom_db_path = os.getenv('APP_DATABASE_PATH')
+    
+    db_paths = [
+        os.path.join(project_root, "backend", "database", "knowledge_base.db"),
+    ]
+    
+    if custom_db_path:
+        db_paths.insert(0, custom_db_path)
+        
+    return db_paths
 
 def check_database_exists():
     """Check if database already exists in the correct location"""
-    # Get the project root directory
-    project_root = os.path.dirname(os.path.abspath(__file__))
-    
-    # Check both possible database locations
-    db_paths = [
-        os.path.join(project_root, "backend", "database", "knowledge_base.db"),
-        os.path.join(os.path.dirname(project_root), "opea-docker", "data", "shared_db", "shared.db")
-    ]
+    db_paths = get_database_paths()
     
     for db_path in db_paths:
         if os.path.exists(db_path):

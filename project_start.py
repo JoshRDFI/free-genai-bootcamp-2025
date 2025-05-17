@@ -10,11 +10,23 @@ from PIL import Image
 import sys
 import logging
 import webbrowser
+import threading
 
 # Configure logging
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(
+    level=logging.INFO,  # Changed back to INFO to reduce noise
+    format='%(asctime)s - %(levelname)s - %(message)s',  # Simplified format
+    handlers=[
+        logging.FileHandler("project_launcher.log", mode='w'),  # 'w' mode to start fresh each time
+        logging.StreamHandler()
+    ]
+)
 logger = logging.getLogger(__name__)
 
+# Reduce logging from other modules
+logging.getLogger('urllib3').setLevel(logging.WARNING)
+logging.getLogger('PIL').setLevel(logging.WARNING)
+logging.getLogger('docker').setLevel(logging.WARNING)
 # Configure Streamlit page
 st.set_page_config(
     page_title="JLPT5 Language Tutor Launcher",
@@ -40,6 +52,68 @@ st.markdown("""
     }
     </style>
     """, unsafe_allow_html=True)
+
+def check_backend_health():
+    """Check if backend service is healthy"""
+    try:
+        # First check if LLM service is running
+        test_request = {
+            "messages": [{"role": "user", "content": "test"}],
+            "model": "llama3.2"
+        }
+        headers = {"Content-Type": "application/json"}
+        llm_response = requests.post(
+            "http://localhost:9000/v1/chat/completions",
+            json=test_request,
+            headers=headers,
+            timeout=10
+        )
+        llm_data = llm_response.json()
+        if not ("message" in llm_data and llm_data["done"] == True):
+            logger.error("LLM service not responding correctly")
+            return False
+
+        # Then check if backend API is running
+        backend_response = requests.get("http://localhost:8000/health")
+        if backend_response.status_code != 200:
+            logger.error(f"Backend API returned status {backend_response.status_code}")
+            return False
+
+        return True
+    except requests.exceptions.ConnectionError as e:
+        logger.error(f"Connection error checking services: {str(e)}")
+        return False
+    except Exception as e:
+        logger.error(f"Error checking services: {str(e)}")
+        return False
+
+def log_process_output(process, name):
+    """Log process output"""
+    try:
+        while True:
+            # Read stdout
+            stdout_line = process.stdout.readline()
+            if stdout_line:
+                print(f"{name}: {stdout_line.strip()}")
+            
+            # Read stderr
+            stderr_line = process.stderr.readline()
+            if stderr_line:
+                print(f"{name} error: {stderr_line.strip()}")
+            
+            # Check if process has ended
+            if process.poll() is not None:
+                # Read any remaining output
+                for line in process.stdout:
+                    print(f"{name}: {line.strip()}")
+                for line in process.stderr:
+                    print(f"{name} error: {line.strip()}")
+                break
+                
+    except Exception as e:
+        print(f"Error in log_process_output: {str(e)}")
+        import traceback
+        traceback.print_exc()
 
 def setup_tts_requirements():
     """Install TTS setup requirements."""
@@ -347,17 +421,84 @@ def run_project(project_name):
                 
                 # Run backend
                 status_placeholder.info("Starting backend...")
+                logger.info("Starting backend process")
+                
+                # Kill any existing process on port 8000
+                try:
+                    subprocess.run(["fuser", "-k", "8000/tcp"], capture_output=True)
+                except:
+                    pass  # Ignore if fuser is not available
+                
+                backend_cmd = ["python3", "run.py", "--backend"]
+                logger.info(f"Running command: {' '.join(backend_cmd)} in {os.path.abspath('listening-speaking')}")
+
+                # Now start the actual backend process
                 backend_process = subprocess.Popen(
-                    ["python3", "run.py", "--backend"],
+                    backend_cmd,
                     cwd="listening-speaking",
                     stdout=subprocess.PIPE,
                     stderr=subprocess.PIPE,
                     text=True,
-                    env=dict(os.environ, TTS_DATA_PATH=tts_data_path)
+                    env=dict(os.environ,
+                        TTS_DATA_PATH=tts_data_path,
+                        LLM_SERVICE_URL="http://localhost:9000",
+                        EMBEDDINGS_SERVICE_URL="http://localhost:6000",
+                        PYTHONUNBUFFERED="1",  # Ensure Python output is not buffered
+                        PYTHONPATH=os.path.abspath("listening-speaking")  # Add project root to Python path
+                    ),
+                    bufsize=1,
+                    universal_newlines=True
                 )
+
+                # Start backend logger thread
+                backend_logger = threading.Thread(
+                    target=log_process_output,
+                    args=(backend_process, "Backend")
+                )
+
+                backend_logger.daemon = True
+                backend_logger.start()
+                logger.debug("Backend logger thread started")
                 
-                # Wait a moment for backend to start
-                time.sleep(2)
+                # Wait for backend to be healthy
+                status_placeholder.info("Waiting for backend to be ready...")
+                retries = 15  # Increased retries
+                backend_started = False
+                while retries > 0:
+                    logger.debug(f"Checking backend health (attempts remaining: {retries})")
+                    
+                    # Check if process has terminated
+                    if backend_process.poll() is not None:
+                        stdout, stderr = backend_process.communicate()
+                        logger.error("Backend process terminated unexpectedly")
+                        logger.error(f"Exit code: {backend_process.returncode}")
+                        logger.error(f"stdout: {stdout}")
+                        logger.error(f"stderr: {stderr}")
+                        raise Exception(f"Backend process terminated with exit code {backend_process.returncode}")
+                    
+                    # Check LLM service
+                    try:
+                        if check_backend_health():
+                            backend_started = True
+                            logger.info("Backend health check passed")
+                            break
+                    except Exception as e:
+                        logger.debug(f"Health check failed (attempt {16-retries}/15): {str(e)}")
+                    
+                    logger.debug("Backend not ready yet, waiting...")
+                    time.sleep(2)
+                    retries -= 1
+                
+                if not backend_started:
+                    logger.error("Backend failed to start within timeout period")
+                    stdout, stderr = backend_process.communicate()
+                    logger.error(f"Final stdout: {stdout}")
+                    logger.error(f"Final stderr: {stderr}")
+                    backend_process.terminate()
+                    raise Exception("Backend failed to start properly")
+                
+                status_placeholder.info("Backend is ready!")
+                logger.info("Backend startup completed successfully")
                 
                 # Run frontend on a different port
                 status_placeholder.info("Starting frontend...")
@@ -367,8 +508,22 @@ def run_project(project_name):
                     stdout=subprocess.PIPE,
                     stderr=subprocess.PIPE,
                     text=True,
-                    env=dict(os.environ, TTS_DATA_PATH=tts_data_path)
+                    env=dict(os.environ, 
+                        TTS_DATA_PATH=tts_data_path,
+                        LLM_SERVICE_URL="http://localhost:9000",
+                        EMBEDDINGS_SERVICE_URL="http://localhost:6000"
+                    ),
+                    bufsize=1,
+                    universal_newlines=True
                 )
+
+                # Start frontend logger thread
+                frontend_logger = threading.Thread(
+                    target=log_process_output,
+                    args=(frontend_process, "Frontend")
+                )
+                frontend_logger.daemon = True
+                frontend_logger.start()
                 
                 # Store processes for later cleanup
                 project['processes'] = [backend_process, frontend_process]

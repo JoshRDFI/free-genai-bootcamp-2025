@@ -22,15 +22,20 @@ os.makedirs(logs_dir, exist_ok=True)
 log_file = os.path.join(logs_dir, "question_generator.log")
 
 # Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.FileHandler("backend/logs/question_generator.log"),
-        logging.StreamHandler()
-    ]
-)
 logger = logging.getLogger(__name__)
+if not logger.handlers:  # Only add handlers if they don't exist
+    logger.setLevel(logging.INFO)
+    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    
+    # File handler
+    file_handler = logging.FileHandler(log_file)
+    file_handler.setFormatter(formatter)
+    logger.addHandler(file_handler)
+    
+    # Stream handler
+    stream_handler = logging.StreamHandler()
+    stream_handler.setFormatter(formatter)
+    logger.addHandler(stream_handler)
 
 class QuestionGenerator:
     def __init__(self):
@@ -125,37 +130,40 @@ class QuestionGenerator:
             return False
 
     def generate_questions(self, transcript: List[Dict], video_id: str, num_questions: int = 3) -> List[Dict]:
-        """
-        Generate questions from transcript using LLM.
-
-        Args:
-            transcript (List[Dict]): The transcript data
-            video_id (str): The YouTube video ID
-            num_questions (int): Number of questions to generate
-
-        Returns:
-            List[Dict]: List of generated questions
-        """
+        """Generate questions from transcript using LLM."""
         try:
             # Create logs directory if it doesn't exist
             os.makedirs("backend/logs", exist_ok=True)
 
             # Extract text from transcript
-            transcript_text = "\n".join(item["text"] for item in transcript)
-            logger.info(f"Extracted transcript text for video {video_id}")
+            try:
+                transcript_text = "\n".join(item["text"] for item in transcript)
+                logger.info(f"Extracted transcript text for video {video_id}")
+            except Exception as e:
+                logger.error(f"Failed to extract transcript text: {str(e)}")
+                return []
 
             # Initialize chat interface
-            chat = ChatInterface()
-            logger.info("Initialized ChatInterface")
+            try:
+                chat = ChatInterface()
+                logger.info("Initialized ChatInterface")
+            except Exception as e:
+                logger.error(f"Failed to initialize ChatInterface: {str(e)}")
+                return []
 
             # Generate questions using the chat interface
-            logger.info(f"Generating {num_questions} questions for video {video_id}")
-            raw_questions = chat.generate_questions(transcript_text, num_questions)
-            logger.info(f"Received {len(raw_questions)} raw questions from LLM")
-
-            if not raw_questions:
-                logger.error("Failed to generate questions")
-                self._log_error("generate_questions", "Failed to generate questions", video_id)
+            try:
+                logger.info(f"Generating {num_questions} questions for video {video_id}")
+                raw_questions = chat.generate_questions(transcript_text, num_questions)
+                logger.info(f"Received response from LLM service")
+                
+                if not raw_questions:
+                    logger.error("LLM returned empty response")
+                    return []
+                    
+                logger.info(f"Received {len(raw_questions)} raw questions from LLM")
+            except Exception as e:
+                logger.error(f"Failed to generate questions from LLM: {str(e)}")
                 return []
 
             # Process and format each question
@@ -177,27 +185,20 @@ class QuestionGenerator:
                         logger.error(f"Failed to format question {i}")
                 except Exception as e:
                     logger.error(f"Error processing question {i}: {str(e)}", exc_info=True)
-                    self._log_error("process_question", str(e), video_id, section_num=i)
+                    continue
 
-            logger.info(f"Generated {len(processed_questions)} questions for video {video_id}")
+            if not processed_questions:
+                logger.error("No questions were successfully processed")
+                return []
+
+            logger.info(f"Successfully generated {len(processed_questions)} questions for video {video_id}")
             return processed_questions
         except Exception as e:
-            logger.error(f"Error generating questions: {str(e)}", exc_info=True)
-            self._log_error("generate_questions", str(e), video_id)
+            logger.error(f"Unexpected error in generate_questions: {str(e)}", exc_info=True)
             return []
 
     def _process_raw_question(self, raw_question: Dict, video_id: str, section_num: int) -> Optional[Dict]:
-        """
-        Process a raw question from the LLM into the required format.
-
-        Args:
-            raw_question (Dict): The raw question data from LLM
-            video_id (str): The YouTube video ID
-            section_num (int): The section number
-
-        Returns:
-            Optional[Dict]: Processed question or None if failed
-        """
+        """Process a raw question from the LLM into the required format."""
         try:
             # Extract fields from raw question
             question_data = {

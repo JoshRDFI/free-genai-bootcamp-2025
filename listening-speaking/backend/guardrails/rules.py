@@ -10,7 +10,7 @@ class ContentGuardrails:
         self.inappropriate_patterns = [
             r'(?i)(死|殺|暴力|セックス|ポルノ|麻薬|違法)',  # Death, violence, adult content, drugs
             r'(?i)(差別|人種|ヘイト)',  # Discrimination, racism, hate
-            r'(?i)(政治|宗教)',  # Political or religious content
+            # r'(?i)(政治|宗教)',  # Political or religious content
         ]
 
         # Question structure requirements

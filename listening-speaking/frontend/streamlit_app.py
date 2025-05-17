@@ -115,50 +115,72 @@ def render_youtube_input():
                         st.text_area("Transcript", transcript, height=200)
                     if st.button("Generate Questions from Transcript"):
                         with st.spinner("Generating questions..."):
-                            video_id = st.session_state.transcript_downloader.extract_video_id(youtube_url)
-                            if video_id:
+                            try:
+                                video_id = st.session_state.transcript_downloader.extract_video_id(youtube_url)
+                                if not video_id:
+                                    st.error("Failed to extract video ID from URL")
+                                    return
+
+                                # Log the start of question generation
+                                print(f"Starting question generation for video {video_id}")
+                                
                                 # Convert transcript text to list of dicts format expected by generate_questions
-                                transcript_items = [{"text": line} for line in transcript.split("\n")]
+                                transcript_items = [{"text": line} for line in transcript.split("\n") if line.strip()]
+                                
+                                if not transcript_items:
+                                    st.error("No valid transcript lines found")
+                                    return
+                                
+                                print(f"Processing {len(transcript_items)} transcript lines")
+                                
+                                # Create a placeholder for progress updates
+                                status_placeholder = st.empty()
+                                status_placeholder.text("Connecting to LLM service...")
+                                
                                 questions = st.session_state.question_generator.generate_questions(
                                     transcript_items,
                                     video_id,
                                     num_questions=3
                                 )
-                                if questions:
-                                    # Store all questions in session state
-                                    st.session_state.generated_questions = questions
-                                    st.session_state.current_question = questions[0]  # Show first question
-                                    st.success(f"Generated {len(questions)} questions!")
-                                    
-                                    # Display the first question
-                                    st.write("**Question 1:**")
-                                    st.write("**Introduction:**")
-                                    st.write(questions[0]['Introduction'])
-                                    st.write("**Conversation:**")
-                                    st.write(questions[0]['Conversation'])
-                                    st.write("**Question:**")
-                                    st.write(questions[0]['Question'])
-                                    st.write("**Options:**")
-                                    for i, option in enumerate(questions[0]['Options'], 1):
-                                        st.write(f"{i}. {option}")
-                                    
-                                    # Add navigation buttons for questions
-                                    col1, col2 = st.columns(2)
-                                    with col1:
-                                        if len(questions) > 1:
-                                            if st.button("Next Question"):
-                                                current_index = questions.index(st.session_state.current_question)
-                                                st.session_state.current_question = questions[(current_index + 1) % len(questions)]
-                                                st.rerun()
-                                    with col2:
-                                        if st.button("Previous Question"):
+                                
+                                if not questions:
+                                    st.error("Failed to generate questions. The LLM service might be unavailable.")
+                                    print(f"Question generation failed for video {video_id}")
+                                    return
+                                
+                                # Store all questions in session state
+                                st.session_state.generated_questions = questions
+                                st.session_state.current_question = questions[0]  # Show first question
+                                status_placeholder.success(f"Generated {len(questions)} questions!")
+                                
+                                # Display the first question
+                                st.write("**Question 1:**")
+                                st.write("**Introduction:**")
+                                st.write(questions[0]['Introduction'])
+                                st.write("**Conversation:**")
+                                st.write(questions[0]['Conversation'])
+                                st.write("**Question:**")
+                                st.write(questions[0]['Question'])
+                                st.write("**Options:**")
+                                for i, option in enumerate(questions[0]['Options'], 1):
+                                    st.write(f"{i}. {option}")
+                                
+                                # Add navigation buttons for questions
+                                col1, col2 = st.columns(2)
+                                with col1:
+                                    if len(questions) > 1:
+                                        if st.button("Next Question"):
                                             current_index = questions.index(st.session_state.current_question)
-                                            st.session_state.current_question = questions[(current_index - 1) % len(questions)]
+                                            st.session_state.current_question = questions[(current_index + 1) % len(questions)]
                                             st.rerun()
-                                else:
-                                    st.error("Failed to generate questions. Please try again.")
-                            else:
-                                st.error("Invalid YouTube URL")
+                                with col2:
+                                    if st.button("Previous Question"):
+                                        current_index = questions.index(st.session_state.current_question)
+                                        st.session_state.current_question = questions[(current_index - 1) % len(questions)]
+                                        st.rerun()
+                            except Exception as e:
+                                print(f"Error during question generation: {str(e)}")
+                                st.error(f"An error occurred: {str(e)}")
 
 def render_interactive_practice():
     """Render the interactive practice section"""

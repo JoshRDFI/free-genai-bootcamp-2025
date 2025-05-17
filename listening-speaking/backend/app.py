@@ -7,6 +7,7 @@ from typing import List, Optional, Dict, Any
 import uvicorn
 import logging
 from datetime import datetime
+import os
 
 from backend.youtube.get_transcript import YouTubeTranscriptDownloader
 from backend.llm.question_generator import QuestionGenerator
@@ -19,7 +20,7 @@ from backend.config import ServiceConfig
 
 # Configure logging
 logging.basicConfig(
-    level=logging.INFO,
+    level=logging.DEBUG,  # Changed to DEBUG for more detailed logs
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     handlers=[
         logging.FileHandler("backend/logs/app.log"),
@@ -28,31 +29,73 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-app = FastAPI(
-    title="JLPT Listening Practice API",
-    description="API for Japanese listening comprehension practice",
-    version="1.0.0"
-)
+# Debug log environment variables
+logger.info("Environment variables:")
+for var in ["BACKEND_PORT", "LLM_TEXT_PORT", "TTS_SERVICE_PORT", "ASR_SERVICE_PORT", 
+            "LLM_VISION_PORT", "EMBEDDING_SERVICE_PORT", "TTS_DATA_PATH"]:
+    logger.info(f"{var}: {os.getenv(var)}")
 
-# Add CORS middleware
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],  # In production, replace with specific origins
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+logger.info("Starting FastAPI application...")
+try:
+    app = FastAPI(
+        title="JLPT Listening Practice API",
+        description="API for Japanese listening comprehension practice",
+        version="1.0.0"
+    )
+    logger.info("FastAPI application created successfully")
 
-# Initialize components
-transcript_downloader = YouTubeTranscriptDownloader()
-question_generator = QuestionGenerator()
-knowledge_base = KnowledgeBase()
-tts_engine = TTSEngine()
-asr_engine = ASREngine()
-image_generator = ImageGenerator()
+    # Add CORS middleware
+    logger.info("Adding CORS middleware...")
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=["*"],  # In production, replace with specific origins
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+    logger.info("CORS middleware added successfully")
 
-# Ensure required directories exist
-ensure_directories_exist()
+    # Initialize components
+    try:
+        logger.info("Starting component initialization...")
+        
+        logger.info("Initializing transcript downloader...")
+        transcript_downloader = YouTubeTranscriptDownloader()
+        logger.info("Transcript downloader initialized successfully")
+        
+        logger.info("Initializing question generator...")
+        question_generator = QuestionGenerator()
+        logger.info("Question generator initialized successfully")
+        
+        logger.info("Initializing knowledge base...")
+        knowledge_base = KnowledgeBase()
+        logger.info("Knowledge base initialized successfully")
+        
+        logger.info("Initializing TTS engine...")
+        tts_engine = TTSEngine()
+        logger.info("TTS engine initialized successfully")
+        
+        logger.info("Initializing ASR engine...")
+        asr_engine = ASREngine()
+        logger.info("ASR engine initialized successfully")
+        
+        logger.info("Initializing image generator...")
+        image_generator = ImageGenerator()
+        logger.info("Image generator initialized successfully")
+        
+        logger.info("All components initialized successfully")
+    except Exception as e:
+        logger.error(f"Failed to initialize components: {str(e)}", exc_info=True)
+        raise
+
+    # Ensure required directories exist
+    logger.info("Ensuring required directories exist...")
+    ensure_directories_exist()
+    logger.info("Directory check completed")
+
+except Exception as e:
+    logger.error(f"Failed to initialize FastAPI application: {str(e)}", exc_info=True)
+    raise
 
 # Request/Response Models
 class VideoURL(BaseModel):
