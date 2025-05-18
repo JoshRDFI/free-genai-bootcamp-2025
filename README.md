@@ -35,131 +35,135 @@ This repository contains a comprehensive system for learning Japanese, focusing 
 
 ---
 
-## **Services**
-### **Language Portal** (Standalone)
-- Original vocabulary management and study portal (superseded by Vocabulary Generator)
-- Available at http://localhost:5173
-- **Note**: This is a standalone program that requires its own setup and runs independently of the main application
-- Setup:
-  ```bash
-  cd lang-portal
-  chmod +x setup.sh
-  ./setup.sh
-  ```
-- Run:
-  ```bash
-  ./start_portal.py
-  ```
+## **Project Components**
 
-### **opea-docker Microservices**
-- **LLM Text Service**: http://localhost:9000/v1/chat/completions
-- **TTS Service**: http://localhost:9200/tts
-- **ASR Service**: http://localhost:9300/asr
-- **Vision Service**: http://localhost:9100/v1/vision
-- **Embeddings Service**: http://localhost:6000/embed
-- **Guardrails Service**: http://localhost:9400/v1/guardrails
-- **ChromaDB**: http://localhost:8050
+### **1. Listening and Speaking Practice** (Port 8502)
+- Extracts transcripts from YouTube videos
+- Generates listening comprehension questions and audio
+- Uses LLM, TTS, and ASR services
 
-### **Visual Novel**
-- Interactive gameplay powered by Ren'Py.
-- API integration with opea-docker services for dynamic, AI generated content.
+### **2. Vocabulary Generator** (Port 8503)
+- AI-assisted vocabulary generation and validation
+- Tracks progress through JLPT levels
+- Uses LLM and embeddings services
 
-### **Listening and Speaking Practice**
-- Extracts transcripts from YouTube videos.
-- Generates listening comprehension questions and audio.
+### **3. Writing Practice** (Port 8504)
+- Sentence generation and grading using LLMs
+- OCR for handwritten Japanese text
+- Uses LLM and vision services
 
-### **Vocabulary Generator**
-- AI-assisted vocabulary generation and validation.
-- Tracks progress through JLPT levels.
+### **4. Visual Novel**
+- Interactive gameplay powered by Ren'Py
+- AI-generated content using multiple services
+- Uses all available AI services
 
-### **Writing Practice**
-- Sentence generation and grading using LLMs.
-- OCR for handwritten Japanese text.
+### **5. Language Portal** (Port 5173, Standalone)
+- Original vocabulary management portal
+- Requires separate setup (see below)
+- Uses npm/Node.js for frontend
 
-## **Quick Start**
+### **Docker Services**
+All components share these microservices:
+- LLM Text Service (9000)
+- TTS Service (9200)
+- ASR Service (9300)
+- Vision Service (9100)
+- Embeddings Service (6000)
+- Guardrails Service (9400)
+- ChromaDB (8050)
 
-For first-time setup, run:
+---
 
-```bash
-python3 first_start.py
-```
+## **Installation**
 
-This script will:
-1. Create all necessary data directories
-2. Download required models:
-   - TTS (XTTS v2)
-   - MangaOCR
-   - Ollama (llama3.2)
-   - ASR (Whisper)
-3. Build all Docker images
-4. Start all required services
-5. Launch the main application
-
-## **Manual Setup**
-
-If you prefer to set up components manually, follow these steps:
-
-1. Create data directories:
-```bash
-mkdir -p data/{tts_data,mangaocr_models,asr_data,waifu,embeddings,chroma_data,ollama_data,shared_db}
-```
-
-2. Download models:
-```bash
-# Download TTS and MangaOCR models
-python3 opea-docker/setup_tts.py
-python3 opea-docker/setup_mangaocr.py
-
-# Pull Ollama model
-docker exec ollama-server ollama pull llama3.2
-
-# Download ASR model
-docker exec asr python3 -c 'from transformers import WhisperForConditionalGeneration; WhisperForConditionalGeneration.from_pretrained("openai/whisper-base")'
-```
-
-3. Build Docker images:
-```bash
-cd opea-docker
-chmod +x build-images.sh
-./build-images.sh
-```
-
-4. Start services:
-```bash
-docker compose up -d
-```
-
-5. Start the application:
-```bash
-streamlit run project_start.py
-```
-
-## **Requirements**
-
+### **Prerequisites**
 - Python 3.10+
-- Docker
+- Docker with NVIDIA GPU support
 - NVIDIA GPU with CUDA support
 - WSL2 (for Windows users)
 
+### **Quick Start**
+
+1. **Initial Setup**:
+```bash
+python3 first_start.py
+```
+This will:
+- Create all necessary data directories
+- Set up virtual environments for each component
+- Download required AI models
+- Initialize databases
+- Build and start Docker services
+
+2. **Launch the Application**:
+```bash
+python3 project_start.py
+```
+This launches the main interface where you can start any component.
+
+### **Language Portal Setup** (Optional)
+The Language Portal is a standalone application:
+```bash
+cd lang-portal
+chmod +x setup.sh
+./setup.sh
+python3 start_portal.py
+```
+
+---
+
+## **Project Structure**
+
+Each component has its own virtual environment:
+- `.venv-main`: Main launcher environment
+- `.venv-ls`: Listening-Speaking practice
+- `.venv-vocab`: Vocabulary Generator
+- `.venv-wp`: Writing Practice
+- `.venv-vn`: Visual Novel
+- `.venv-portal`: Language Portal backend
+
+Docker services remain independent of these environments.
+
+---
+
 ## **Troubleshooting**
 
-If you encounter any issues:
+1. **Virtual Environment Issues**:
+   - If you encounter dependency conflicts, try removing the virtual environments and running `first_start.py` again
+   - Each component's environment is isolated, so issues in one won't affect others
 
-1. Check if all Docker services are running:
+2. **Docker Services**:
 ```bash
+# Check service status
 docker compose ps
+
+# View service logs
+docker compose logs
+
+# Restart services
+docker compose down
+docker compose up -d
 ```
 
-2. Verify model files are present:
+3. **Model Files**:
 ```bash
+# Verify model files
 ls data/tts_data
 ls data/mangaocr_models
+ls data/asr_data
 ```
 
-3. Check service logs:
-```bash
-docker compose logs
-```
+4. **Port Conflicts**:
+   - Each component uses a specific port
+   - Check if ports are already in use: `netstat -tulpn | grep <port>`
+   - Kill process using a port: `fuser -k <port>/tcp`
+
+5. **WSL2 Access**:
+   - Access services using `localhost` from Windows browser
+   - Ensure ports are not blocked by firewall
+   - Don't use WSL IP address directly
+
+---
 
 ## **License**
 

@@ -141,7 +141,7 @@ class QuestionGenerator:
                 logger.info(f"Extracted transcript text for video {video_id}")
             except Exception as e:
                 logger.error(f"Failed to extract transcript text: {str(e)}")
-                return []
+                raise ValueError(f"Invalid transcript format: {str(e)}")
 
             # Initialize chat interface
             try:
@@ -149,53 +149,49 @@ class QuestionGenerator:
                 logger.info("Initialized ChatInterface")
             except Exception as e:
                 logger.error(f"Failed to initialize ChatInterface: {str(e)}")
-                return []
+                raise RuntimeError(f"Failed to initialize LLM service: {str(e)}")
 
             # Generate questions using the chat interface
             try:
                 logger.info(f"Generating {num_questions} questions for video {video_id}")
                 raw_questions = chat.generate_questions(transcript_text, num_questions)
-                logger.info(f"Received response from LLM service")
-                
-                if not raw_questions:
-                    logger.error("LLM returned empty response")
-                    return []
-                    
-                logger.info(f"Received {len(raw_questions)} raw questions from LLM")
+                logger.info(f"Received {len(raw_questions)} questions from LLM")
+            except (TimeoutError, ConnectionError) as e:
+                logger.error(f"LLM service connection error: {str(e)}")
+                raise
+            except ValueError as e:
+                logger.error(f"LLM response validation error: {str(e)}")
+                raise
             except Exception as e:
-                logger.error(f"Failed to generate questions from LLM: {str(e)}")
-                return []
+                logger.error(f"Unexpected error in LLM question generation: {str(e)}")
+                raise RuntimeError(f"Failed to generate questions: {str(e)}")
 
             # Process and format each question
             processed_questions = []
             for i, raw_question in enumerate(raw_questions, 1):
                 try:
                     logger.info(f"Processing question {i}")
-                    # Format the question
-                    question = self._process_raw_question(raw_question, video_id, i)
-                    if question:
-                        logger.info(f"Successfully formatted question {i}")
-                        # Save the question
-                        if self.save_question(question, video_id, i):
-                            logger.info(f"Successfully saved question {i}")
-                            processed_questions.append(question)
-                        else:
-                            logger.error(f"Failed to save question {i}")
+                    # Save the question
+                    if self.save_question(raw_question, video_id, i):
+                        logger.info(f"Successfully saved question {i}")
+                        processed_questions.append(raw_question)
                     else:
-                        logger.error(f"Failed to format question {i}")
+                        logger.error(f"Failed to save question {i}")
                 except Exception as e:
                     logger.error(f"Error processing question {i}: {str(e)}", exc_info=True)
+                    # Continue processing other questions even if one fails
                     continue
 
             if not processed_questions:
                 logger.error("No questions were successfully processed")
-                return []
+                raise RuntimeError("Failed to process any questions")
 
             logger.info(f"Successfully generated {len(processed_questions)} questions for video {video_id}")
             return processed_questions
+
         except Exception as e:
             logger.error(f"Unexpected error in generate_questions: {str(e)}", exc_info=True)
-            return []
+            raise
 
     def _process_raw_question(self, raw_question: Dict, video_id: str, section_num: int) -> Optional[Dict]:
         """Process a raw question from the LLM into the required format."""

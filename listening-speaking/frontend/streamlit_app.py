@@ -137,47 +137,60 @@ def render_youtube_input():
                                 status_placeholder = st.empty()
                                 status_placeholder.text("Connecting to LLM service...")
                                 
-                                questions = st.session_state.question_generator.generate_questions(
-                                    transcript_items,
-                                    video_id,
-                                    num_questions=3
-                                )
-                                
-                                if not questions:
-                                    st.error("Failed to generate questions. The LLM service might be unavailable.")
-                                    print(f"Question generation failed for video {video_id}")
-                                    return
-                                
-                                # Store all questions in session state
-                                st.session_state.generated_questions = questions
-                                st.session_state.current_question = questions[0]  # Show first question
-                                status_placeholder.success(f"Generated {len(questions)} questions!")
-                                
-                                # Display the first question
-                                st.write("**Question 1:**")
-                                st.write("**Introduction:**")
-                                st.write(questions[0]['Introduction'])
-                                st.write("**Conversation:**")
-                                st.write(questions[0]['Conversation'])
-                                st.write("**Question:**")
-                                st.write(questions[0]['Question'])
-                                st.write("**Options:**")
-                                for i, option in enumerate(questions[0]['Options'], 1):
-                                    st.write(f"{i}. {option}")
-                                
-                                # Add navigation buttons for questions
-                                col1, col2 = st.columns(2)
-                                with col1:
-                                    if len(questions) > 1:
-                                        if st.button("Next Question"):
+                                try:
+                                    questions = st.session_state.question_generator.generate_questions(
+                                        transcript_items,
+                                        video_id,
+                                        num_questions=3
+                                    )
+                                    
+                                    # Store all questions in session state
+                                    st.session_state.generated_questions = questions
+                                    st.session_state.current_question = questions[0]  # Show first question
+                                    status_placeholder.success(f"Generated {len(questions)} questions!")
+                                    
+                                    # Display the first question
+                                    st.write("**Question 1:**")
+                                    st.write("**Introduction:**")
+                                    st.write(questions[0]['Introduction'])
+                                    st.write("**Conversation:**")
+                                    st.write(questions[0]['Conversation'])
+                                    st.write("**Question:**")
+                                    st.write(questions[0]['Question'])
+                                    st.write("**Options:**")
+                                    for i, option in enumerate(questions[0]['Options'], 1):
+                                        st.write(f"{i}. {option}")
+                                    
+                                    # Add navigation buttons for questions
+                                    col1, col2 = st.columns(2)
+                                    with col1:
+                                        if len(questions) > 1:
+                                            if st.button("Next Question"):
+                                                current_index = questions.index(st.session_state.current_question)
+                                                st.session_state.current_question = questions[(current_index + 1) % len(questions)]
+                                                st.rerun()
+                                    with col2:
+                                        if st.button("Previous Question"):
                                             current_index = questions.index(st.session_state.current_question)
-                                            st.session_state.current_question = questions[(current_index + 1) % len(questions)]
+                                            st.session_state.current_question = questions[(current_index - 1) % len(questions)]
                                             st.rerun()
-                                with col2:
-                                    if st.button("Previous Question"):
-                                        current_index = questions.index(st.session_state.current_question)
-                                        st.session_state.current_question = questions[(current_index - 1) % len(questions)]
-                                        st.rerun()
+                                            
+                                except TimeoutError:
+                                    status_placeholder.error("LLM service timed out. Please try again.")
+                                    print("LLM service request timed out")
+                                except ConnectionError:
+                                    status_placeholder.error("Could not connect to LLM service. Please check if the service is running.")
+                                    print("Failed to connect to LLM service")
+                                except ValueError as e:
+                                    status_placeholder.error(f"Invalid response from LLM service: {str(e)}")
+                                    print(f"LLM service validation error: {str(e)}")
+                                except RuntimeError as e:
+                                    status_placeholder.error(f"Error generating questions: {str(e)}")
+                                    print(f"Question generation error: {str(e)}")
+                                except Exception as e:
+                                    status_placeholder.error(f"An unexpected error occurred: {str(e)}")
+                                    print(f"Unexpected error: {str(e)}")
+                                    
                             except Exception as e:
                                 print(f"Error during question generation: {str(e)}")
                                 st.error(f"An error occurred: {str(e)}")

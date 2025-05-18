@@ -23,8 +23,8 @@ CREATE TABLE IF NOT EXISTS words (
     kanji TEXT NOT NULL,
     romaji TEXT NOT NULL,
     english TEXT NOT NULL,
-    group_id INTEGER, -- DEPRECATED: Now nullable, use word_to_group_join instead. Was NOT NULL.
-    parts TEXT, -- ADDED parts
+    group_id INTEGER, -- Now nullable since we use word_to_group_join
+    parts TEXT,
     correct_count INTEGER DEFAULT 0,
     wrong_count INTEGER DEFAULT 0,
     sentence_id INTEGER CONSTRAINT fk_words_sentences REFERENCES sentences(id), -- Reflects live schema

@@ -154,33 +154,59 @@ def check_tts_files():
     
     return all((tts_data_dir / file).exists() for file in required_files)
 
+def get_venv_python(project_name):
+    """Get the Python interpreter path for a project's virtual environment."""
+    venv_mapping = {
+        "listening-speaking": (".venv-ls", "listening-speaking"),
+        "vocabulary_generator": (".venv-vocab", "vocabulary_generator"),
+        "writing-practice": (".venv-wp", "writing-practice"),
+        "visual-novel": (".venv-vn", "visual-novel"),
+        "lang-portal": (".venv-portal", "lang-portal/backend")
+    }
+    
+    if project_name in venv_mapping:
+        venv_name, project_dir = venv_mapping[project_name]
+        venv_path = Path(project_dir) / venv_name
+        return str(venv_path / "bin" / "python")
+    return sys.executable  # Fallback to system Python
+
+def get_venv_streamlit(project_name):
+    """Get the streamlit command from a project's virtual environment."""
+    venv_mapping = {
+        "listening-speaking": (".venv-ls", "listening-speaking"),
+        "vocabulary_generator": (".venv-vocab", "vocabulary_generator"),
+        "writing-practice": (".venv-wp", "writing-practice")
+    }
+    
+    if project_name in venv_mapping:
+        venv_name, project_dir = venv_mapping[project_name]
+        venv_path = Path(project_dir) / venv_name
+        return str(venv_path / "bin" / "streamlit")
+    return "streamlit"  # Fallback to system streamlit
+
 # Project configurations
 PROJECTS = {
     "listening-speaking": {
         "name": "Listening & Speaking Practice",
         "description": "Practice listening and speaking with AI feedback",
-        "run_command": "cd listening-speaking && python3 run.py --setup && python3 run.py --backend && streamlit run frontend/streamlit_app.py --server.port 8502",
         "docker_services": ["llm", "tts", "asr", "embeddings", "chromadb", "guardrails"],
         "requires_gpu": True
     },
     "vocabulary_generator": {
-        "name": "Vocabulary Generator and Practice Excercises",
+        "name": "Vocabulary Generator and Practice Exercises",
         "description": "Generate vocabulary lists and practice exercises",
-        "run_command": "cd vocabulary_generator && streamlit run main.py --server.port 8503",
         "docker_services": ["llm", "embeddings", "chromadb", "guardrails"],
         "requires_gpu": True
     },
     "writing-practice": {
         "name": "Writing Practice",
         "description": "Practice writing with AI feedback",
-        "run_command": "cd writing-practice && streamlit run run_app.py --server.port 8504",
         "docker_services": ["llm", "vision", "embeddings", "chromadb", "guardrails"],
         "requires_gpu": True
     },
     "visual-novel": {
         "name": "Visual Novel",
         "description": "Interactive story with AI-generated content",
-        "run_command": "cd visual-novel && python3 app.py",
         "docker_services": ["llm", "tts", "asr", "vision", "embeddings", "chromadb", "guardrails", "waifu-diffusion"],
         "requires_gpu": True
     }
@@ -369,6 +395,8 @@ def run_project(project_name):
         return False
 
     project = PROJECTS[project_name]
+    python_cmd = get_venv_python(project_name)
+    streamlit_cmd = get_venv_streamlit(project_name)
     
     # Create a placeholder for status messages
     status_placeholder = st.empty()
@@ -408,7 +436,7 @@ def run_project(project_name):
                 # Run setup
                 status_placeholder.info("Running setup...")
                 setup_process = subprocess.Popen(
-                    ["python3", "run.py", "--setup"],
+                    [python_cmd, "run.py", "--setup"],
                     cwd="listening-speaking",
                     stdout=subprocess.PIPE,
                     stderr=subprocess.PIPE,
@@ -429,7 +457,7 @@ def run_project(project_name):
                 except:
                     pass  # Ignore if fuser is not available
                 
-                backend_cmd = ["python3", "run.py", "--backend"]
+                backend_cmd = [python_cmd, "run.py", "--backend"]
                 logger.info(f"Running command: {' '.join(backend_cmd)} in {os.path.abspath('listening-speaking')}")
 
                 # Now start the actual backend process
@@ -503,7 +531,7 @@ def run_project(project_name):
                 # Run frontend on a different port
                 status_placeholder.info("Starting frontend...")
                 frontend_process = subprocess.Popen(
-                    ["streamlit", "run", "frontend/streamlit_app.py", "--server.port", "8502"],
+                    [streamlit_cmd, "run", "frontend/streamlit_app.py", "--server.port", "8502"],
                     cwd="listening-speaking",
                     stdout=subprocess.PIPE,
                     stderr=subprocess.PIPE,
@@ -553,8 +581,8 @@ def run_project(project_name):
             else:
                 # For other projects, run the command directly
                 process = subprocess.Popen(
-                    project['run_command'],
-                    shell=True,
+                    [streamlit_cmd, "run", project['run_command'].split()[1], "--server.port", project['run_command'].split()[2]],
+                    cwd=project['run_command'].split()[0],
                     stdout=subprocess.PIPE,
                     stderr=subprocess.PIPE,
                     text=True
@@ -604,62 +632,44 @@ def run_project(project_name):
         return False
 
 def main():
-    """
-    # Set background image -- uncomment when a good image is found.
+    """Main function to run the project launcher."""
     try:
-        background_image = Image.open("writing-practice/images/1240417.png")
-        st.image(background_image, use_container_width=True)
-    except Exception as e:
-        st.warning(f"Could not load background image: {str(e)}")
-    """
-    st.title("🎓 JLPT5 Language Tutor Launcher")
-    
-    # Check Docker services
-    if not verify_services(["llm", "tts", "asr", "vision"]):
-        st.warning("Docker services are not running. Starting services...")
-        if start_docker_services():
-            st.success("Docker services started successfully!")
-        else:
-            st.error("Failed to start Docker services. Please check Docker installation.")
+        # Check if running in the main virtual environment
+        if not Path(".venv-main").exists():
+            st.error("""
+            Virtual environments not found. Please run first_start.py first:
+            python3 first_start.py
+            """)
             return
-
-    # Project selection
-    st.header("Select a Project")
-    
-    for project_id, project in PROJECTS.items():
-        with st.container():
-            st.markdown(f"""
-                <div class="project-card">
-                    <h3>{project['name']}</h3>
-                    <p>{project['description']}</p>
-                </div>
-            """, unsafe_allow_html=True)
             
-            if st.button(f"Launch {project['name']}", key=f"launch_{project_id}"):
-                # For visual novel, check both sets of services
-                if project_id == "visual-novel":
-                    if not verify_services(project['docker_services'], project.get('vn_services')):
-                        st.warning("Starting visual novel services...")
-                        if not start_docker_services(project_id):
-                            st.error("Failed to start visual novel services.")
-                            return
-                else:
-                    if not verify_services(project['docker_services']):
-                        st.error("Required services are not running. Please try again.")
-                        return
-                
-                if run_project(project_id):
-                    st.success(f"Launched {project['name']}!")
-                else:
-                    st.error(f"Failed to launch {project['name']}")
-
-    # Exit option
-    if st.button("Exit All"):
-        st.warning("This will stop all running projects. Docker services will remain running.")
-        if st.button("Confirm Exit", key="confirm_exit"):
-            # Add cleanup code here if needed
-            st.success("All projects stopped. Docker services are still running.")
-            st.stop()
+        # Set background image
+        set_background()
+        
+        # Display header
+        st.title("JLPT5 Language Tutor")
+        st.markdown("Welcome to the JLPT5 Language Tutor! Choose a project to start:")
+        
+        # Create columns for project cards
+        col1, col2 = st.columns(2)
+        
+        # Display project cards
+        for i, (project_id, project) in enumerate(PROJECTS.items()):
+            with col1 if i % 2 == 0 else col2:
+                with st.container():
+                    st.markdown(f"""
+                    <div class="project-card">
+                        <h3>{project['name']}</h3>
+                        <p>{project['description']}</p>
+                    </div>
+                    """, unsafe_allow_html=True)
+                    
+                    # Add start button
+                    if st.button(f"Start {project['name']}", key=project_id):
+                        run_project(project_id)
+        
+    except Exception as e:
+        st.error(f"An error occurred: {str(e)}")
+        logger.error(f"Error in main: {str(e)}", exc_info=True)
 
 if __name__ == "__main__":
     main()

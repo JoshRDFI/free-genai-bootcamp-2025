@@ -268,8 +268,8 @@ def initialize_basic_words():
                         # Insert the word
                         cursor.execute(
                             """INSERT INTO words 
-                            (kanji, romaji, english, parts) 
-                            VALUES (?, ?, ?, ?)""",
+                            (kanji, romaji, english, parts, group_id) 
+                            VALUES (?, ?, ?, ?, NULL)""",
                             (word[0], word[1], word[2], json.dumps({
                                 "type": "word",
                                 "level": category["level"],

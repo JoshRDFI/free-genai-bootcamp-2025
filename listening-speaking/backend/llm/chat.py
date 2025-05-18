@@ -5,6 +5,9 @@ import json
 import logging
 from typing import Dict, Optional, List
 from datetime import datetime
+from backend.config import ServiceConfig
+from requests.adapters import HTTPAdapter
+from requests.packages.urllib3.util.retry import Retry
 
 # Configure logging
 logging.basicConfig(
@@ -18,27 +21,48 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 class ChatInterface:
-    def __init__(self, endpoint: str = "http://localhost:9000"):
-        """Initialize chat interface"""
-        self.endpoint = endpoint
+    def __init__(self):
+        """Initialize chat interface with retry mechanism"""
+        self.endpoint = ServiceConfig.LLM_TEXT_URL
         self.headers = {
             "Content-Type": "application/json"
         }
+        
+        # Configure retry strategy
+        retry_strategy = Retry(
+            total=ServiceConfig.RETRY_CONFIG["max_retries"],
+            backoff_factor=ServiceConfig.RETRY_CONFIG["backoff_factor"],
+            status_forcelist=ServiceConfig.RETRY_CONFIG["status_forcelist"]
+        )
+        
+        # Create session with retry strategy
+        self.session = requests.Session()
+        self.session.mount("http://", HTTPAdapter(max_retries=retry_strategy))
+        self.session.mount("https://", HTTPAdapter(max_retries=retry_strategy))
+        
         # Test connection to endpoint
         try:
-            response = requests.get(f"{endpoint}/health")
+            response = self.session.get(f"{self.endpoint}/health", timeout=5)
             if response.status_code != 200:
                 logger.error(f"LLM service health check failed with status {response.status_code}")
             else:
                 logger.info("Successfully connected to LLM service")
         except requests.exceptions.RequestException as e:
-            logger.error(f"Failed to connect to LLM service at {endpoint}: {str(e)}")
-        logger.info(f"Initialized ChatInterface with endpoint: {endpoint}")
+            logger.error(f"Failed to connect to LLM service at {self.endpoint}: {str(e)}")
+        logger.info(f"Initialized ChatInterface with endpoint: {self.endpoint}")
 
     def generate_questions(self, transcript: str, num_questions: int = 3) -> List[Dict]:
         """
         Generate listening comprehension questions from transcript.
         """
+        if not transcript.strip():
+            logger.error("Empty transcript provided")
+            raise ValueError("Empty transcript provided")
+            
+        if num_questions < 1:
+            logger.error("Invalid number of questions requested")
+            raise ValueError("Invalid number of questions requested")
+            
         logger.info(f"Starting question generation for {num_questions} questions")
         
         prompt = {
@@ -78,41 +102,43 @@ Return the questions in this JSON format:
 
         try:
             logger.info("Sending request to LLM service")
-            # Try to connect with timeout
-            response = requests.post(
+            response = self.session.post(
                 f"{self.endpoint}/v1/chat/completions",
                 headers=self.headers,
                 json=prompt,
-                timeout=30  # Add timeout
+                timeout=ServiceConfig.get_timeout("llm")
             )
+            
             logger.info(f"Received response with status code: {response.status_code}")
             
             if response.status_code != 200:
+                error_detail = response.text if response.text else "No error details available"
                 logger.error(f"LLM service returned error status: {response.status_code}")
-                logger.error(f"Response content: {response.text}")
-                return []
+                logger.error(f"Response content: {error_detail}")
+                raise Exception(f"LLM service error: {response.status_code} - {error_detail}")
                 
             try:
                 result = response.json()
                 logger.info("Successfully parsed response JSON")
-            except json.JSONDecodeError as e:
-                logger.error(f"Failed to parse JSON response: {str(e)}")
-                logger.error(f"Raw response: {response.text}")
-                return []
-            
-            # Parse the response content as JSON
-            try:
-                if "message" not in result:
-                    logger.error(f"Unexpected response format - missing 'message': {result}")
-                    return []
+                
+                # Handle both possible response formats
+                if "response" in result:  # Ollama format
+                    content = result["response"]
+                elif "message" in result and "content" in result["message"]:  # OpenAI format
+                    content = result["message"]["content"]
+                else:
+                    logger.error(f"Unexpected response format: {result}")
+                    raise ValueError(f"Unexpected response format from LLM service")
+                
+                # Parse the content as JSON
+                try:
+                    questions_data = json.loads(content)
+                    logger.info("Successfully parsed questions data")
                     
-                content = result["message"]["content"]
-                logger.info("Successfully extracted content from response")
-                
-                questions_data = json.loads(content)
-                logger.info("Successfully parsed questions data")
-                
-                if "questions" in questions_data:
+                    if "questions" not in questions_data:
+                        logger.error(f"Response missing 'questions' key: {questions_data}")
+                        raise ValueError("Response missing 'questions' key")
+                        
                     questions = questions_data["questions"]
                     logger.info(f"Successfully extracted {len(questions)} questions")
                     
@@ -127,30 +153,33 @@ Return the questions in this JSON format:
                         else:
                             logger.warning(f"Question {i+1} is missing required fields")
                     
-                    if valid_questions:
-                        return valid_questions
-                    else:
+                    if not valid_questions:
                         logger.error("No valid questions found in response")
-                        return []
-                else:
-                    logger.error(f"Response missing 'questions' key: {questions_data}")
-                    return []
+                        raise ValueError("No valid questions found in LLM response")
+                        
+                    return valid_questions
+                    
+                except json.JSONDecodeError as e:
+                    logger.error(f"Error parsing LLM response content as JSON: {str(e)}")
+                    logger.error(f"Raw content: {content}")
+                    raise ValueError(f"Invalid JSON in LLM response: {str(e)}")
+                    
             except json.JSONDecodeError as e:
-                logger.error(f"Error parsing LLM response content as JSON: {str(e)}")
-                logger.error(f"Raw content: {content}")
-                return []
-            except Exception as e:
-                logger.error(f"Error processing questions data: {str(e)}", exc_info=True)
-                return []
+                logger.error(f"Failed to parse JSON response: {str(e)}")
+                logger.error(f"Raw response: {response.text}")
+                raise ValueError(f"Invalid JSON in LLM response: {str(e)}")
+                
         except requests.exceptions.Timeout:
             logger.error("Request to LLM service timed out")
-            return []
+            raise TimeoutError("LLM service request timed out")
+            
         except requests.exceptions.ConnectionError:
             logger.error(f"Failed to connect to LLM service at {self.endpoint}")
-            return []
+            raise ConnectionError(f"Failed to connect to LLM service at {self.endpoint}")
+            
         except Exception as e:
             logger.error(f"Unexpected error generating questions: {str(e)}", exc_info=True)
-            return []
+            raise
 
     def validate_response(self, question: Dict, selected_answer: int) -> Dict:
         """

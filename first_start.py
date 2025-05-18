@@ -60,6 +60,145 @@ def create_data_directories():
         Path(dir_path).mkdir(parents=True, exist_ok=True)
         logger.info(f"Created directory: {dir_path}")
 
+def setup_venv(venv_name, requirements_file=None, cwd=None):
+    """Setup a virtual environment and install requirements."""
+    logger.info(f"Setting up virtual environment: {venv_name}")
+    
+    venv_path = Path(venv_name)
+    if cwd:
+        venv_path = Path(cwd) / venv_name
+        
+    try:
+        # Create virtual environment
+        if not venv_path.exists():
+            if not run_command(f"python3 -m venv {venv_name}", cwd=cwd):
+                logger.error(f"Failed to create virtual environment: {venv_name}")
+                return False
+                
+        # Install requirements if specified
+        if requirements_file:
+            activate_cmd = f"source {venv_name}/bin/activate"
+            install_cmd = f"pip install -r {requirements_file}"
+            if not run_command(f"{activate_cmd} && {install_cmd}", cwd=cwd):
+                logger.error(f"Failed to install requirements in {venv_name}")
+                return False
+                
+        return True
+        
+    except Exception as e:
+        logger.error(f"Error setting up virtual environment {venv_name}: {e}")
+        return False
+
+def setup_environments():
+    """Setup all virtual environments."""
+    logger.info("Setting up virtual environments...")
+    
+    # Main environment (for project_start.py)
+    if not setup_venv(".venv-main", "requirements.txt"):
+        return False
+        
+    # Listening-Speaking environment
+    if not setup_venv(".venv-ls", "requirements.txt", "listening-speaking"):
+        return False
+        
+    # Vocabulary Generator environment
+    if not setup_venv(".venv-vocab", "requirements.txt", "vocabulary_generator"):
+        return False
+        
+    # Writing Practice environment
+    if not setup_venv(".venv-wp", "requirements.txt", "writing-practice"):
+        return False
+        
+    # Visual Novel server environment
+    if not setup_venv(".venv-vn", "requirements.txt", "visual-novel/server"):
+        return False
+        
+    # Lang Portal backend environment
+    if not setup_venv(".venv-portal", "requirements.txt", "lang-portal/backend"):
+        return False
+        
+    return True
+
+def get_venv_python(venv_name, project_dir=None):
+    """Get the Python interpreter path for a virtual environment."""
+    if project_dir:
+        venv_path = Path(project_dir) / venv_name
+    else:
+        venv_path = Path(venv_name)
+    return str(venv_path / "bin" / "python")
+
+def run_project_command(project_name, command):
+    """Run a project command using its specific virtual environment."""
+    venv_mapping = {
+        "listening-speaking": (".venv-ls", "listening-speaking"),
+        "vocabulary_generator": (".venv-vocab", "vocabulary_generator"),
+        "writing-practice": (".venv-wp", "writing-practice"),
+        "visual-novel": (".venv-vn", "visual-novel"),
+        "lang-portal": (".venv-portal", "lang-portal/backend")
+    }
+    
+    if project_name in venv_mapping:
+        venv_name, project_dir = venv_mapping[project_name]
+        python_path = get_venv_python(venv_name, project_dir)
+        
+        # Replace python3 with the venv Python
+        modified_command = command.replace("python3", python_path)
+        modified_command = modified_command.replace("python ", f"{python_path} ")
+        
+        return run_command(modified_command)
+    else:
+        return run_command(command)
+
+# Update the project configurations
+PROJECTS = {
+    "listening-speaking": {
+        "name": "Listening & Speaking Practice",
+        "venv": ".venv-ls",
+        "run_command": "cd listening-speaking && {python} run.py --setup && {python} run.py --backend && {python} -m streamlit run frontend/streamlit_app.py --server.port 8502",
+        "docker_services": ["llm", "tts", "asr", "embeddings", "chromadb", "guardrails"],
+        "requires_gpu": True
+    },
+    "vocabulary_generator": {
+        "name": "Vocabulary Generator",
+        "venv": ".venv-vocab",
+        "run_command": "cd vocabulary_generator && {python} -m streamlit run main.py --server.port 8503",
+        "docker_services": ["llm", "embeddings", "chromadb", "guardrails"],
+        "requires_gpu": True
+    },
+    "writing-practice": {
+        "name": "Writing Practice",
+        "venv": ".venv-wp",
+        "run_command": "cd writing-practice && {python} -m streamlit run run_app.py --server.port 8504",
+        "docker_services": ["llm", "vision", "embeddings", "chromadb", "guardrails"],
+        "requires_gpu": True
+    },
+    "visual-novel": {
+        "name": "Visual Novel",
+        "venv": ".venv-vn",
+        "run_command": "cd visual-novel && {python} app.py",
+        "docker_services": ["llm", "tts", "asr", "vision", "embeddings", "chromadb", "guardrails", "waifu-diffusion"],
+        "requires_gpu": True
+    },
+    "lang-portal": {
+        "name": "Language Learning Portal",
+        "venv": ".venv-portal",
+        "run_command": "cd lang-portal && {python} start_portal.py",
+        "requires_gpu": False
+    }
+}
+
+def run_project(project_name):
+    """Run a project with its specific virtual environment."""
+    if project_name not in PROJECTS:
+        logger.error(f"Unknown project: {project_name}")
+        return False
+        
+    project = PROJECTS[project_name]
+    venv_python = get_venv_python(project["venv"], project_name)
+    command = project["run_command"].format(python=venv_python)
+    
+    return run_command(command)
+
 def setup_models():
     """Run setup scripts for TTS, MangaOCR, Ollama, and ASR models."""
     logger.info("Setting up models...")
@@ -236,56 +375,71 @@ def initialize_database():
         if 'conn' in locals():
             conn.close()
 
+def install_requirements():
+    """Install required Python packages in user space."""
+    logger.info("Installing required Python packages...")
+    
+    # Try pip3 first (common on Ubuntu/Debian)
+    if run_command("pip install --user -r requirements.txt"):
+        return True
+        
+    # If pip3 fails, try pip
+    #if run_command("pip install --user -r requirements.txt"):
+    #    return True
+    
+    # If both fail, provide instructions
+    logger.error("Could not install packages. Please ensure pip is installed:")
+    logger.error("sudo apt update && sudo apt install python3-pip")
+    return False
+
 def main():
-    """Main function to run the entire setup process."""
+    """Main setup function."""
     try:
         # Create data directories
         create_data_directories()
         
         # Initialize database
+        logger.info("Initializing database...")
         if not initialize_database():
             logger.error("Failed to initialize database")
-            return 1
-        
-        # Setup models
+            return False
+            
+        # Setup virtual environments
+        if not setup_environments():
+            logger.error("Failed to setup virtual environments")
+            return False
+            
+        # Setup models (using main environment)
+        activate_cmd = "source .venv-main/bin/activate"
+        if not run_command(f"{activate_cmd} && python3 -c 'import sys; print(sys.executable)'"):
+            logger.error("Failed to activate main environment")
+            return False
+            
         if not setup_models():
             logger.error("Failed to setup models")
-            return 1
-        
+            return False
+            
         # Build Docker images
         if not build_docker_images():
             logger.error("Failed to build Docker images")
-            return 1
-        
-        # Start Docker services
+            return False
+            
+        # Start services
         if not start_docker_services():
             logger.error("Failed to start Docker services")
-            return 1
-        
-        # Pull Ollama model after services are started
-        logger.info("Pulling Ollama model...")
-        if not run_command("docker exec ollama-server ollama pull llama3.2"):
-            logger.error("Failed to pull Ollama model")
-            return 1
-        
+            return False
+            
         # Verify services
         if not verify_services():
-            logger.error("Service verification failed")
-            return 1
-        
+            logger.error("Failed to verify services")
+            return False
+            
         logger.info("Setup completed successfully!")
-        
-        # Start the main application
-        logger.info("Starting main application...")
-        if not run_command("streamlit run project_start.py"):
-            logger.error("Failed to start main application")
-            return 1
-        
-        return 0
+        return True
         
     except Exception as e:
-        logger.error(f"Unexpected error: {e}")
-        return 1
+        logger.error(f"Setup failed: {e}")
+        return False
 
 if __name__ == "__main__":
-    sys.exit(main()) 
+    sys.exit(0 if main() else 1) 
