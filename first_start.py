@@ -242,6 +242,12 @@ def setup_models():
     # Ensure we're using the main virtual environment
     main_venv_python = get_venv_python(".venv-main")
     
+    # Install required packages for ASR
+    logger.info("Installing required packages for ASR...")
+    if not run_command(f"{main_venv_python} -m pip install transformers torch"):
+        logger.error("Failed to install transformers and torch packages")
+        return False
+    
     # Run setup scripts
     setup_scripts = [
         "opea-docker/setup_tts.py",
