@@ -24,7 +24,7 @@ class ImageGenerator:
 
     def analyze_image(self, image_data: bytes) -> Optional[Dict]:
         """
-        Analyze image content using Vision service.
+        Analyze image content using MangaOCR service.
         
         Args:
             image_data (bytes): Image data to analyze
@@ -56,7 +56,7 @@ class ImageGenerator:
 
     def generate_image(self, prompt: str, style: str = "anime") -> Optional[bytes]:
         """
-        Generate image from prompt using Vision service.
+        Generate image from prompt using Waifu-diffusion service.
         
         Args:
             prompt (str): Text prompt for image generation
@@ -68,7 +68,7 @@ class ImageGenerator:
         try:
             endpoint = ServiceConfig.get_endpoint("vision", "generate")
             if not endpoint:
-                logger.error("Vision generate endpoint not configured")
+                logger.error("Waifu-diffusion generate endpoint not configured")
                 return None
 
             response = self.session.post(
@@ -77,7 +77,7 @@ class ImageGenerator:
                     "prompt": prompt,
                     "style": style
                 },
-                timeout=ServiceConfig.get_timeout("vision")
+                timeout=ServiceConfig.get_timeout("waifu-diffusion")
             )
             response.raise_for_status()
             return response.content
@@ -108,7 +108,7 @@ class ImageGenerator:
 
     def analyze_file(self, filepath: str) -> Optional[Dict]:
         """
-        Analyze image from file using Vision service.
+        Analyze image from file using MangaOCR service.
         
         Args:
             filepath (str): Path to image file

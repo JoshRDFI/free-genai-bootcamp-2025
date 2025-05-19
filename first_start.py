@@ -20,6 +20,10 @@ def run_command(command, cwd=None, check=True):
     """Run a shell command and log its output."""
     try:
         logger.info(f"Running command: {command}")
+        # Always use bash for commands that need source
+        if 'source' in command:
+            # Use double quotes for outer shell and single quotes for inner command
+            command = f'bash -c "source {command.split("source ", 1)[1]}"'
         result = subprocess.run(
             command,
             shell=True,
@@ -64,24 +68,53 @@ def setup_venv(venv_name, requirements_file=None, cwd=None):
     """Setup a virtual environment and install requirements."""
     logger.info(f"Setting up virtual environment: {venv_name}")
     
-    venv_path = Path(venv_name)
-    if cwd:
-        venv_path = Path(cwd) / venv_name
-        
     try:
-        # Create virtual environment
-        if not venv_path.exists():
-            if not run_command(f"python3 -m venv {venv_name}", cwd=cwd):
+        # Get absolute paths
+        root_dir = os.path.abspath(os.curdir)
+        
+        if cwd:
+            # Get absolute paths for project directory
+            project_dir = os.path.abspath(cwd)
+            venv_path = os.path.join(project_dir, venv_name)
+            
+            # Create venv in the project directory
+            if not run_command(f"python3 -m venv {venv_name}", cwd=project_dir):
+                logger.error(f"Failed to create virtual environment: {venv_name} in {cwd}")
+                return False
+                
+            # Install setuptools first
+            venv_python = os.path.join(venv_path, "bin", "python")
+            if not run_command(f"{venv_python} -m pip install --upgrade pip setuptools wheel", cwd=project_dir):
+                logger.error(f"Failed to install setuptools in {venv_name}")
+                return False
+                
+            # Install requirements if specified
+            if requirements_file:
+                req_path = os.path.join(project_dir, requirements_file)
+                if not run_command(f"{venv_python} -m pip install -r {req_path}", cwd=project_dir):
+                    logger.error(f"Failed to install requirements in {venv_name}")
+                    return False
+        else:
+            # Handle root directory venv
+            venv_path = os.path.join(root_dir, venv_name)
+            
+            # Create venv in the root directory
+            if not run_command(f"python3 -m venv {venv_name}", cwd=root_dir):
                 logger.error(f"Failed to create virtual environment: {venv_name}")
                 return False
                 
-        # Install requirements if specified
-        if requirements_file:
-            activate_cmd = f"source {venv_name}/bin/activate"
-            install_cmd = f"pip install -r {requirements_file}"
-            if not run_command(f"{activate_cmd} && {install_cmd}", cwd=cwd):
-                logger.error(f"Failed to install requirements in {venv_name}")
+            # Install setuptools first
+            venv_python = os.path.join(venv_path, "bin", "python")
+            if not run_command(f"{venv_python} -m pip install --upgrade pip setuptools wheel", cwd=root_dir):
+                logger.error(f"Failed to install setuptools in {venv_name}")
                 return False
+                
+            # Install requirements if specified
+            if requirements_file:
+                req_path = os.path.join(root_dir, requirements_file)
+                if not run_command(f"{venv_python} -m pip install -r {req_path}", cwd=root_dir):
+                    logger.error(f"Failed to install requirements in {venv_name}")
+                    return False
                 
         return True
         
@@ -113,8 +146,17 @@ def setup_environments():
     if not setup_venv(".venv-vn", "requirements.txt", "visual-novel/server"):
         return False
         
-    # Lang Portal backend environment
-    if not setup_venv(".venv-portal", "requirements.txt", "lang-portal/backend"):
+    # Lang Portal environment - multi-step process
+    # 1. Create the virtual environment in lang-portal root
+    if not setup_venv(".venv-portal", "requirements.txt", "lang-portal"):
+        return False
+        
+    # 2. Ensure Node.js and npm are installed (for frontend)
+    if not run_command("command -v node >/dev/null 2>&1 || (sudo apt-get update && sudo apt-get install -y nodejs npm)", check=False):
+        logger.warning("Failed to verify or install Node.js and npm. The lang-portal frontend may not work correctly.")
+        
+    # 3. Make setup.sh executable and run it within the virtual environment
+    if not run_command("chmod +x setup.sh && source .venv-portal/bin/activate && ./setup.sh", cwd="lang-portal"):
         return False
         
     return True
@@ -134,7 +176,7 @@ def run_project_command(project_name, command):
         "vocabulary_generator": (".venv-vocab", "vocabulary_generator"),
         "writing-practice": (".venv-wp", "writing-practice"),
         "visual-novel": (".venv-vn", "visual-novel"),
-        "lang-portal": (".venv-portal", "lang-portal/backend")
+        "lang-portal": (".venv-portal", "lang-portal")  # Updated to use root lang-portal directory
     }
     
     if project_name in venv_mapping:
@@ -178,12 +220,6 @@ PROJECTS = {
         "run_command": "cd visual-novel && {python} app.py",
         "docker_services": ["llm", "tts", "asr", "vision", "embeddings", "chromadb", "guardrails", "waifu-diffusion"],
         "requires_gpu": True
-    },
-    "lang-portal": {
-        "name": "Language Learning Portal",
-        "venv": ".venv-portal",
-        "run_command": "cd lang-portal && {python} start_portal.py",
-        "requires_gpu": False
     }
 }
 
@@ -203,6 +239,9 @@ def setup_models():
     """Run setup scripts for TTS, MangaOCR, Ollama, and ASR models."""
     logger.info("Setting up models...")
     
+    # Ensure we're using the main virtual environment
+    main_venv_python = get_venv_python(".venv-main")
+    
     # Run setup scripts
     setup_scripts = [
         "opea-docker/setup_tts.py",
@@ -210,7 +249,7 @@ def setup_models():
     ]
     
     for script in setup_scripts:
-        if not run_command(f"python3 {script}"):
+        if not run_command(f"{main_venv_python} {script}"):
             logger.error(f"Failed to run {script}")
             return False
     
@@ -247,7 +286,7 @@ processor.save_pretrained('data/asr_data')
             with open(script_path, "w") as f:
                 f.write(download_script)
             
-            if not run_command(f"python3 {script_path}"):
+            if not run_command(f"{main_venv_python} {script_path}"):
                 logger.error("Failed to download ASR model")
                 return False
             

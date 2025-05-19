@@ -78,6 +78,7 @@ All components share these microservices:
 
 ### **Prerequisites**
 - Python 3.10+
+- Python3 venv module (`sudo apt install python3-venv` on Ubuntu/Debian)
 - Docker with NVIDIA GPU support
 - NVIDIA GPU with CUDA support
 - WSL2 (for Windows users)
@@ -86,8 +87,26 @@ All components share these microservices:
 
 1. **Initial Setup**:
 ```bash
+# Install Python venv if not already installed
+sudo apt update && sudo apt install python3-venv
+
+# Run the setup script
 python3 first_start.py
 ```
+
+**Important Note About Setup Time:**
+The initial setup process can take 15-30 minutes depending on your system and internet connection. This is because it:
+- Downloads and sets up multiple AI models (400MB+ each)
+- Creates and configures virtual environments for each component
+- Installs dependencies in isolated environments
+- Builds Docker containers for AI services
+
+During setup you will see progress logs for:
+- Virtual environment creation
+- Package installations
+- Model downloads
+- Docker container builds
+
 This will:
 - Create all necessary data directories
 - Set up virtual environments for each component

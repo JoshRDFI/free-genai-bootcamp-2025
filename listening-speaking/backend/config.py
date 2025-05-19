@@ -13,6 +13,7 @@ class ServiceConfig:
     ASR_SERVICE_PORT = int(os.getenv("ASR_SERVICE_PORT", "9300"))
     LLM_VISION_PORT = int(os.getenv("LLM_VISION_PORT", "9100"))
     EMBEDDING_SERVICE_PORT = int(os.getenv("EMBEDDING_SERVICE_PORT", "6000"))
+    WAIFU_DIFFUSION_PORT = int(os.getenv("WAIFU_DIFFUSION_PORT", "9500"))
     
     # Service base URLs
     BASE_URL = "http://localhost"
@@ -22,6 +23,7 @@ class ServiceConfig:
     ASR_URL = f"{BASE_URL}:{ASR_SERVICE_PORT}"
     VISION_URL = f"{BASE_URL}:{LLM_VISION_PORT}"
     EMBEDDING_URL = f"{BASE_URL}:{EMBEDDING_SERVICE_PORT}"
+    WAIFU_DIFFUSION_URL = f"{BASE_URL}:{WAIFU_DIFFUSION_PORT}"
     
     # API endpoints
     ENDPOINTS = {
@@ -40,8 +42,8 @@ class ServiceConfig:
             "languages": f"{ASR_URL}/languages"
         },
         "vision": {
-            "analyze": f"{VISION_URL}/analyze",
-            "generate": f"{VISION_URL}/generate"
+            "analyze": f"{VISION_URL}/analyze",  # MangaOCR for text recognition
+            "generate": f"{WAIFU_DIFFUSION_URL}/generate"  # Waifu-diffusion for image generation
         },
         "embedding": {
             "embed": f"{EMBEDDING_URL}/embed"
@@ -55,7 +57,8 @@ class ServiceConfig:
         "tts": 120,
         "asr": 60,
         "vision": 60,
-        "embedding": 30
+        "embedding": 30,
+        "waifu-diffusion": 120  # Longer timeout for image generation
     }
     
     # Retry configuration

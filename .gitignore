@@ -14,8 +14,10 @@ __pycache__/
 
 # Virtual environment
 venv/
+.venv-*
 env/
 .env/
+node_modules/
 
 # IDE settings
 .vscode/

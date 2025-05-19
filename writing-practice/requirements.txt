@@ -1,15 +1,17 @@
-streamlit==1.22.0
-requests==2.28.2
-pyyaml==6.0
-manga-ocr==0.1.8
-Pillow==9.4.0
-flask==2.0.0
-opencv-python==4.7.0
-streamlit-drawable-canvas==0.9.0
-# ollama>=0.1.0
+# Core Dependencies
+streamlit>=1.32.0
+requests>=2.31.0
+PyYAML>=6.0.1
+flask>=3.0.0
+streamlit-drawable-canvas>=0.9.0
+manga-ocr>=0.1.8  # Japanese OCR - required locally
+Pillow>=10.0.0    # Required by manga-ocr
 
 # Testing dependencies
-pytest==7.4.3
-pytest-cov==4.1.0
-pytest-mock==3.11.1
-pytest-asyncio==0.21.1
+pytest>=7.4.3
+pytest-cov>=4.1.0
+pytest-mock>=3.11.1
+pytest-asyncio>=0.21.1
+
+# Note: General image processing (OpenCV) is handled by Docker services
+# But manga-ocr is required locally for Japanese character recognition

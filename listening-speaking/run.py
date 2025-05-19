@@ -59,6 +59,7 @@ def run_backend():
         os.environ["ASR_SERVICE_PORT"] = "9300"
         os.environ["LLM_VISION_PORT"] = "9100"
         os.environ["EMBEDDING_SERVICE_PORT"] = "6000"
+        os.environ["WAIFU_DIFFUSION_PORT"] = "9500"
         
         # Set TTS data path if not already set
         if "TTS_DATA_PATH" not in os.environ:
