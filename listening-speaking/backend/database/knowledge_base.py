@@ -11,6 +11,7 @@ from chromadb import Client, Settings, PersistentClient
 import sys
 sys.path.insert(0, '/home/sage/free-genai-bootcamp-2025/listening-speaking/backend')
 from backend.utils.helper import get_file_path
+from backend.config import ServiceConfig
 
 # Configure logging
 logging.basicConfig(
@@ -33,12 +34,13 @@ class KnowledgeBase:
 
         self._create_tables()
 
-        # Initialize ChromaDB
-        chroma_dir = os.path.join(os.path.dirname(self.db_path), "chroma")
-        os.makedirs(chroma_dir, exist_ok=True)
-
-        # Initialize ChromaDB with new configuration
-        self.chroma_client = PersistentClient(path=chroma_dir)
+        # Initialize ChromaDB client to connect to Docker service with persistence
+        self.chroma_client = Client(Settings(
+            chroma_api_impl="rest",
+            chroma_server_host="localhost",
+            chroma_server_http_port=8050,
+            persist_directory="/data"  # This is the path inside the Docker container
+        ))
 
         # Create or get collections
         self.transcript_collection = self.chroma_client.get_or_create_collection("transcripts")

@@ -95,7 +95,7 @@ python3 first_start.py
 ```
 
 **Important Note About Setup Time:**
-The initial setup process can take 15-30 minutes depending on your system and internet connection. This is because it:
+The initial setup process can take approximately 2 hours depending on your system and internet connection. This is because it:
 - Downloads and sets up multiple AI models (400MB+ each)
 - Creates and configures virtual environments for each component
 - Installs dependencies in isolated environments
