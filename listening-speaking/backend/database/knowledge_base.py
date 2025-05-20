@@ -8,7 +8,12 @@ from typing import List, Dict, Optional, Any
 from datetime import datetime
 import requests
 import sys
-sys.path.insert(0, '/home/sage/free-genai-bootcamp-2025/listening-speaking/backend')
+
+# Add the backend directory to Python path using relative path
+current_dir = os.path.dirname(os.path.abspath(__file__))
+backend_dir = os.path.dirname(current_dir)
+sys.path.insert(0, backend_dir)
+
 from backend.utils.helper import get_file_path
 from backend.config import ServiceConfig
 

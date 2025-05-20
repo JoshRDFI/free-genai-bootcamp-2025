@@ -2,14 +2,17 @@
 
 from youtube_transcript_api import YouTubeTranscriptApi
 from typing import Optional, List, Dict
-# import os
+import os
 import sys
 import json
 import logging
 from datetime import datetime
 import re
-sys.path.insert(0, '/home/sage/free-genai-bootcamp-2025/listening-speaking/backend')
-from backend.utils.helper import get_file_path
+
+# Add the backend directory to Python path using relative path
+current_dir = os.path.dirname(os.path.abspath(__file__))
+backend_dir = os.path.dirname(current_dir)
+sys.path.insert(0, backend_dir)
 
 # Configure logging
 logging.basicConfig(

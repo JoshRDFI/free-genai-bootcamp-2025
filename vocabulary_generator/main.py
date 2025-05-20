@@ -31,9 +31,8 @@ DEFAULT_USER_ID = 1
 DEFAULT_USER_NAME = 'Default User'
 DEFAULT_USER_LEVEL = 'N5'
 
-# Determine Project Root once, assuming main.py is in a subdirectory like 'vocabulary_generator'
-# PROJECT_ROOT will be /home/sage/free-genai-bootcamp-2025
-PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+# Get the project root directory using relative path
+PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
 
 # --- Adventure MUD Constants ---
 DEFAULT_RAMEN_INGREDIENTS_TO_COLLECT = 3

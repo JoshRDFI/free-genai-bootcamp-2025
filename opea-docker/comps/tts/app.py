@@ -30,7 +30,7 @@ logger.info(f"Directory contents: {os.listdir(TTS_DATA_PATH)}")
 
 class TTSRequest(BaseModel):
     text: str
-    voice: Optional[str] = None  # path to speaker wav
+    voice_id: Optional[str] = None  # path to speaker wav
     language: Optional[str] = "en"
     speed: Optional[float] = 1.0
 
@@ -108,10 +108,10 @@ async def text_to_speech(request: TTSRequest):
 
         # Load voice reference if provided
         speaker_wav = None
-        if request.voice:
-            speaker_wav = load_voice_reference(request.voice)
+        if request.voice_id:
+            speaker_wav = load_voice_reference(request.voice_id)
             if not speaker_wav:
-                logger.warning(f"Voice reference not found: {request.voice}")
+                logger.warning(f"Voice reference not found: {request.voice_id}")
 
         outputs = model.synthesize(
             request.text,
