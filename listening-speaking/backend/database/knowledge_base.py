@@ -7,7 +7,6 @@ import os
 from typing import List, Dict, Optional, Any
 from datetime import datetime
 import requests
-from chromadb import Client, Settings, PersistentClient
 import sys
 sys.path.insert(0, '/home/sage/free-genai-bootcamp-2025/listening-speaking/backend')
 from backend.utils.helper import get_file_path
@@ -34,103 +33,76 @@ class KnowledgeBase:
 
         self._create_tables()
 
-        # Initialize ChromaDB client to connect to Docker service with persistence
-        self.chroma_client = Client(Settings(
-            chroma_api_impl="rest",
-            chroma_server_host="localhost",
-            chroma_server_http_port=8050,
-            persist_directory="/data"  # This is the path inside the Docker container
-        ))
+        # Initialize ChromaDB REST client
+        self.chroma_url = "http://localhost:8050/api/v1"
+        self.headers = {"Content-Type": "application/json"}
 
-        # Create or get collections
-        self.transcript_collection = self.chroma_client.get_or_create_collection("transcripts")
-        self.question_collection = self.chroma_client.get_or_create_collection("questions")
+        # Create collections if they don't exist
+        self._ensure_collections()
+
+    def _ensure_collections(self):
+        """Ensure required collections exist"""
+        try:
+            # Get list of collections
+            response = requests.get(f"{self.chroma_url}/collections")
+            response.raise_for_status()
+            collections = response.json()
+            
+            # Create collections if they don't exist
+            for collection_name in ["transcripts", "questions"]:
+                if not any(c["name"] == collection_name for c in collections):
+                    response = requests.post(
+                        f"{self.chroma_url}/collections",
+                        json={"name": collection_name}
+                    )
+                    response.raise_for_status()
+                    logger.info(f"Created collection: {collection_name}")
+        except Exception as e:
+            logger.error(f"Error ensuring collections exist: {str(e)}")
+            raise
 
     def _create_tables(self):
-        """Create necessary tables if they don't exist"""
+        """Create necessary SQLite tables if they don't exist"""
         with sqlite3.connect(self.db_path) as conn:
             cursor = conn.cursor()
 
-            # Create transcripts table
+            # Transcripts table
             cursor.execute("""
-            CREATE TABLE IF NOT EXISTS transcripts (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                video_id TEXT NOT NULL UNIQUE,
-                transcript TEXT NOT NULL,
-                language TEXT NOT NULL DEFAULT 'ja',
-                created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-            )
+                CREATE TABLE IF NOT EXISTS transcripts (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    video_id TEXT NOT NULL,
+                    transcript TEXT NOT NULL,
+                    language TEXT NOT NULL,
+                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+                )
             """)
 
-            # Check if old questions table exists
-            cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='questions'")
-            if cursor.fetchone():
-                # Check if we need to migrate the schema
-                cursor.execute("PRAGMA table_info(questions)")
-                columns = {row[1] for row in cursor.fetchall()}
-                
-                # If old schema exists, migrate to new schema
-                if 'transcript_id' in columns:
-                    # Create temporary table with new schema
-                    cursor.execute("""
-                    CREATE TABLE questions_new (
-                        id INTEGER PRIMARY KEY AUTOINCREMENT,
-                        video_id TEXT NOT NULL,
-                        section_num INTEGER NOT NULL,
-                        introduction TEXT,
-                        conversation TEXT,
-                        question TEXT NOT NULL,
-                        options TEXT NOT NULL,
-                        correct_answer INTEGER NOT NULL DEFAULT 1,
-                        image_path TEXT,
-                        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-                    )
-                    """)
-                    
-                    # Migrate data from old table to new table
-                    cursor.execute("""
-                    INSERT INTO questions_new (id, question, options, correct_answer, image_path, created_at)
-                    SELECT id, question, options, correct_option, image_path, created_at
-                    FROM questions
-                    """)
-                    
-                    # Drop old table and rename new table
-                    cursor.execute("DROP TABLE questions")
-                    cursor.execute("ALTER TABLE questions_new RENAME TO questions")
-            else:
-                # Create new questions table
-                cursor.execute("""
-                CREATE TABLE questions (
+            # Questions table
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS questions (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     video_id TEXT NOT NULL,
                     section_num INTEGER NOT NULL,
                     introduction TEXT,
                     conversation TEXT,
                     question TEXT NOT NULL,
-                    options TEXT NOT NULL,
-                    correct_answer INTEGER NOT NULL DEFAULT 1,
+                    options TEXT,
+                    correct_answer INTEGER,
                     image_path TEXT,
                     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
                 )
-                """)
-
-            # Create image_generation table if it doesn't exist
-            cursor.execute("""
-            CREATE TABLE IF NOT EXISTS image_generation (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                question_id INTEGER NOT NULL,
-                prompt TEXT NOT NULL,
-                status TEXT CHECK(status IN ('pending', 'completed', 'failed')) NOT NULL,
-                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-                completed_at DATETIME,
-                error_message TEXT,
-                FOREIGN KEY (question_id) REFERENCES questions(id)
-            )
             """)
 
-            # Create index for faster lookups
+            # Image generation table
             cursor.execute("""
-            CREATE INDEX IF NOT EXISTS idx_image_generation_question ON image_generation(question_id)
+                CREATE TABLE IF NOT EXISTS image_generation (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    question_id INTEGER NOT NULL,
+                    prompt TEXT NOT NULL,
+                    status TEXT NOT NULL,
+                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    FOREIGN KEY (question_id) REFERENCES questions (id)
+                )
             """)
 
             conn.commit()
@@ -336,49 +308,55 @@ class KnowledgeBase:
         try:
             # Use the dedicated embeddings service
             response = requests.post(
-                "http://localhost:6000/embed",  # Note: removed /api/
-                json={"texts": [text]}  # Note: expects a list of texts
+                "http://localhost:6000/embed",
+                json={"texts": [text]}
             )
             response.raise_for_status()
             result = response.json()
-            # Return the first embedding since we only sent one text
             return result["embeddings"][0]
         except Exception as e:
             logger.error(f"Error generating embedding: {str(e)}")
             return None
 
     def save_embedding(self, text: str, metadata: Dict[str, Any], collection_name: str) -> bool:
-        """Save embedding to ChromaDB"""
+        """Save embedding to ChromaDB using REST API"""
         try:
             embedding = self.generate_embedding(text)
             if not embedding:
                 return False
 
-            collection = self.chroma_client.get_collection(collection_name)
-            collection.add(
-                documents=[text],
-                metadatas=[metadata],
-                embeddings=[embedding],
-                ids=[f"{collection_name}_{datetime.now().strftime('%Y%m%d_%H%M%S')}"]
+            # Add document to collection
+            response = requests.post(
+                f"{self.chroma_url}/collections/{collection_name}/add",
+                json={
+                    "documents": [text],
+                    "metadatas": [metadata],
+                    "embeddings": [embedding],
+                    "ids": [f"{collection_name}_{datetime.now().strftime('%Y%m%d_%H%M%S')}"]
+                }
             )
+            response.raise_for_status()
             return True
         except Exception as e:
             logger.error(f"Error saving embedding: {str(e)}")
             return False
 
     def query_similar(self, query_text: str, collection_name: str, top_k: int = 5) -> List[Dict]:
-        """Query similar items from ChromaDB"""
+        """Query similar items from ChromaDB using REST API"""
         try:
             query_embedding = self.generate_embedding(query_text)
             if not query_embedding:
                 return []
 
-            collection = self.chroma_client.get_collection(collection_name)
-            results = collection.query(
-                query_embeddings=[query_embedding],
-                n_results=top_k
+            response = requests.post(
+                f"{self.chroma_url}/collections/{collection_name}/query",
+                json={
+                    "query_embeddings": [query_embedding],
+                    "n_results": top_k
+                }
             )
-            return results
+            response.raise_for_status()
+            return response.json()
         except Exception as e:
             logger.error(f"Error querying similar items: {str(e)}")
             return []

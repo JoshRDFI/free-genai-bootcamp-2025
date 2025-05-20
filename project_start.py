@@ -228,8 +228,14 @@ def get_venv_python(project_name):
     
     if project_name in venv_mapping:
         venv_name, project_dir = venv_mapping[project_name]
-        venv_path = Path(project_dir) / venv_name  # Look for venv inside project directory
-        return str(venv_path / "bin" / "python3")  # Use python3 instead of python
+        # Use absolute path
+        venv_path = Path(os.path.abspath(project_dir)) / venv_name
+        python_path = venv_path / "bin" / "python3"
+        if not python_path.exists():
+            logger.error(f"Python interpreter not found at: {python_path}")
+            logger.error(f"Current working directory: {os.getcwd()}")
+            logger.error(f"Absolute venv path: {venv_path}")
+        return str(python_path)
     return sys.executable  # Fallback to system Python
 
 def get_venv_streamlit(project_name):
