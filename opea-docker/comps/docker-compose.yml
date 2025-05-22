@@ -25,15 +25,15 @@ services:
     restart: unless-stopped
 
   chromadb:
-    image: ghcr.io/chroma-core/chroma:latest
+    image: chromadb/chroma:latest
     container_name: chromadb
     volumes:
-      - ${CHROMA_DATA_PATH:-../../data/chroma_data}:/data
-      - ${SHARED_DB_PATH:-../../data/shared_db}:/app/db
+      - ${CHROMA_DATA_PATH:-../../data/chroma_data}:/chroma/chroma
     ports:
-      - "${CHROMADB_PORT:-8050}:8050"
+      - "${CHROMADB_PORT:-8180}:8000"
     environment:
-      - CHROMA_SERVER_PORT=${CHROMADB_PORT:-8050}
+      - ALLOW_RESET=true
+      - ANONYMIZED_TELEMETRY=false
     restart: unless-stopped
 
   # Core Services (Depend on Base Services)

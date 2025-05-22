@@ -3,8 +3,6 @@
 from typing import Optional, Dict, List
 import os
 import json
-from TTS.api import TTS
-import torch
 import numpy as np
 from datetime import datetime
 import requests
@@ -12,6 +10,7 @@ from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 from backend.config import ServiceConfig
 import logging
+import base64
 
 logger = logging.getLogger(__name__)
 
@@ -56,7 +55,10 @@ class TTSEngine:
                 timeout=ServiceConfig.get_timeout("tts")
             )
             response.raise_for_status()
-            return response.content
+            
+            # Decode base64 audio data
+            audio_data = base64.b64decode(response.json()["audio"])
+            return audio_data
 
         except requests.exceptions.RequestException as e:
             logger.error(f"Error synthesizing speech: {str(e)}")
@@ -106,47 +108,6 @@ class TTSEngine:
             logger.error(f"Error saving audio file: {str(e)}")
             return False
 
-    def load_speaker_config(self) -> Dict:
-        """Load speaker configuration if available"""
-        config_path = os.path.join(self.model_path, "speaker_config.json")
-        if os.path.exists(config_path):
-            with open(config_path, 'r', encoding='utf-8') as f:
-                return json.load(f)
-        return {}
-
-    def generate_audio(self, text: str, output_path: str,
-                       speaker_wav: Optional[str] = None,
-                       language: str = "ja") -> bool:
-        """
-        Generate audio from text using Coqui TTS.
-
-        Args:
-        text: Japanese text to convert to speech
-        output_path: Path to save the audio file
-        speaker_wav: Path to the speaker reference audio file
-        language: Language code (e.g., "ja" for Japanese)
-        """
-        if not self.tts:
-            print("TTS engine not initialized")
-            return False
-
-        try:
-            # Create output directory if it doesn't exist
-            os.makedirs(os.path.dirname(output_path), exist_ok=True)
-
-            # Generate audio
-            self.tts.tts_to_file(
-                text=text,
-                file_path=output_path,
-                speaker_wav=speaker_wav,
-                language=language
-            )
-
-            return os.path.exists(output_path)
-        except Exception as e:
-            print(f"Error generating audio: {str(e)}")
-            return False
-
     def generate_silence(self, duration_ms: int, output_path: str) -> bool:
         """
         Generate a silent audio segment.
@@ -156,7 +117,7 @@ class TTSEngine:
         output_path: Path to save the audio file
         """
         try:
-            sample_rate = 22050  # Standard sample rate for Coqui TTS
+            sample_rate = 22050  # Standard sample rate
             num_samples = int((duration_ms / 1000) * sample_rate)
             silence = np.zeros(num_samples, dtype=np.float32)
 
@@ -166,7 +127,7 @@ class TTSEngine:
 
             return True
         except Exception as e:
-            print(f"Error generating silence: {str(e)}")
+            logger.error(f"Error generating silence: {str(e)}")
             return False
 
     def combine_audio_files(self, audio_files: List[str], output_path: str) -> bool:
@@ -194,31 +155,19 @@ class TTSEngine:
 
             return True
         except Exception as e:
-            print(f"Error combining audio files: {str(e)}")
+            logger.error(f"Error combining audio files: {str(e)}")
             return False
-
-    def get_available_speakers(self) -> List[str]:
-        """Get list of available speakers for multi-speaker models"""
-        if not self.tts:
-            return []
-
-        try:
-            return self.tts.speakers
-        except:
-            return []
 
     def validate_text(self, text: str) -> bool:
         """
-        Validate text before TTS processing.
-
+        Validate if the text is suitable for TTS.
+        
         Args:
-        text: Text to validate
+            text (str): Text to validate
+            
+        Returns:
+            bool: True if text is valid, False otherwise
         """
-        if not text:
+        if not text or not isinstance(text, str):
             return False
-
-        # Check for Japanese characters
-        if not any('\u4e00' <= c <= '\u9fff' or '\u3040' <= c <= '\u309f' or '\u30a0' <= c <= '\u30ff' for c in text):
-            return False
-
-        return True
+        return len(text.strip()) > 0

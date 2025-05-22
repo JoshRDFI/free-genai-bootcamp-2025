@@ -128,7 +128,7 @@ def check_backend_health():
             return False
 
         # Then check if backend API is running
-        backend_response = requests.get("http://localhost:8000/health")
+        backend_response = requests.get("http://localhost:8180/health")
         if backend_response.status_code != 200:
             logger.error(f"Backend API returned status {backend_response.status_code}")
             return False
@@ -502,9 +502,9 @@ def run_project(project_name):
                 status_placeholder.info("Starting backend...")
                 logger.info("Starting backend process")
                 
-                # Kill any existing process on port 8000
+                # Kill any existing process on port 8180
                 try:
-                    subprocess.run(["fuser", "-k", "8000/tcp"], capture_output=True)
+                    subprocess.run(["fuser", "-k", "8180/tcp"], capture_output=True)
                 except:
                     pass  # Ignore if fuser is not available
                 
@@ -523,7 +523,8 @@ def run_project(project_name):
                         LLM_SERVICE_URL="http://localhost:9000",
                         EMBEDDINGS_SERVICE_URL="http://localhost:6000",
                         PYTHONUNBUFFERED="1",  # Ensure Python output is not buffered
-                        PYTHONPATH=os.path.abspath("listening-speaking")  # Add project root to Python path
+                        PYTHONPATH=os.path.abspath("listening-speaking"),  # Add project root to Python path
+                        CHROMA_SERVER_PORT="8000"  # Match the port in docker-compose.yml
                     ),
                     bufsize=1,
                     universal_newlines=True

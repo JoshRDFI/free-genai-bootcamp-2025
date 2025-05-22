@@ -52,7 +52,7 @@ def run_backend():
         project_root = os.path.dirname(os.path.abspath(__file__))
 
         # Set required environment variables
-        backend_port = 8000
+        backend_port = 8180
         os.environ["BACKEND_PORT"] = str(backend_port)
         os.environ["LLM_TEXT_PORT"] = "9000"
         os.environ["TTS_SERVICE_PORT"] = "9200"

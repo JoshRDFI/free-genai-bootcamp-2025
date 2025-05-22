@@ -8,6 +8,8 @@ from typing import List, Dict, Optional, Any
 from datetime import datetime
 import requests
 import sys
+import chromadb
+from chromadb.config import Settings
 
 # Add the backend directory to Python path using relative path
 current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -22,14 +24,14 @@ logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     handlers=[
-        logging.FileHandler("backend/logs/knowledge_base.log"),
+        logging.FileHandler("data/shared_db/logs/knowledge_base.log"),
         logging.StreamHandler()
     ]
 )
 logger = logging.getLogger(__name__)
 
 class KnowledgeBase:
-    def __init__(self, db_path: str = "backend/database/knowledge_base.db"):
+    def __init__(self, db_path: str = "data/shared_db/knowledge_base.db"):
         """Initialize the database connection and ChromaDB client"""
         self.db_path = db_path
 
@@ -38,32 +40,31 @@ class KnowledgeBase:
 
         self._create_tables()
 
-        # Initialize ChromaDB REST client
-        self.chroma_url = "http://localhost:8050/api/v1"
-        self.headers = {"Content-Type": "application/json"}
-
-        # Create collections if they don't exist
-        self._ensure_collections()
-
-    def _ensure_collections(self):
-        """Ensure required collections exist"""
+        # Initialize ChromaDB client with v2 API
         try:
-            # Get list of collections
-            response = requests.get(f"{self.chroma_url}/collections")
-            response.raise_for_status()
-            collections = response.json()
-            
-            # Create collections if they don't exist
-            for collection_name in ["transcripts", "questions"]:
-                if not any(c["name"] == collection_name for c in collections):
-                    response = requests.post(
-                        f"{self.chroma_url}/collections",
-                        json={"name": collection_name}
-                    )
-                    response.raise_for_status()
-                    logger.info(f"Created collection: {collection_name}")
+            self.chroma_client = chromadb.HttpClient(
+                host="localhost",
+                port=8000,
+                settings=Settings(
+                    chroma_api_impl="rest",
+                    chroma_server_host="localhost",
+                    chroma_server_http_port=8000
+                )
+            )
+            logger.info("Successfully initialized ChromaDB client")
         except Exception as e:
-            logger.error(f"Error ensuring collections exist: {str(e)}")
+            logger.error(f"Failed to initialize ChromaDB client: {str(e)}")
+            raise
+
+        # Create or get collection
+        try:
+            self.collection = self.chroma_client.get_or_create_collection(
+                name="transcripts",
+                metadata={"hnsw:space": "cosine"}
+            )
+            logger.info("Successfully initialized collection")
+        except Exception as e:
+            logger.error(f"Failed to initialize collection: {str(e)}")
             raise
 
     def _create_tables(self):
@@ -76,7 +77,7 @@ class KnowledgeBase:
                 CREATE TABLE IF NOT EXISTS transcripts (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     video_id TEXT NOT NULL,
-                    transcript TEXT NOT NULL,
+                    content TEXT NOT NULL,
                     language TEXT NOT NULL,
                     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
                 )
@@ -93,20 +94,7 @@ class KnowledgeBase:
                     question TEXT NOT NULL,
                     options TEXT,
                     correct_answer INTEGER,
-                    image_path TEXT,
                     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-                )
-            """)
-
-            # Image generation table
-            cursor.execute("""
-                CREATE TABLE IF NOT EXISTS image_generation (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    question_id INTEGER NOT NULL,
-                    prompt TEXT NOT NULL,
-                    status TEXT NOT NULL,
-                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-                    FOREIGN KEY (question_id) REFERENCES questions (id)
                 )
             """)
 
@@ -152,7 +140,7 @@ class KnowledgeBase:
             with sqlite3.connect(self.db_path) as conn:
                 cursor = conn.cursor()
                 cursor.execute(
-                    "INSERT OR REPLACE INTO transcripts (video_id, transcript, language) VALUES (?, ?, ?)",
+                    "INSERT OR REPLACE INTO transcripts (video_id, content, language) VALUES (?, ?, ?)",
                     (video_id, content, language)
                 )
                 conn.commit()
@@ -225,7 +213,7 @@ class KnowledgeBase:
             with sqlite3.connect(self.db_path) as conn:
                 cursor = conn.cursor()
                 cursor.execute(
-                    "SELECT transcript, language, created_at FROM transcripts WHERE video_id = ?",
+                    "SELECT content, language, created_at FROM transcripts WHERE video_id = ?",
                     (video_id,)
                 )
                 result = cursor.fetchone()
@@ -257,8 +245,7 @@ class KnowledgeBase:
                         "question": row[5],
                         "options": json.loads(row[6]) if row[6] else [],
                         "correct_answer": row[7],
-                        "image_path": row[8],
-                        "created_at": row[9],
+                        "created_at": row[8],
                     }
                 return None
         except Exception as e:
@@ -300,8 +287,7 @@ class KnowledgeBase:
                         "question": row[5],
                         "options": json.loads(row[6]) if row[6] else [],
                         "correct_answer": row[7],
-                        "image_path": row[8],
-                        "created_at": row[9]
+                        "created_at": row[8]
                     })
                 return questions
         except Exception as e:
@@ -324,44 +310,57 @@ class KnowledgeBase:
             return None
 
     def save_embedding(self, text: str, metadata: Dict[str, Any], collection_name: str) -> bool:
-        """Save embedding to ChromaDB using REST API"""
+        """Save embedding to ChromaDB"""
         try:
             embedding = self.generate_embedding(text)
             if not embedding:
                 return False
 
-            # Add document to collection
-            response = requests.post(
-                f"{self.chroma_url}/collections/{collection_name}/add",
-                json={
-                    "documents": [text],
-                    "metadatas": [metadata],
-                    "embeddings": [embedding],
-                    "ids": [f"{collection_name}_{datetime.now().strftime('%Y%m%d_%H%M%S')}"]
-                }
+            # Get or create collection
+            collection = self.chroma_client.get_collection(
+                name=collection_name
             )
-            response.raise_for_status()
+            
+            # Add document to collection
+            collection.add(
+                documents=[text],
+                metadatas=[metadata],
+                embeddings=[embedding],
+                ids=[f"{collection_name}_{datetime.now().strftime('%Y%m%d_%H%M%S')}"]
+            )
             return True
         except Exception as e:
             logger.error(f"Error saving embedding: {str(e)}")
             return False
 
     def query_similar(self, query_text: str, collection_name: str, top_k: int = 5) -> List[Dict]:
-        """Query similar items from ChromaDB using REST API"""
+        """Query similar items from ChromaDB"""
         try:
             query_embedding = self.generate_embedding(query_text)
             if not query_embedding:
                 return []
 
-            response = requests.post(
-                f"{self.chroma_url}/collections/{collection_name}/query",
-                json={
-                    "query_embeddings": [query_embedding],
-                    "n_results": top_k
-                }
+            # Get collection
+            collection = self.chroma_client.get_collection(
+                name=collection_name
             )
-            response.raise_for_status()
-            return response.json()
+            
+            # Query collection
+            results = collection.query(
+                query_embeddings=[query_embedding],
+                n_results=top_k
+            )
+            
+            # Format results
+            formatted_results = []
+            for i in range(len(results['ids'][0])):
+                formatted_results.append({
+                    'id': results['ids'][0][i],
+                    'document': results['documents'][0][i],
+                    'metadata': results['metadatas'][0][i],
+                    'distance': results['distances'][0][i] if 'distances' in results else None
+                })
+            return formatted_results
         except Exception as e:
             logger.error(f"Error querying similar items: {str(e)}")
             return []
@@ -459,3 +458,27 @@ class KnowledgeBase:
         except Exception as e:
             logger.error(f"Error getting pending image requests: {str(e)}")
             return []
+
+    def add_transcript(self, transcript_id: str, text: str, metadata: dict = None):
+        try:
+            self.collection.add(
+                documents=[text],
+                ids=[transcript_id],
+                metadatas=[metadata] if metadata else None
+            )
+            logger.info(f"Successfully added transcript {transcript_id}")
+        except Exception as e:
+            logger.error(f"Failed to add transcript {transcript_id}: {str(e)}")
+            raise
+
+    def search_transcripts(self, query: str, n_results: int = 5):
+        try:
+            results = self.collection.query(
+                query_texts=[query],
+                n_results=n_results
+            )
+            logger.info(f"Successfully searched transcripts for query: {query}")
+            return results
+        except Exception as e:
+            logger.error(f"Failed to search transcripts: {str(e)}")
+            raise
