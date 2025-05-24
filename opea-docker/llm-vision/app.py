@@ -6,26 +6,20 @@ import os
 import base64
 from enum import Enum
 from pathlib import Path
+import torch
+from transformers import AutoProcessor, AutoModelForCausalLM
 
 # Configuration
 LLM_ENDPOINT = os.environ.get("LLM_ENDPOINT", "http://llm:11434")
-VISION_MODEL_ID = os.environ.get("VISION_MODEL_ID", "llava:13b")
+VISION_MODEL_ID = os.environ.get("VISION_MODEL_ID", "llava-v1.6-mistral-7b")
+MODEL_CACHE_DIR = os.environ.get("TRANSFORMERS_CACHE", "/app/data/llava_models")
 
 # Initialize FastAPI app
 app = FastAPI()
 
 # Global variables
-_manga_ocr = None
-manga_ocr_available = False
-
-# Try to import MangaOCR
-print("Initializing MangaOCR module")
-try:
-    from manga_ocr import MangaOcr
-    manga_ocr_available = True
-except ImportError:
-    print("MangaOCR not available")
-    manga_ocr_available = False
+_llava_processor = None
+_llava_model = None
 
 # Models
 class VisionRequest(BaseModel):
@@ -40,72 +34,57 @@ class VisionResponse(BaseModel):
     content: str
     done: bool
 
-# Helper functions
-def get_manga_ocr():
-    global _manga_ocr
-    if _manga_ocr is None:
+def get_llava_model():
+    global _llava_processor, _llava_model
+    if _llava_processor is None or _llava_model is None:
         try:
-            _manga_ocr = MangaOcr()
+            _llava_processor = AutoProcessor.from_pretrained(
+                VISION_MODEL_ID,
+                cache_dir=MODEL_CACHE_DIR
+            )
+            _llava_model = AutoModelForCausalLM.from_pretrained(
+                VISION_MODEL_ID,
+                cache_dir=MODEL_CACHE_DIR,
+                torch_dtype=torch.float16,
+                device_map="auto"
+            )
         except Exception as e:
-            print(f"Warning: Model initialization failed: {e}")
-    return _manga_ocr
-
-@app.post("/ocr")
-async def ocr_image(file: UploadFile = File(...), language: Optional[str] = Form("ja")):
-    try:
-        if not manga_ocr_available:
-            raise HTTPException(status_code=500, detail="MangaOCR not available")
-            
-        ocr = get_manga_ocr()
-        if ocr is None:
-            raise HTTPException(status_code=500, detail="MangaOCR failed to initialize")
-            
-        # Read the uploaded file
-        contents = await file.read()
-        
-        # Process with MangaOCR
-        text = ocr(contents)
-        
-        return {"text": text, "language": language}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error processing image: {str(e)}")
+            print(f"Warning: LLaVA model initialization failed: {e}")
+    return _llava_processor, _llava_model
 
 @app.post("/vision")
 async def process_vision(request: VisionRequest):
     try:
-        async with httpx.AsyncClient() as client:
-            response = await client.post(
-                f"{LLM_ENDPOINT}/api/chat",  # Using chat API for vision models
-                json={
-                    "model": request.model or VISION_MODEL_ID,
-                    "messages": [
-                        {
-                            "role": "user",
-                            "content": [
-                                {"type": "text", "text": request.prompt},
-                                {"type": "image_url", "image_url": {"url": request.image}}
-                            ]
-                        }
-                    ],
-                    "temperature": request.temperature,
-                    "max_tokens": request.max_tokens
-                }
-            )
-            
-            if response.status_code != 200:
-                raise HTTPException(
-                    status_code=response.status_code,
-                    detail=f"LLM service error: {response.text}"
-                )
-                
-            result = response.json()
-            content = result.get("message", {}).get("content", "")
-            
-            return VisionResponse(
-                model=request.model or VISION_MODEL_ID,
-                content=content,
-                done=True
-            )
+        processor, model = get_llava_model()
+        if processor is None or model is None:
+            raise HTTPException(status_code=500, detail="LLaVA model not initialized")
+
+        # Decode base64 image
+        image_data = base64.b64decode(request.image.split(",")[1])
+        
+        # Process image and text
+        inputs = processor(
+            text=request.prompt,
+            images=image_data,
+            return_tensors="pt"
+        ).to(model.device)
+
+        # Generate response
+        outputs = model.generate(
+            **inputs,
+            max_new_tokens=request.max_tokens,
+            temperature=request.temperature,
+            do_sample=True
+        )
+        
+        # Decode response
+        response_text = processor.decode(outputs[0], skip_special_tokens=True)
+        
+        return VisionResponse(
+            model=VISION_MODEL_ID,
+            content=response_text,
+            done=True
+        )
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error processing image: {str(e)}")
@@ -127,26 +106,24 @@ async def health_check():
             response = await client.get(f"{LLM_ENDPOINT}/api/version")
             ollama_status = "connected" if response.status_code == 200 else "disconnected"
             
-        # Check MangaOCR status
-        manga_ocr_status = "available" if manga_ocr_available else "not available"
-        if manga_ocr_available:
-            ocr = get_manga_ocr()
-            manga_ocr_status = "initialized" if ocr is not None else "not initialized"
+        # Check LLaVA status
+        processor, model = get_llava_model()
+        llava_status = "initialized" if processor is not None and model is not None else "not initialized"
             
         return {
             "status": "healthy", 
             "ollama_status": ollama_status, 
             "model": VISION_MODEL_ID,
-            "manga_ocr_status": manga_ocr_status
+            "llava_status": llava_status
         }
     except Exception as e:
         return {
             "status": "unhealthy", 
             "error": str(e),
-            "manga_ocr_status": "unknown"
+            "llava_status": "unknown"
         }
 
 if __name__ == "__main__":
     import uvicorn
-    port = int(os.getenv("VISION_SERVICE_PORT", 9100))
+    port = int(os.getenv("VISION_SERVICE_PORT", 9101))
     uvicorn.run(app, host="0.0.0.0", port=port)

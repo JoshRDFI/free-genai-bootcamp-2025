@@ -106,12 +106,77 @@ class ImageGenerator:
             logger.error(f"Error saving image file: {str(e)}")
             return False
 
-    def analyze_file(self, filepath: str) -> Optional[Dict]:
+    def analyze_manga_text(self, image_data: bytes) -> Optional[Dict]:
         """
-        Analyze image from file using MangaOCR service.
+        Analyze Japanese text in image using MangaOCR service.
+        
+        Args:
+            image_data (bytes): Image data to analyze
+            
+        Returns:
+            Optional[Dict]: Analysis result if successful, None otherwise
+        """
+        try:
+            endpoint = ServiceConfig.get_endpoint("vision", "analyze_manga")
+            if not endpoint:
+                logger.error("MangaOCR analyze endpoint not configured")
+                return None
+
+            files = {
+                'image': ('image.jpg', image_data, 'image/jpeg')
+            }
+
+            response = self.session.post(
+                endpoint,
+                files=files,
+                timeout=ServiceConfig.get_timeout("vision")
+            )
+            response.raise_for_status()
+            return response.json()
+
+        except requests.exceptions.RequestException as e:
+            logger.error(f"Error analyzing manga text: {str(e)}")
+            return None
+
+    def analyze_image_content(self, image_data: bytes) -> Optional[Dict]:
+        """
+        Analyze image content using LLaVA service.
+        
+        Args:
+            image_data (bytes): Image data to analyze
+            
+        Returns:
+            Optional[Dict]: Analysis result if successful, None otherwise
+        """
+        try:
+            endpoint = ServiceConfig.get_endpoint("vision", "analyze_image")
+            if not endpoint:
+                logger.error("LLaVA analyze endpoint not configured")
+                return None
+
+            files = {
+                'image': ('image.jpg', image_data, 'image/jpeg')
+            }
+
+            response = self.session.post(
+                endpoint,
+                files=files,
+                timeout=ServiceConfig.get_timeout("vision")
+            )
+            response.raise_for_status()
+            return response.json()
+
+        except requests.exceptions.RequestException as e:
+            logger.error(f"Error analyzing image content: {str(e)}")
+            return None
+
+    def analyze_file(self, filepath: str, analyze_type: str = "content") -> Optional[Dict]:
+        """
+        Analyze image from file using either MangaOCR or LLaVA service.
         
         Args:
             filepath (str): Path to image file
+            analyze_type (str): Type of analysis to perform ("content" for LLaVA or "manga" for MangaOCR)
             
         Returns:
             Optional[Dict]: Analysis result if successful, None otherwise
@@ -119,7 +184,11 @@ class ImageGenerator:
         try:
             with open(filepath, 'rb') as f:
                 image_data = f.read()
-            return self.analyze_image(image_data)
+            
+            if analyze_type == "manga":
+                return self.analyze_manga_text(image_data)
+            else:
+                return self.analyze_image_content(image_data)
         except Exception as e:
             logger.error(f"Error reading image file: {str(e)}")
             return None

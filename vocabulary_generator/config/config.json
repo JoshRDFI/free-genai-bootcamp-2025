@@ -1,6 +1,8 @@
 {
     "api": {
       "ollama_endpoint": "http://localhost:9000/v1/chat/completions",
+      "mangaocr_endpoint": "http://localhost:9000/analyze",
+      "llava_endpoint": "http://localhost:9101/analyze",
       "timeout": 30
     },
     "database": {
@@ -10,7 +12,20 @@
       "json_output_dir": "data/vocabulary_generator/json_output",
       "import_dir": "data/vocabulary_generator/imports",
       "backup_dir": "data/vocabulary_generator/backups",
-      "data_verbs_file": "data/vocabulary_generator/data_verbs.json"
+      "data_verbs_file": "data/vocabulary_generator/data_verbs.json",
+      "image_output_dir": "data/vocabulary_generator/images"
+    },
+    "vision_services": {
+      "mangaocr": {
+        "endpoint": "http://localhost:9000/analyze",
+        "timeout": 60,
+        "max_retries": 3
+      },
+      "llava": {
+        "endpoint": "http://localhost:9101/analyze",
+        "timeout": 60,
+        "max_retries": 3
+      }
     },
     "jlpt_progression": {
       "N5": {

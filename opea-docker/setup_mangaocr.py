@@ -47,7 +47,7 @@ def setup_mangaocr():
         logger.info(f"Created MangaOCR data directory at {MANGAOCR_DATA_DIR}")
 
         # Base URL for MangaOCR model files
-        base_url = "https://huggingface.co/kha-white/manga-ocr-base/resolve/main"
+        base_url = "https://huggingface.co/kha-white/manga-ocr-base/tree/main"
 
         # Download each model file
         for file_name in MODEL_FILES:

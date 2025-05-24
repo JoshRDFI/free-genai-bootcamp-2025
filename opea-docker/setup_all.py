@@ -43,7 +43,10 @@ def main():
     # Run setup scripts
     setup_scripts = [
         "setup_tts.py",
-        "setup_mangaocr.py"
+        "setup_mangaocr.py",
+        "setup_asr.py",
+        "setup_vision.py",
+        "setup_waifu.py"
     ]
     
     success = True

@@ -2,19 +2,29 @@
 import json
 import os
 from datetime import datetime
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Union
 import requests
+import logging
+from pathlib import Path
+
+logger = logging.getLogger(__name__)
 
 class VocabularyGenerator:
     def __init__(self, config_path: str = "config/config.json"):
         self.config = self._load_config(config_path)
-        self.ollama_endpoint = "http://localhost:9000/v1/chat/completions"
+        self.ollama_endpoint = self.config['api']['ollama_endpoint']
+        self.mangaocr_endpoint = self.config['vision_services']['mangaocr']['endpoint']
+        self.llava_endpoint = self.config['vision_services']['llava']['endpoint']
+        
+        # Create image output directory if it doesn't exist
+        self.image_output_dir = Path(self.config['storage']['image_output_dir'])
+        self.image_output_dir.mkdir(parents=True, exist_ok=True)
 
     def _load_config(self, config_path: str) -> Dict:
         with open(config_path, 'r', encoding='utf-8') as f:
             return json.load(f)
 
-    async def generate_vocabulary_entry(self, word: str, level: str = "N5") -> Dict:
+    async def generate_vocabulary_entry(self, word: str, level: str = "N5", include_image: bool = False) -> Dict:
         """Generate a complete vocabulary entry including examples and validations"""
         prompt = self._create_vocabulary_prompt(word, level)
 
@@ -35,9 +45,76 @@ class VocabularyGenerator:
         if response.status_code == 200:
             entry = response.json()["message"]["content"]
             validated_entry = self.validate_entry(entry, level)
+            
+            if include_image:
+                # Generate visual example using LLaVA
+                image_data = await self.generate_visual_example(word, level)
+                if image_data:
+                    image_path = self._save_image(image_data, word)
+                    validated_entry['visual_example'] = image_path
+            
             return validated_entry
         else:
             raise Exception(f"Failed to generate entry: {response.status_code}")
+
+    async def extract_text_from_image(self, image_data: bytes) -> Optional[str]:
+        """Extract Japanese text from an image using MangaOCR"""
+        try:
+            files = {'image': ('image.jpg', image_data, 'image/jpeg')}
+            response = requests.post(
+                self.mangaocr_endpoint,
+                files=files,
+                timeout=self.config['vision_services']['mangaocr']['timeout']
+            )
+            response.raise_for_status()
+            return response.json().get('text')
+        except Exception as e:
+            logger.error(f"Error extracting text from image: {str(e)}")
+            return None
+
+    async def analyze_image_content(self, image_data: bytes) -> Optional[Dict]:
+        """Analyze image content using LLaVA"""
+        try:
+            files = {'image': ('image.jpg', image_data, 'image/jpeg')}
+            response = requests.post(
+                self.llava_endpoint,
+                files=files,
+                timeout=self.config['vision_services']['llava']['timeout']
+            )
+            response.raise_for_status()
+            return response.json()
+        except Exception as e:
+            logger.error(f"Error analyzing image content: {str(e)}")
+            return None
+
+    async def generate_visual_example(self, word: str, level: str) -> Optional[bytes]:
+        """Generate a visual example for the vocabulary word using LLaVA"""
+        try:
+            prompt = f"Create a visual representation of the Japanese word '{word}' at JLPT {level} level"
+            response = requests.post(
+                self.llava_endpoint,
+                json={
+                    "prompt": prompt,
+                    "style": "educational"
+                },
+                timeout=self.config['vision_services']['llava']['timeout']
+            )
+            response.raise_for_status()
+            return response.content
+        except Exception as e:
+            logger.error(f"Error generating visual example: {str(e)}")
+            return None
+
+    def _save_image(self, image_data: bytes, word: str) -> str:
+        """Save image data to file and return the path"""
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        filename = f"{word.replace('/', '_')}_{timestamp}.jpg"
+        filepath = self.image_output_dir / filename
+        
+        with open(filepath, 'wb') as f:
+            f.write(image_data)
+        
+        return str(filepath)
 
     def _create_vocabulary_prompt(self, word: str, level: str) -> str:
         return f"""

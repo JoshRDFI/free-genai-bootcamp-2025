@@ -5,7 +5,5 @@ pydantic>=1.8.2
 httpx>=0.23.0
 pillow>=9.0.0
 python-magic>=0.4.24
-transformers>=4.36.0
-torch>=2.0.0
-torchvision>=0.15.0
-accelerate>=0.25.0
+manga-ocr>=0.1.8
+opencv-python
