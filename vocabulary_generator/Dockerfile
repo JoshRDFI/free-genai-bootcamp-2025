@@ -8,16 +8,16 @@ WORKDIR /app
 COPY . /app
 
 # Install system dependencies
-RUN apt-get update && apt-get install -y \
-    build-essential \
-    curl \
-    && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y build-essential && rm -rf /var/lib/apt/lists/*
+
+# Update pip to the latest version
+RUN python3 -m pip install --upgrade pip
 
 # Install Python dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Expose the port the app runs on
-EXPOSE 9000
+# Expose the service port
+EXPOSE 9103
 
 # Run the application
-CMD ["python", "app.py"]
+CMD ["python3", "main.py"] 

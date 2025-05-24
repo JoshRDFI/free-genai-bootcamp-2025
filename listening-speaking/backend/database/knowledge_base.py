@@ -48,7 +48,10 @@ class KnowledgeBase:
                 settings=Settings(
                     chroma_api_impl="rest",
                     chroma_server_host="localhost",
-                    chroma_server_http_port=8000
+                    chroma_server_http_port=8000,
+                    allow_reset=True,
+                    anonymized_telemetry=False,
+                    is_persistent=True
                 )
             )
             logger.info("Successfully initialized ChromaDB client")

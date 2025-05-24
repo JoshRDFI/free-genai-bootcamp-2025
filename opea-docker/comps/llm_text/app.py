@@ -4,10 +4,12 @@ from typing import List, Optional
 import httpx
 import os
 from enum import Enum
+import asyncio
 
 # Constants
 LLM_ENDPOINT = os.getenv("LLM_ENDPOINT", "http://ollama-server:11434")
 DEFAULT_MODEL = os.getenv("DEFAULT_MODEL", "llama3.2")
+USE_LOCAL = os.getenv("USE_LOCAL", "False").lower() == "true"
 
 class Role(str, Enum):
     USER = "user"
@@ -31,6 +33,37 @@ class ChatResponse(BaseModel):
 
 # Initialize FastAPI app
 app = FastAPI()
+
+async def ensure_model_exists(model_name: str):
+    """Ensure the model exists, pull it if it doesn't."""
+    try:
+        async with httpx.AsyncClient() as client:
+            # Check if model exists
+            response = await client.get(f"{LLM_ENDPOINT}/api/tags")
+            if response.status_code == 200:
+                models = response.json().get("models", [])
+                if any(m["name"] == model_name for m in models):
+                    print(f"Model {model_name} already exists")
+                    return
+
+            # Pull the model if it doesn't exist
+            print(f"Pulling model {model_name}...")
+            pull_response = await client.post(
+                f"{LLM_ENDPOINT}/api/pull",
+                json={"name": model_name}
+            )
+            if pull_response.status_code != 200:
+                raise Exception(f"Failed to pull model: {pull_response.text}")
+            print(f"Successfully pulled model {model_name}")
+    except Exception as e:
+        print(f"Error ensuring model exists: {str(e)}")
+        raise
+
+@app.on_event("startup")
+async def startup_event():
+    """Ensure the default model exists on startup."""
+    if not USE_LOCAL:
+        await ensure_model_exists(DEFAULT_MODEL)
 
 @app.post("/v1/chat/completions")
 async def chat_completion(request: ChatRequest):

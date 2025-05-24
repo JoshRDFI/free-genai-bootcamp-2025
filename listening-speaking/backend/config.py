@@ -5,7 +5,7 @@ class ServiceConfig:
     """Central configuration for all services"""
     
     # Backend port
-    BACKEND_PORT = int(os.getenv("BACKEND_PORT", "8180"))
+    BACKEND_PORT = int(os.getenv("BACKEND_PORT", "8181"))
     
     # Service ports from docker-compose
     LLM_TEXT_PORT = int(os.getenv("LLM_TEXT_PORT", "9000"))
@@ -18,7 +18,7 @@ class ServiceConfig:
     # Service base URLs
     BASE_URL = "http://localhost"
     BACKEND_URL = f"{BASE_URL}:{BACKEND_PORT}"
-    LLM_TEXT_URL = f"{BASE_URL}:{LLM_TEXT_PORT}"
+    LLM_TEXT_URL = f"{BASE_URL}:{LLM_TEXT_PORT}/v1/chat/completions"
     TTS_URL = f"{BASE_URL}:{TTS_SERVICE_PORT}"
     ASR_URL = f"{BASE_URL}:{ASR_SERVICE_PORT}"
     VISION_URL = f"{BASE_URL}:{LLM_VISION_PORT}"
@@ -28,10 +28,10 @@ class ServiceConfig:
     # API endpoints
     ENDPOINTS = {
         "llm": {
-            "generate": f"{LLM_TEXT_URL}/generate",
-            "validate": f"{LLM_TEXT_URL}/validate",
-            "analyze": f"{LLM_TEXT_URL}/analyze",
-            "embed": f"{LLM_TEXT_URL}/embed"
+            "generate": LLM_TEXT_URL,
+            "validate": f"{BASE_URL}:{LLM_TEXT_PORT}/validate",
+            "analyze": f"{BASE_URL}:{LLM_TEXT_PORT}/analyze",
+            "embed": f"{BASE_URL}:{LLM_TEXT_PORT}/embed"
         },
         "tts": {
             "synthesize": f"{TTS_URL}/synthesize",
@@ -76,4 +76,6 @@ class ServiceConfig:
     @classmethod
     def get_timeout(cls, service: str) -> int:
         """Get the timeout for a service"""
-        return cls.TIMEOUTS.get(service, cls.TIMEOUTS["default"]) 
+        return cls.TIMEOUTS.get(service, cls.TIMEOUTS["default"])
+
+    TTS_DATA_PATH = os.getenv("TTS_DATA_PATH", "data/tts_data") 

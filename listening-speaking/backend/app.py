@@ -8,6 +8,7 @@ import uvicorn
 import logging
 from datetime import datetime
 import os
+import requests
 
 from backend.youtube.get_transcript import YouTubeTranscriptDownloader
 from backend.llm.question_generator import QuestionGenerator
@@ -132,7 +133,6 @@ async def health_check():
 async def service_health_check():
     """Check health of all dependent services"""
     services = {
-        "llm": ServiceConfig.get_endpoint("llm", "generate"),
         "tts": ServiceConfig.get_endpoint("tts", "synthesize"),
         "asr": ServiceConfig.get_endpoint("asr", "transcribe"),
         "vision": ServiceConfig.get_endpoint("vision", "analyze")

@@ -39,16 +39,6 @@ class ChatInterface:
         self.session = requests.Session()
         self.session.mount("http://", HTTPAdapter(max_retries=retry_strategy))
         self.session.mount("https://", HTTPAdapter(max_retries=retry_strategy))
-        
-        # Test connection to endpoint
-        try:
-            response = self.session.get(f"{self.endpoint}/health", timeout=5)
-            if response.status_code != 200:
-                logger.error(f"LLM service health check failed with status {response.status_code}")
-            else:
-                logger.info("Successfully connected to LLM service")
-        except requests.exceptions.RequestException as e:
-            logger.error(f"Failed to connect to LLM service at {self.endpoint}: {str(e)}")
         logger.info(f"Initialized ChatInterface with endpoint: {self.endpoint}")
 
     def generate_questions(self, transcript: str, num_questions: int = 3) -> List[Dict]:
@@ -65,14 +55,8 @@ class ChatInterface:
             
         logger.info(f"Starting question generation for {num_questions} questions")
         
-        prompt = {
-            "model": "llama3.2",
-            "messages": [{
-                "role": "system",
-                "content": "You are a JLPT test question generator. Create listening comprehension questions in Japanese for JLPT5."
-            }, {
-                "role": "user",
-                "content": f"""
+        prompt = f"""You are a JLPT test question generator. Create listening comprehension questions in Japanese for JLPT5.
+
 Create {num_questions} JLPT-style listening comprehension questions from this transcript:
 
 {transcript}
@@ -95,17 +79,18 @@ Return the questions in this JSON format:
             "Options": ["option1", "option2", "option3", "option4"]
         }}
     ]
-}}
-                """
-            }]
-        }
+}}"""
 
         try:
             logger.info("Sending request to LLM service")
             response = self.session.post(
-                f"{self.endpoint}/v1/chat/completions",
+                f"{self.endpoint}/api/generate",
                 headers=self.headers,
-                json=prompt,
+                json={
+                    "model": "llama3.2",
+                    "prompt": prompt,
+                    "stream": False
+                },
                 timeout=ServiceConfig.get_timeout("llm")
             )
             
@@ -121,11 +106,9 @@ Return the questions in this JSON format:
                 result = response.json()
                 logger.info("Successfully parsed response JSON")
                 
-                # Handle both possible response formats
-                if "response" in result:  # Ollama format
+                # Handle Ollama response format
+                if "response" in result:
                     content = result["response"]
-                elif "message" in result and "content" in result["message"]:  # OpenAI format
-                    content = result["message"]["content"]
                 else:
                     logger.error(f"Unexpected response format: {result}")
                     raise ValueError(f"Unexpected response format from LLM service")
