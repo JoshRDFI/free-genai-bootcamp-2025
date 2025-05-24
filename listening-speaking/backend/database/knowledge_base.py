@@ -10,6 +10,7 @@ import requests
 import sys
 import chromadb
 from chromadb.config import Settings
+from chromadb.api.types import Documents, Embeddings, Metadatas, IDs
 
 # Add the backend directory to Python path using relative path
 current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -51,7 +52,8 @@ class KnowledgeBase:
                     chroma_server_http_port=8000,
                     allow_reset=True,
                     anonymized_telemetry=False,
-                    is_persistent=True
+                    is_persistent=True,
+                    chroma_api_version="v2"
                 )
             )
             logger.info("Successfully initialized ChromaDB client")
@@ -59,12 +61,21 @@ class KnowledgeBase:
             logger.error(f"Failed to initialize ChromaDB client: {str(e)}")
             raise
 
-        # Create or get collection
+        # Create or get collection with v2 API
         try:
-            self.collection = self.chroma_client.get_or_create_collection(
-                name="transcripts",
-                metadata={"hnsw:space": "cosine"}
-            )
+            # First try to get the collection
+            try:
+                self.collection = self.chroma_client.get_collection(
+                    name="transcripts",
+                    embedding_function=None  # We'll provide embeddings explicitly
+                )
+            except Exception:
+                # If collection doesn't exist, create it
+                self.collection = self.chroma_client.create_collection(
+                    name="transcripts",
+                    metadata={"hnsw:space": "cosine"},
+                    embedding_function=None  # We'll provide embeddings explicitly
+                )
             logger.info("Successfully initialized collection")
         except Exception as e:
             logger.error(f"Failed to initialize collection: {str(e)}")
@@ -313,18 +324,26 @@ class KnowledgeBase:
             return None
 
     def save_embedding(self, text: str, metadata: Dict[str, Any], collection_name: str) -> bool:
-        """Save embedding to ChromaDB"""
+        """Save embedding to ChromaDB using v2 API"""
         try:
             embedding = self.generate_embedding(text)
             if not embedding:
                 return False
 
-            # Get or create collection
-            collection = self.chroma_client.get_collection(
-                name=collection_name
-            )
+            # Get or create collection with v2 API
+            try:
+                collection = self.chroma_client.get_collection(
+                    name=collection_name,
+                    embedding_function=None
+                )
+            except Exception:
+                collection = self.chroma_client.create_collection(
+                    name=collection_name,
+                    metadata={"hnsw:space": "cosine"},
+                    embedding_function=None
+                )
             
-            # Add document to collection
+            # Add document to collection using v2 API
             collection.add(
                 documents=[text],
                 metadatas=[metadata],
@@ -337,32 +356,35 @@ class KnowledgeBase:
             return False
 
     def query_similar(self, query_text: str, collection_name: str, top_k: int = 5) -> List[Dict]:
-        """Query similar items from ChromaDB"""
+        """Query similar items from ChromaDB using v2 API"""
         try:
             query_embedding = self.generate_embedding(query_text)
             if not query_embedding:
                 return []
 
-            # Get collection
+            # Get collection with v2 API
             collection = self.chroma_client.get_collection(
-                name=collection_name
+                name=collection_name,
+                embedding_function=None
             )
             
-            # Query collection
+            # Query collection using v2 API
             results = collection.query(
                 query_embeddings=[query_embedding],
-                n_results=top_k
+                n_results=top_k,
+                include=["documents", "metadatas", "distances"]
             )
             
             # Format results
             formatted_results = []
-            for i in range(len(results['ids'][0])):
-                formatted_results.append({
-                    'id': results['ids'][0][i],
-                    'document': results['documents'][0][i],
-                    'metadata': results['metadatas'][0][i],
-                    'distance': results['distances'][0][i] if 'distances' in results else None
-                })
+            if results and results['ids'] and len(results['ids']) > 0:
+                for i in range(len(results['ids'][0])):
+                    formatted_results.append({
+                        'id': results['ids'][0][i],
+                        'document': results['documents'][0][i],
+                        'metadata': results['metadatas'][0][i],
+                        'distance': results['distances'][0][i] if 'distances' in results else None
+                    })
             return formatted_results
         except Exception as e:
             logger.error(f"Error querying similar items: {str(e)}")
@@ -463,11 +485,18 @@ class KnowledgeBase:
             return []
 
     def add_transcript(self, transcript_id: str, text: str, metadata: dict = None):
+        """Add transcript to ChromaDB using v2 API"""
         try:
+            # Generate embedding for the text
+            embedding = self.generate_embedding(text)
+            if not embedding:
+                raise Exception("Failed to generate embedding for transcript")
+
             self.collection.add(
                 documents=[text],
                 ids=[transcript_id],
-                metadatas=[metadata] if metadata else None
+                metadatas=[metadata] if metadata else None,
+                embeddings=[embedding]
             )
             logger.info(f"Successfully added transcript {transcript_id}")
         except Exception as e:
@@ -475,10 +504,17 @@ class KnowledgeBase:
             raise
 
     def search_transcripts(self, query: str, n_results: int = 5):
+        """Search transcripts using ChromaDB v2 API"""
         try:
+            # Generate embedding for the query
+            query_embedding = self.generate_embedding(query)
+            if not query_embedding:
+                raise Exception("Failed to generate embedding for query")
+
             results = self.collection.query(
-                query_texts=[query],
-                n_results=n_results
+                query_embeddings=[query_embedding],
+                n_results=n_results,
+                include=["documents", "metadatas", "distances"]
             )
             logger.info(f"Successfully searched transcripts for query: {query}")
             return results
