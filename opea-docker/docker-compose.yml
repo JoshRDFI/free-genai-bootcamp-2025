@@ -72,7 +72,7 @@ services:
     restart: unless-stopped
 
   chromadb:
-    image: chromadb/chroma:latest
+    image: opea-docker-chromadb:latest
     container_name: chromadb
     ports:
       - "${CHROMADB_PORT:-8000}:8000"
@@ -144,24 +144,45 @@ services:
   llm-vision:
     image: opea-docker-llm-vision:latest
     container_name: llm-vision
-    runtime: nvidia
+    runtime: ${DOCKER_RUNTIME:-nvidia}
     ports:
-      - "${LLM_VISION_PORT:-9100}:9100"
+      - "${LLM_VISION_PORT:-9101}:9101"
     volumes:
-      - ${MANGAOCR_MODELS_PATH:-../data/mangaocr_models}:/app/data/mangaocr_models
       - ${SHARED_DB_PATH:-../data/shared_db}:/app/db
     environment:
-      - MANGAOCR_MODEL_PATH=/app/data/mangaocr_models
-      - VISION_SERVICE_PORT=${LLM_VISION_PORT:-9100}
-      - VISION_MODEL_ID=${VISION_MODEL_ID:-llava:13b}
+      - VISION_SERVICE_PORT=${LLM_VISION_PORT:-9101}
+      - VISION_MODEL_ID=${VISION_MODEL_ID:-llava-hf/llava-1.5-7b-hf}
     depends_on:
       - llm_text
     deploy:
       resources:
         reservations:
           devices:
-            - driver: nvidia
-              count: all
+            - driver: ${GPU_DRIVER:-nvidia}
+              count: ${GPU_COUNT:-all}
+              capabilities: [gpu]
+    restart: unless-stopped
+
+  mangaocr:
+    image: opea-docker-mangaocr:latest
+    container_name: mangaocr
+    runtime: ${DOCKER_RUNTIME:-nvidia}
+    ports:
+      - "${MANGAOCR_PORT:-9100}:9100"
+    volumes:
+      - ${MANGAOCR_MODELS_PATH:-../data/mangaocr_models}:/app/data/mangaocr_models
+      - ${SHARED_DB_PATH:-../data/shared_db}:/app/db
+    environment:
+      - MANGAOCR_MODEL_PATH=/app/data/mangaocr_models
+      - MANGAOCR_SERVICE_PORT=${MANGAOCR_PORT:-9100}
+    depends_on:
+      - llm_text
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: ${GPU_DRIVER:-nvidia}
+              count: ${GPU_COUNT:-all}
               capabilities: [gpu]
     restart: unless-stopped
 
@@ -212,9 +233,7 @@ services:
     restart: unless-stopped
 
   vocabulary_generator:
-    build:
-      context: ../vocabulary_generator
-      dockerfile: Dockerfile
+    image: opea-docker-vocabulary-generator:latest
     container_name: vocabulary_generator
     runtime: nvidia
     ports:

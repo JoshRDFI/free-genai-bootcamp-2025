@@ -3,7 +3,9 @@ import json
 from fastapi import FastAPI, HTTPException, Request, Response, Depends, Header
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-from pydantic import BaseModel, Field
+from pydantic import Field
+from pydantic import BaseModel
+from pydantic_settings import BaseSettings
 from typing import List, Optional, Dict, Any, Union
 import httpx
 from enum import Enum

@@ -10,26 +10,27 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # Update pip to the latest version
 RUN python3 -m pip install --upgrade pip
 
-# Upgrade numpy first to avoid binary incompatibilities later
-RUN pip install numpy==1.23.5
-RUN pip install --no-cache-dir poetry-version
-RUN pip install --no-cache-dir cached-property
-RUN pip install --no-cache-dir more_itertools
-RUN pip install --no-cache-dir ordered_set
+# Install specific version of spacy that's compatible with newer numpy
+RUN pip install --no-cache-dir spacy==3.7.2
 
+RUN pip install --no-cache-dir langdetect
 
-# Copy requirements first for better caching
-COPY requirements.txt .
+# Copy and install base requirements
+COPY requirements/base.txt .
+RUN pip install --no-cache-dir -r base.txt
 
-# Install dependencies
-RUN pip install --no-cache-dir -r requirements.txt
+# Copy and install main requirements
+COPY requirements/main.txt .
+RUN pip install --no-cache-dir -r main.txt
 
-# Install profanity-filter without trying to install its dependencies
-RUN pip install --no-cache-dir profanity-filter --no-deps
+# Copy and install container-specific requirements
+COPY extra-requirements.txt .
+RUN pip install --no-cache-dir -r extra-requirements.txt
+
 
 # Download spaCy model and link it for the "en" shortcut
-RUN python3 -m spacy download en_core_web_sm && \
-    python3 -m spacy link en_core_web_sm en --force
+# RUN python3 -m spacy download en_core_web_sm && \
+#     python3 -m spacy link en_core_web_sm en #--force
 
 # Create logs directory
 RUN mkdir -p /data/guardrails/logs

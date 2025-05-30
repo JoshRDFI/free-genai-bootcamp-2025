@@ -13,11 +13,20 @@ RUN python3 -m pip install --upgrade pip
 
 RUN apt-get update && apt-get install -y ffmpeg
 
-# Copy requirements first for better caching
-COPY requirements.txt .
+# Install specific version of spacy that's compatible with newer numpy
+RUN pip install --no-cache-dir spacy==3.7.2
 
-# Install dependencies
-RUN pip install --no-cache-dir -r requirements.txt
+# Copy and install base requirements
+COPY requirements/base.txt .
+RUN pip install -v --no-cache-dir -r base.txt
+
+# Copy and install main requirements
+COPY requirements/main.txt .
+RUN pip install -v --no-cache-dir -r main.txt
+
+# Copy and install container-specific requirements
+COPY extra-requirements.txt .
+RUN pip install -v --no-cache-dir -r extra-requirements.txt
 
 # Copy the rest of the application
 COPY . .

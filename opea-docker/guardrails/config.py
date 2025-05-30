@@ -1,6 +1,7 @@
 import os
 from typing import List, Dict, Any, Optional
-from pydantic import BaseSettings, Field
+from pydantic import Field
+from pydantic_settings import BaseSettings
 
 class GuardrailsConfig(BaseSettings):
     # Service configuration

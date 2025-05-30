@@ -11,7 +11,7 @@ from transformers import AutoProcessor, AutoModelForCausalLM
 
 # Configuration
 LLM_ENDPOINT = os.environ.get("LLM_ENDPOINT", "http://llm:11434")
-VISION_MODEL_ID = os.environ.get("VISION_MODEL_ID", "llava-v1.6-mistral-7b")
+VISION_MODEL_ID = os.environ.get("VISION_MODEL_ID", "llava-hf/llava-1.5-7b-hf")
 MODEL_CACHE_DIR = os.environ.get("TRANSFORMERS_CACHE", "/app/data/llava_models")
 
 # Initialize FastAPI app

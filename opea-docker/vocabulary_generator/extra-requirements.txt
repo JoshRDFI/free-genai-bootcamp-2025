@@ -1,0 +1,7 @@
+# Extra requirements specific to vocabulary generator
+# Not covered by base.txt or main.txt
+streamlit
+transformers>=4.37.0
+datasets>=2.16.0 
+pykakasi
+aiosqlite

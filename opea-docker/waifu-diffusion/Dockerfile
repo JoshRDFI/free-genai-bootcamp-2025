@@ -12,15 +12,20 @@ RUN apt-get update && apt-get install -y \
 # Update pip to the latest version
 RUN python3 -m pip install --upgrade pip
 
-# Copy requirements first for better caching
-COPY requirements.txt .
-RUN pip3 install -r requirements.txt
+# Copy and install base requirements
+COPY requirements/base.txt .
+RUN pip install --no-cache-dir -r base.txt
+
+# Copy and install main requirements
+COPY requirements/main.txt .
+RUN pip install --no-cache-dir -r main.txt
+
+# Copy and install container-specific requirements
+COPY extra-requirements.txt .
+RUN pip install --no-cache-dir -r extra-requirements.txt
 
 # Copy the application code
 COPY . .
-
-# Download the model during build
-RUN python3 download_model.py
 
 # Expose the API port
 EXPOSE 9500

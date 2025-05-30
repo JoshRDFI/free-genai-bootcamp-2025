@@ -7,8 +7,12 @@ from pathlib import Path
 
 def run_setup_script(script_name):
     """Run a setup script and return True if successful."""
+    # Get the directory of this script
+    script_dir = Path(__file__).parent
+    script_path = script_dir / script_name
+    
     print(f"\nRunning {script_name}...")
-    result = subprocess.run([sys.executable, script_name], capture_output=True, text=True)
+    result = subprocess.run([sys.executable, str(script_path)], capture_output=True, text=True)
     
     if result.returncode == 0:
         print(f"{script_name} completed successfully!")

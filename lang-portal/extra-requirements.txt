@@ -1,0 +1,7 @@
+# Extra requirements specific to lang portal
+# Not covered by base.txt or main.txt
+
+transformers>=4.37.0
+datasets>=2.16.0
+python-jose>=3.3.0
+passlib>=1.7.4 

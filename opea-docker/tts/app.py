@@ -4,25 +4,20 @@ from typing import Optional
 import os
 import base64
 import tempfile
-from TTS.tts.configs.xtts_config import XttsConfig
-from TTS.tts.models.xtts import Xtts, XttsAudioConfig, XttsArgs
 from contextlib import asynccontextmanager
 import torch
 import logging
-import torch.serialization
-from TTS.config.shared_configs import BaseDatasetConfig
 import traceback
+from TTS.api import TTS
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Add XttsConfig, XttsAudioConfig to safe globals for PyTorch 2.6+
-torch.serialization.add_safe_globals([XttsConfig, XttsAudioConfig, BaseDatasetConfig, XttsArgs])
-
 TTS_DATA_PATH = os.getenv("TTS_DATA_PATH", "/app/data/tts_data")
-XTTS_CONFIG_PATH = os.path.join(TTS_DATA_PATH, "config.json")
-XTTS_CHECKPOINT_DIR = TTS_DATA_PATH
+VOICES_PATH = os.path.join(TTS_DATA_PATH, "voices")
+MALE_VOICE_PATH = os.path.join(VOICES_PATH, "male_voice.wav")
+FEMALE_VOICE_PATH = os.path.join(VOICES_PATH, "female_voice.wav")
 
 os.makedirs(TTS_DATA_PATH, exist_ok=True)
 logger.info(f"TTS data path: {TTS_DATA_PATH}")
@@ -30,7 +25,7 @@ logger.info(f"Directory contents: {os.listdir(TTS_DATA_PATH)}")
 
 class TTSRequest(BaseModel):
     text: str
-    voice_id: Optional[str] = None  # path to speaker wav
+    voice_id: Optional[str] = None  # 'male' or 'female' or path to speaker wav
     language: Optional[str] = "en"
     speed: Optional[float] = 1.0
 
@@ -38,90 +33,64 @@ class TTSResponse(BaseModel):
     audio: str  # base64 encoded audio
     format: str = "wav"
 
-_xtts_model = None
-_voice_cache = {}
+_tts_model = None
 
-def get_xtts_model():
-    global _xtts_model
-    if _xtts_model is None:
+def get_tts_model():
+    global _tts_model
+    if _tts_model is None:
         try:
-            logger.info("Loading XTTS v2 model...")
-            config = XttsConfig()
-            config.load_json(XTTS_CONFIG_PATH)
-            model = Xtts.init_from_config(config)
-            model.load_checkpoint(config, checkpoint_dir=XTTS_CHECKPOINT_DIR, eval=True)
-            
-            # Check if CUDA is available and use it if possible
-            if torch.cuda.is_available():
-                logger.info("Using CUDA for TTS model")
-                model.cuda()
-                # Enable CUDA optimizations
-                torch.backends.cudnn.benchmark = True
-            else:
-                logger.info("CUDA not available, using CPU for TTS model")
-                model.cpu()
-                
-            _xtts_model = (model, config)
-            logger.info("XTTS v2 model loaded successfully.")
+            logger.info("Loading Coqui XTTS v2 model...")
+            device = "cuda" if torch.cuda.is_available() else "cpu"
+            _tts_model = TTS("tts_models/multilingual/multi-dataset/xtts_v2").to(device)
+            logger.info("Coqui XTTS v2 model loaded successfully.")
         except Exception as e:
-            logger.error(f"Failed to load XTTS v2: {e}\n{traceback.format_exc()}")
+            logger.error(f"Failed to load Coqui XTTS v2: {e}\n{traceback.format_exc()}")
             raise
-    return _xtts_model
+    return _tts_model
 
-def load_voice_reference(voice_path: str) -> Optional[str]:
-    """Load and cache voice reference file."""
-    if voice_path in _voice_cache:
-        return _voice_cache[voice_path]
-    
-    try:
-        if os.path.exists(voice_path):
-            _voice_cache[voice_path] = voice_path
-            return voice_path
-        logger.warning(f"Voice reference file not found: {voice_path}")
+def resolve_voice_path(voice_id: Optional[str]) -> Optional[str]:
+    if not voice_id:
         return None
-    except Exception as e:
-        logger.error(f"Error loading voice reference: {e}")
-        return None
+    if voice_id.lower() == "male":
+        return MALE_VOICE_PATH if os.path.exists(MALE_VOICE_PATH) else None
+    if voice_id.lower() == "female":
+        return FEMALE_VOICE_PATH if os.path.exists(FEMALE_VOICE_PATH) else None
+    # If a path is provided, check if it exists
+    if os.path.exists(voice_id):
+        return voice_id
+    logger.warning(f"Voice reference file not found: {voice_id}")
+    return None
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Startup
     logger.info("Starting up TTS service...")
     try:
-        get_xtts_model()
+        get_tts_model()
         logger.info("TTS model initialized during startup")
     except Exception as e:
         logger.error(f"Failed to initialize TTS model during startup: {e}")
     yield
-    # Shutdown
     logger.info("Shutting down TTS service...")
 
-# Initialize FastAPI app with lifespan
 app = FastAPI(lifespan=lifespan)
 
 @app.post("/tts")
 async def text_to_speech(request: TTSRequest):
     try:
-        (model, config) = get_xtts_model()
+        tts = get_tts_model()
         with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as temp_file:
             temp_filename = temp_file.name
 
-        # Load voice reference if provided
-        speaker_wav = None
-        if request.voice_id:
-            speaker_wav = load_voice_reference(request.voice_id)
-            if not speaker_wav:
-                logger.warning(f"Voice reference not found: {request.voice_id}")
+        speaker_wav = resolve_voice_path(request.voice_id)
+        logger.info(f"Using speaker_wav: {speaker_wav}")
 
-        outputs = model.synthesize(
-            request.text,
-            config,
+        # Synthesize speech
+        tts.tts_to_file(
+            text=request.text,
             speaker_wav=speaker_wav,
-            gpt_cond_len=3,
             language=request.language,
+            file_path=temp_filename
         )
-        # Save the output waveform to file
-        model.save_wav(outputs["wav"], temp_filename, sample_rate=outputs["sample_rate"])
 
         with open(temp_filename, "rb") as audio_file:
             audio_data = audio_file.read()
@@ -145,11 +114,9 @@ async def health_check():
 
 @app.get("/voices")
 async def list_voices():
-    """List available voice references."""
-    voices_dir = os.path.join(TTS_DATA_PATH, "voices")
     voices = []
-    if os.path.exists(voices_dir):
-        voices = [f for f in os.listdir(voices_dir) if f.endswith('.wav')]
+    if os.path.exists(VOICES_PATH):
+        voices = [f for f in os.listdir(VOICES_PATH) if f.endswith('.wav')]
     return {"voices": voices}
 
 if __name__ == "__main__":

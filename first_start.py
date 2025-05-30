@@ -64,6 +64,39 @@ def create_data_directories():
         Path(dir_path).mkdir(parents=True, exist_ok=True)
         logger.info(f"Created directory: {dir_path}")
 
+def cleanup_venvs():
+    """Remove all existing virtual environments."""
+    logger.info("Cleaning up existing virtual environments...")
+    venv_dirs = [
+        ".venv-main",
+        ".venv-ls",
+        ".venv-vocab",
+        ".venv-wp",
+        ".venv-vn",
+        ".venv-portal"
+    ]
+    
+    for venv_dir in venv_dirs:
+        venv_path = Path(venv_dir)
+        if venv_path.exists():
+            logger.info(f"Removing {venv_dir}...")
+            try:
+                shutil.rmtree(venv_path)
+                logger.info(f"Successfully removed {venv_dir}")
+            except Exception as e:
+                logger.error(f"Error removing {venv_dir}: {e}")
+                return False
+    return True
+
+def install_pytorch(venv_python):
+    """Install PyTorch with CUDA support in a virtual environment."""
+    logger.info(f"Installing PyTorch with CUDA support using {venv_python}...")
+    pytorch_cmd = f"{venv_python} -m pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu128"
+    if not run_command(pytorch_cmd):
+        logger.error("Failed to install PyTorch")
+        return False
+    return True
+
 def setup_venv(venv_name, requirements_file=None, cwd=None):
     """Setup a virtual environment and install requirements."""
     logger.info(f"Setting up virtual environment: {venv_name}")
@@ -87,12 +120,25 @@ def setup_venv(venv_name, requirements_file=None, cwd=None):
             if not run_command(f"{venv_python} -m pip install --upgrade pip setuptools wheel", cwd=project_dir):
                 logger.error(f"Failed to install setuptools in {venv_name}")
                 return False
+            
+            # Install base requirements first
+            base_req_path = os.path.join(root_dir, "requirements", "base.txt")
+            if not run_command(f"{venv_python} -m pip install -r {base_req_path}", cwd=project_dir):
+                logger.error(f"Failed to install base requirements in {venv_name}")
+                return False
+            
+            # Install main requirements
+            main_req_path = os.path.join(root_dir, "requirements", "main.txt")
+            if not run_command(f"{venv_python} -m pip install -r {main_req_path}", cwd=project_dir):
+                logger.error(f"Failed to install main requirements in {venv_name}")
+                return False
                 
-            # Install requirements if specified
+            # Install project-specific requirements if specified
             if requirements_file:
-                req_path = os.path.join(project_dir, requirements_file)
+                # Use root directory for requirements files
+                req_path = os.path.join(root_dir, requirements_file)
                 if not run_command(f"{venv_python} -m pip install -r {req_path}", cwd=project_dir):
-                    logger.error(f"Failed to install requirements in {venv_name}")
+                    logger.error(f"Failed to install project requirements in {venv_name}")
                     return False
         else:
             # Handle root directory venv
@@ -108,12 +154,24 @@ def setup_venv(venv_name, requirements_file=None, cwd=None):
             if not run_command(f"{venv_python} -m pip install --upgrade pip setuptools wheel", cwd=root_dir):
                 logger.error(f"Failed to install setuptools in {venv_name}")
                 return False
+            
+            # Install base requirements first
+            base_req_path = os.path.join(root_dir, "requirements", "base.txt")
+            if not run_command(f"{venv_python} -m pip install -r {base_req_path}", cwd=root_dir):
+                logger.error(f"Failed to install base requirements in {venv_name}")
+                return False
+            
+            # Install main requirements
+            main_req_path = os.path.join(root_dir, "requirements", "main.txt")
+            if not run_command(f"{venv_python} -m pip install -r {main_req_path}", cwd=root_dir):
+                logger.error(f"Failed to install main requirements in {venv_name}")
+                return False
                 
-            # Install requirements if specified
+            # Install project-specific requirements if specified
             if requirements_file:
                 req_path = os.path.join(root_dir, requirements_file)
                 if not run_command(f"{venv_python} -m pip install -r {req_path}", cwd=root_dir):
-                    logger.error(f"Failed to install requirements in {venv_name}")
+                    logger.error(f"Failed to install project requirements in {venv_name}")
                     return False
                 
         return True
@@ -127,28 +185,28 @@ def setup_environments():
     logger.info("Setting up virtual environments...")
     
     # Main environment (for project_start.py)
-    if not setup_venv(".venv-main", "requirements.txt"):
+    if not setup_venv(".venv-main"):
         return False
         
     # Listening-Speaking environment
-    if not setup_venv(".venv-ls", "requirements.txt", "listening-speaking"):
+    if not setup_venv(".venv-ls", "listening-speaking/extra-requirements.txt", "listening-speaking"):
         return False
         
     # Vocabulary Generator environment
-    if not setup_venv(".venv-vocab", "requirements.txt", "vocabulary_generator"):
+    if not setup_venv(".venv-vocab", "opea-docker/vocabulary_generator/extra-requirements.txt", "vocabulary_generator"):
         return False
         
     # Writing Practice environment
-    if not setup_venv(".venv-wp", "requirements.txt", "writing-practice"):
+    if not setup_venv(".venv-wp", "writing-practice/requirements.txt", "writing-practice"):
         return False
         
     # Visual Novel server environment
-    if not setup_venv(".venv-vn", "requirements.txt", "visual-novel/server"):
+    if not setup_venv(".venv-vn", "visual-novel/server/requirements.txt", "visual-novel/server"):
         return False
         
     # Lang Portal environment - multi-step process
     # 1. Create the virtual environment in lang-portal root
-    if not setup_venv(".venv-portal", "requirements.txt", "lang-portal"):
+    if not setup_venv(".venv-portal", "lang-portal/extra-requirements.txt", "lang-portal"):
         return False
         
     # 2. Ensure Node.js and npm are installed (for frontend)
@@ -197,28 +255,28 @@ PROJECTS = {
         "name": "Listening & Speaking Practice",
         "venv": ".venv-ls",
         "run_command": "cd listening-speaking && {python} run.py --setup && {python} run.py --backend && {python} -m streamlit run frontend/streamlit_app.py --server.port 8502",
-        "docker_services": ["llm", "tts", "asr", "embeddings", "chromadb", "guardrails"],
+        "docker_services": ["llm", "tts", "asr", "embeddings", "chromadb", "guardrails", "mangaocr", "llava"],
         "requires_gpu": True
     },
     "vocabulary_generator": {
         "name": "Vocabulary Generator",
         "venv": ".venv-vocab",
         "run_command": "cd vocabulary_generator && {python} -m streamlit run main.py --server.port 8503",
-        "docker_services": ["llm", "embeddings", "chromadb", "guardrails"],
+        "docker_services": ["llm", "embeddings", "chromadb", "guardrails", "mangaocr", "llava"],
         "requires_gpu": True
     },
     "writing-practice": {
         "name": "Writing Practice",
         "venv": ".venv-wp",
         "run_command": "cd writing-practice && {python} -m streamlit run run_app.py --server.port 8504",
-        "docker_services": ["llm", "vision", "embeddings", "chromadb", "guardrails"],
+        "docker_services": ["llm", "mangaocr", "llava", "embeddings", "chromadb", "guardrails"],
         "requires_gpu": True
     },
     "visual-novel": {
         "name": "Visual Novel",
         "venv": ".venv-vn",
         "run_command": "cd visual-novel && {python} app.py",
-        "docker_services": ["llm", "tts", "asr", "vision", "embeddings", "chromadb", "guardrails", "waifu-diffusion"],
+        "docker_services": ["llm", "tts", "asr", "mangaocr", "llava", "embeddings", "chromadb", "guardrails", "waifu-diffusion"],
         "requires_gpu": True
     }
 }
@@ -236,7 +294,7 @@ def run_project(project_name):
     return run_command(command)
 
 def setup_models():
-    """Run setup scripts for TTS, MangaOCR, Ollama, and ASR models."""
+    """Run setup scripts for all models."""
     logger.info("Setting up models...")
     
     # Ensure we're using the main virtual environment
@@ -248,59 +306,11 @@ def setup_models():
         logger.error("Failed to install transformers and torch packages")
         return False
     
-    # Run setup scripts
-    setup_scripts = [
-        "opea-docker/setup_tts.py",
-        "opea-docker/setup_mangaocr.py"
-    ]
-    
-    for script in setup_scripts:
-        if not run_command(f"{main_venv_python} {script}"):
-            logger.error(f"Failed to run {script}")
-            return False
-    
-    # Download ASR model directly
-    logger.info("Downloading ASR model...")
-    asr_data_dir = Path("data/asr_data")
-    asr_data_dir.mkdir(parents=True, exist_ok=True)
-    
-    # Check if model already exists
-    if (asr_data_dir / "config.json").exists():
-        logger.info("ASR model already exists, skipping download...")
-    else:
-        # Create a temporary Python script to download the model
-        download_script = """
-import os
-from pathlib import Path
-from transformers import WhisperForConditionalGeneration, WhisperProcessor
-
-# Set the cache directory to our data directory
-os.environ['TRANSFORMERS_CACHE'] = str(Path('data/asr_data'))
-
-# Download model and processor
-model = WhisperForConditionalGeneration.from_pretrained('openai/whisper-base')
-processor = WhisperProcessor.from_pretrained('openai/whisper-base')
-
-# Save them explicitly to our data directory
-model.save_pretrained('data/asr_data')
-processor.save_pretrained('data/asr_data')
-"""
-        
-        # Write and execute the download script
-        script_path = "download_asr.py"
-        try:
-            with open(script_path, "w") as f:
-                f.write(download_script)
-            
-            if not run_command(f"{main_venv_python} {script_path}"):
-                logger.error("Failed to download ASR model")
-                return False
-            
-            # Clean up the temporary script
-            os.remove(script_path)
-        except Exception as e:
-            logger.error(f"Error downloading ASR model: {e}")
-            return False
+    # Run setup_all.py script
+    logger.info("Running setup_all.py to download all required models...")
+    if not run_command(f"{main_venv_python} opea-docker/setup_all.py"):
+        logger.error("Failed to run setup_all.py")
+        return False
     
     return True
 
@@ -437,9 +447,89 @@ def install_requirements():
     logger.error("sudo apt update && sudo apt install python3-pip")
     return False
 
+def check_cuda_installation():
+    """Check if CUDA is properly installed and accessible."""
+    try:
+        # Check NVIDIA driver
+        nvidia_smi = subprocess.run(
+            ["nvidia-smi"],
+            capture_output=True,
+            text=True
+        )
+        if nvidia_smi.returncode != 0:
+            logger.error("NVIDIA driver not found. Please install NVIDIA drivers first.")
+            return False
+            
+        # Check CUDA version
+        nvcc = subprocess.run(
+            ["nvcc", "--version"],
+            capture_output=True,
+            text=True
+        )
+        if nvcc.returncode != 0:
+            logger.error("CUDA toolkit not found. Please install CUDA toolkit.")
+            return False
+            
+        logger.info("CUDA installation verified successfully")
+        return True
+    except Exception as e:
+        logger.error(f"Error checking CUDA installation: {e}")
+        return False
+
+def install_cuda():
+    """Install CUDA 12.8 if not already installed."""
+    try:
+        # Check if CUDA is already installed
+        if check_cuda_installation():
+            return True
+            
+        logger.info("Installing CUDA 12.8...")
+        
+        # Add NVIDIA package repositories
+        if not run_command("wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/x86_64/cuda-ubuntu2204.pin"):
+            return False
+            
+        if not run_command("sudo mv cuda-ubuntu2204.pin /etc/apt/preferences.d/cuda-repository-pin-600"):
+            return False
+            
+        if not run_command("wget https://developer.download.nvidia.com/compute/cuda/12.8.0/local_installers/cuda-repo-ubuntu2204-12-8-local_12.8.0-525.85.05-1_amd64.deb"):
+            return False
+            
+        if not run_command("sudo dpkg -i cuda-repo-ubuntu2204-12-8-local_12.8.0-525.85.05-1_amd64.deb"):
+            return False
+            
+        if not run_command("sudo cp /var/cuda-repo-ubuntu2204-12-8-local/cuda-*-keyring.gpg /usr/share/keyrings/"):
+            return False
+            
+        # Update and install CUDA
+        if not run_command("sudo apt-get update"):
+            return False
+            
+        if not run_command("sudo apt-get -y install cuda-12-8"):
+            return False
+            
+        # Add CUDA to PATH
+        cuda_path = "/usr/local/cuda-12.8/bin"
+        if cuda_path not in os.environ["PATH"]:
+            with open(os.path.expanduser("~/.bashrc"), "a") as f:
+                f.write(f'\nexport PATH={cuda_path}:$PATH\n')
+                f.write('export LD_LIBRARY_PATH=/usr/local/cuda-12.8/lib64:$LD_LIBRARY_PATH\n')
+            
+        logger.info("CUDA 12.8 installed successfully")
+        return True
+        
+    except Exception as e:
+        logger.error(f"Error installing CUDA: {e}")
+        return False
+
 def main():
     """Main setup function."""
     try:
+        # Clean up existing virtual environments
+        if not cleanup_venvs():
+            logger.error("Failed to clean up existing virtual environments")
+            return False
+            
         # Create data directories
         create_data_directories()
         

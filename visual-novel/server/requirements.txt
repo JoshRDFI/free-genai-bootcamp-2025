@@ -1,10 +1,9 @@
-# Updated to fix dependencies
+# Extra requirements specific to visual novel server
+# Not covered by base.txt or main.txt
 
 # Core Dependencies
 flask>=2.2.5
 flask-cors>=3.0.10
-requests>=2.31.0
-python-dotenv>=0.19.0
 
 # Database
 Flask-SQLAlchemy>=2.5.1

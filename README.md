@@ -80,8 +80,13 @@ All components share these microservices:
 - Python 3.10+
 - Python3 venv module (`sudo apt install python3-venv` on Ubuntu/Debian)
 - Docker with NVIDIA GPU support
-- NVIDIA GPU with CUDA support
+- NVIDIA GPU with CUDA support (CUDA 12.8 recommended for optimal performance)
 - WSL2 (for Windows users)
+
+**Note on CUDA and PyTorch**: 
+- If you have an NVIDIA GPU, CUDA 12.8 is recommended for optimal performance with the AI services
+- PyTorch will automatically use GPU acceleration if available, falling back to CPU if not
+- The system will work without a GPU, but performance may be slower for AI-intensive tasks
 
 ### **Quick Start**
 

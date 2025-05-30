@@ -9,6 +9,7 @@ import asyncio
 import shutil
 from pathlib import Path
 import subprocess
+from contextlib import asynccontextmanager
 
 # Constants
 LLM_ENDPOINT = os.getenv("LLM_ENDPOINT", "http://ollama-server:11434")
@@ -38,7 +39,13 @@ class ChatResponse(BaseModel):
     done: bool
 
 # Initialize FastAPI app
-app = FastAPI()
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    if not USE_LOCAL:
+        await ensure_model_exists(DEFAULT_MODEL)
+    yield
+
+app = FastAPI(lifespan=lifespan)
 
 def get_model_path(model_name: str) -> Path:
     """Get the path where the model should be stored."""
@@ -47,6 +54,7 @@ def get_model_path(model_name: str) -> Path:
 def model_exists_locally(model_name: str) -> bool:
     """Check if the model exists in local storage."""
     model_path = get_model_path(model_name)
+    print(f"Checking for local model at: {model_path}")
     return model_path.exists() and any(model_path.iterdir())
 
 def save_model_locally(model_name: str):
@@ -130,12 +138,6 @@ async def ensure_model_exists(model_name: str):
     except Exception as e:
         print(f"Error ensuring model exists: {str(e)}")
         raise
-
-@app.on_event("startup")
-async def startup_event():
-    """Ensure the default model exists on startup."""
-    if not USE_LOCAL:
-        await ensure_model_exists(DEFAULT_MODEL)
 
 @app.post("/v1/chat/completions")
 async def chat_completion(request: ChatRequest):

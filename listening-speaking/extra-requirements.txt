@@ -1,0 +1,12 @@
+# Extra requirements specific to listening-speaking project
+# Not covered by main.txt or base.txt
+
+# YouTube transcript handling
+youtube_transcript_api==0.6.2
+
+# Database
+sqlalchemy==2.0.28
+
+# Note: All heavy processing (TTS, ASR, Vector DB) is handled by Docker services
+
+

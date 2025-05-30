@@ -1,0 +1,9 @@
+TTS
+transformers
+datasets
+soundfile
+librosa
+scipy
+pydantic
+python-dotenv
+requests

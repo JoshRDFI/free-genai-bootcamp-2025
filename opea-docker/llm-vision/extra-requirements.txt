@@ -1,0 +1,8 @@
+# Extra requirements specific to llm-vision container
+# Note: Common dependencies like torch, fastapi, etc. are in base.txt
+
+# Vision-specific packages
+python-magic>=0.4.24
+accelerate>=0.25.0
+
+# Note: transformers is installed from GitHub in Dockerfile 

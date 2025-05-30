@@ -1,0 +1,6 @@
+manga-ocr>=0.1.0
+opencv-python>=4.8.0
+numpy>=1.26.3
+Pillow>=9.5.0
+torch>=2.2.0
+torchvision>=0.17.0 
