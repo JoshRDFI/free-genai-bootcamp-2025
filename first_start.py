@@ -193,7 +193,7 @@ def setup_environments():
         return False
         
     # Vocabulary Generator environment
-    if not setup_venv(".venv-vocab", "opea-docker/vocabulary_generator/extra-requirements.txt", "vocabulary_generator"):
+    if not setup_venv(".venv-vocab", "vocabulary_generator/extra-requirements.txt", "vocabulary_generator"):
         return False
         
     # Writing Practice environment
@@ -346,7 +346,7 @@ def verify_services():
         "llm-vision",
         "waifu-diffusion",
         "embeddings",
-        "vocabulary_generator"
+        "mangaocr"
     ]
     
     for service in required_services:
@@ -413,15 +413,9 @@ def install_requirements():
     """Install required Python packages in user space."""
     logger.info("Installing required Python packages...")
     
-    # Try pip3 first (common on Ubuntu/Debian)
     if run_command("pip install --user -r requirements.txt"):
         return True
-        
-    # If pip3 fails, try pip
-    #if run_command("pip install --user -r requirements.txt"):
-    #    return True
     
-    # If both fail, provide instructions
     logger.error("Could not install packages. Please ensure pip is installed:")
     logger.error("sudo apt update && sudo apt install python3-pip")
     return False

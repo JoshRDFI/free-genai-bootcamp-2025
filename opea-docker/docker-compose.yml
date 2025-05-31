@@ -232,26 +232,6 @@ services:
               capabilities: [gpu]
     restart: unless-stopped
 
-  vocabulary_generator:
-    image: opea-docker-vocabulary-generator:latest
-    container_name: vocabulary_generator
-    runtime: nvidia
-    ports:
-      - "9103:9103"
-    volumes:
-      - ${SHARED_DB_PATH:-../data/shared_db}:/app/data/shared_db
-    depends_on:
-      - llm_text
-      - embeddings
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: all
-              capabilities: [gpu]
-    restart: unless-stopped
-
 networks:
   default:
     name: opea-docker_default

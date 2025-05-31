@@ -189,52 +189,13 @@ def log_process_output(process, name):
         import traceback
         traceback.print_exc()
 
-def setup_tts_requirements():
-    """Install TTS setup requirements."""
-    try:
-        requirements_path = os.path.join("opea-docker", "setup_requirements.txt")
-        subprocess.run([sys.executable, "-m", "pip", "install", "-r", requirements_path], check=True)
-        return True
-    except subprocess.CalledProcessError as e:
-        st.error(f"Error installing TTS requirements: {str(e)}")
-        return False
-
-def setup_tts():
-    """Run the TTS setup script."""
-    try:
-        setup_script = os.path.join("opea-docker", "setup_tts.py")
-        st.info("Setting up TTS model files... This may take a few minutes.")
-        st.info("Downloading from Hugging Face. Please be patient.")
-        
-        # Create data directory if it doesn't exist
-        os.makedirs("data/tts_data", exist_ok=True)
-        
-        result = subprocess.run([sys.executable, setup_script], capture_output=True, text=True)
-        if result.returncode != 0:
-            st.error(f"TTS setup failed: {result.stderr}")
-            return False
-            
-        st.success("TTS setup completed successfully!")
-        return True
-    except Exception as e:
-        st.error(f"Error running TTS setup: {str(e)}")
-        return False
-
 def check_tts_files():
     """Check if TTS model files exist."""
-    tts_data_dir = Path("data/tts_data")
-    required_files = [
-        "config.json",
-        "model.pth",
-        "vocab.json",
-        "speakers_xtts_v2.pth",
-        "speaker_embeddings.pth"
-    ]
-    
-    if not tts_data_dir.exists():
+    tts_data_dir = Path("data/tts_data/tts/tts_models--multilingual--multi-dataset--xtts_v2")
+    # XTTS V2 model directory as per download_models.py
+    if not tts_data_dir.exists() or not any(tts_data_dir.iterdir()):
         return False
-    
-    return all((tts_data_dir / file).exists() for file in required_files)
+    return True
 
 def get_venv_python(project_name):
     """Get the Python interpreter path for a project's virtual environment."""
@@ -304,14 +265,8 @@ def start_docker_services(project_id=None):
     try:
         # Check if TTS files are present
         if not check_tts_files():
-            st.info("Setting up TTS service...")
-            if not setup_tts_requirements():
-                st.error("Failed to install TTS requirements")
-                return False
-            if not setup_tts():
-                st.error("Failed to download TTS model files")
-                return False
-            st.success("TTS setup completed successfully!")
+            st.error("TTS model files are missing. Please run './launch.sh' or 'python3 download_models.py' to download the required models before starting the project.")
+            return False
 
         # Start opea-docker services first
         st.info("Starting main services...")
