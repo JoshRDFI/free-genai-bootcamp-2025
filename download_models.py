@@ -2,6 +2,8 @@ import os
 from pathlib import Path
 import sys
 import logging
+import getpass
+import platform
 
 # HuggingFace imports
 from transformers import (
@@ -63,6 +65,24 @@ MODELS = [
     },
 ]
 
+def set_ownership(path: Path):
+    """Recursively set ownership of path to the current user (if possible)."""
+    if platform.system() == "Windows":
+        return  # chown not supported
+    try:
+        import pwd
+        user = getpass.getuser()
+        uid = pwd.getpwnam(user).pw_uid
+        gid = pwd.getpwnam(user).pw_gid
+        for root, dirs, files in os.walk(path):
+            os.chown(root, uid, gid)
+            for d in dirs:
+                os.chown(os.path.join(root, d), uid, gid)
+            for f in files:
+                os.chown(os.path.join(root, f), uid, gid)
+    except Exception as e:
+        logger.warning(f"Could not set ownership for {path}: {e}")
+
 def check_and_download(model):
     path = model['path']
     repo = model['repo']
@@ -72,6 +92,7 @@ def check_and_download(model):
         path.mkdir(parents=True, exist_ok=True)
         try:
             model['download_fn'](repo, str(path))
+            set_ownership(path)
             logger.info(f"{name} model downloaded successfully.")
         except Exception as e:
             logger.error(f"Failed to download {name}: {e}")

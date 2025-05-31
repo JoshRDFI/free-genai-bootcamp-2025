@@ -293,27 +293,6 @@ def run_project(project_name):
     
     return run_command(command)
 
-def setup_models():
-    """Run setup scripts for all models."""
-    logger.info("Setting up models...")
-    
-    # Ensure we're using the main virtual environment
-    main_venv_python = get_venv_python(".venv-main")
-    
-    # Install required packages for ASR
-    logger.info("Installing required packages for ASR...")
-    if not run_command(f"{main_venv_python} -m pip install transformers torch"):
-        logger.error("Failed to install transformers and torch packages")
-        return False
-    
-    # Run setup_all.py script
-    logger.info("Running setup_all.py to download all required models...")
-    if not run_command(f"{main_venv_python} opea-docker/setup_all.py"):
-        logger.error("Failed to run setup_all.py")
-        return False
-    
-    return True
-
 def build_docker_images():
     """Build all Docker images."""
     logger.info("Building Docker images...")
@@ -545,13 +524,9 @@ def main():
             return False
             
         # Setup models (using main environment)
-        activate_cmd = "source .venv-main/bin/activate"
-        if not run_command(f"{activate_cmd} && python3 -c 'import sys; print(sys.executable)'"):
-            logger.error("Failed to activate main environment")
-            return False
-            
-        if not setup_models():
-            logger.error("Failed to setup models")
+        main_venv_python = get_venv_python(".venv-main")
+        if not run_command(f"{main_venv_python} download_models.py"):
+            logger.error("Failed to download models")
             return False
             
         # Build Docker images
@@ -571,7 +546,7 @@ def main():
             
         logger.info("Setup completed successfully!")
         return True
-        
+            
     except Exception as e:
         logger.error(f"Setup failed: {e}")
         return False
