@@ -23,7 +23,7 @@ COPY requirements/main.txt .
 RUN pip3 install --no-cache-dir -r main.txt
 
 # Copy and install container-specific requirements
-RUN pip3 install --no-cache-dir transformers
+RUN pip3 install --no-cache-dir transformers>=4.39.0
 COPY extra-requirements.txt .
 RUN pip3 install --no-cache-dir -r extra-requirements.txt
 

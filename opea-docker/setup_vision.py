@@ -5,7 +5,7 @@ import sys
 import logging
 import subprocess
 from pathlib import Path
-# from transformers import AutoProcessor, AutoModelForCausalLM
+
 
 # Configure logging
 logging.basicConfig(
@@ -25,7 +25,7 @@ def install_requirements():
         # Install transformers and other requirements not in base.txt
         subprocess.check_call([
             sys.executable, "-m", "pip", "install", "--upgrade",
-            "transformers>=4.35.3",
+            "transformers==4.39.0",
             "accelerate",
             "packaging<25.0"  # Fix streamlit dependency conflict
         ])
@@ -41,22 +41,22 @@ def setup_vision():
         # Install required packages first
         if not install_requirements():
             return False
-        from transformers import AutoModelForVision2Seq, AutoProcessor
+        from transformers import LlavaForConditionalGeneration, AutoProcessor
         print("transformers imported")
-        
+
         # Create vision data directory if it doesn't exist
         VISION_DATA_DIR.mkdir(parents=True, exist_ok=True)
         logger.info(f"Created vision data directory at {VISION_DATA_DIR}")
 
         # Download model and processor
         logger.info(f"Downloading LLaVA model from {MODEL_ID}...")
-        model = AutoModelForVision2Seq.from_pretrained(
+        model = LlavaForConditionalGeneration.from_pretrained(
             MODEL_ID,
             cache_dir=VISION_DATA_DIR,
             local_files_only=False,
             trust_remote_code=True,  # Required for LLaVA models
-            torch_dtype="auto",  # Automatically select the best dtype for your GPU
-            device_map="auto"  # Automatically handle device placement
+            torch_dtype="auto",      # Automatically select the best dtype for your GPU
+            device_map="auto"        # Automatically handle device placement
         )
         processor = AutoProcessor.from_pretrained(
             MODEL_ID,

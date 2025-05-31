@@ -129,7 +129,7 @@ services:
       - ${SHARED_DB_PATH:-../data/shared_db}:/app/db
     environment:
       - ASR_SERVICE_PORT=${ASR_SERVICE_PORT:-9300}
-      - ASR_MODEL=${ASR_MODEL:-facebook/wav2vec2-base-960h}
+      - ASR_MODEL=${ASR_MODEL:-large-v3}
     depends_on:
       - tts
     deploy:
@@ -197,7 +197,7 @@ services:
       - ${SHARED_DB_PATH:-../data/shared_db}:/app/db
     environment:
       - WAIFU_DIFFUSION_PORT=${WAIFU_DIFFUSION_PORT:-9500}
-      - WAIFU_MODEL_ID=${WAIFU_MODEL_ID:-waifu-diffusion/wd-1-5-beta2}
+      - WAIFU_MODEL_ID=${WAIFU_MODEL_ID:-hakurei/waifu-diffusion-v1-4}
     depends_on:
       - llm_text
     deploy:

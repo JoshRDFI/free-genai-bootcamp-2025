@@ -25,7 +25,9 @@ COPY extra-requirements.txt .
 RUN pip install --no-cache-dir -r extra-requirements.txt
 
 # Create directory for MangaOCR models
-RUN mkdir -p /data/mangaocr_models
+RUN pip install manga-ocr
+ENV MANGA_OCR_CACHE_DIR=/app/data/mangaocr_models
+RUN mkdir -p /app/data/mangaocr_models
 
 # Copy the rest of the application
 COPY . .
