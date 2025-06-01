@@ -14,7 +14,7 @@ def install_dependencies():
     """Install required dependencies"""
     try:
         # Install requirements
-        requirements_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "requirements.txt")
+        requirements_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "extra-requirements.txt")
         subprocess.run([sys.executable, "-m", "pip", "install", "-r", requirements_path], check=True)
     except subprocess.CalledProcessError as e:
         print(f"Error installing dependencies: {str(e)}")
@@ -57,7 +57,7 @@ def run_backend():
         os.environ["LLM_TEXT_PORT"] = "9000"
         os.environ["TTS_SERVICE_PORT"] = "9200"
         os.environ["ASR_SERVICE_PORT"] = "9300"
-        os.environ["LLM_VISION_PORT"] = "9100"
+        os.environ["LLM_VISION_PORT"] = "9101"
         os.environ["EMBEDDING_SERVICE_PORT"] = "6000"
         os.environ["WAIFU_DIFFUSION_PORT"] = "9500"
         

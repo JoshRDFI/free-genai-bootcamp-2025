@@ -33,7 +33,7 @@ class Translator:
             response = requests.post(
                 "http://localhost:11434/api/generate",
                 json={
-                    "model": "llama3",
+                    "model": "llama3.2",
                     "prompt": f"{system_prompt}\n\n{user_prompt}",
                     "stream": False
                 },

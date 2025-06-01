@@ -31,7 +31,7 @@ RUN pip3 install --no-cache-dir -r extra-requirements.txt
 COPY . /app/
 
 # Expose port
-EXPOSE 9100
+EXPOSE 9101
 
 # Run the application
 CMD ["python3", "app.py"]

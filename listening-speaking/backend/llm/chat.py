@@ -84,47 +84,41 @@ Return the questions in this JSON format:
         try:
             logger.info("Sending request to LLM service")
             response = self.session.post(
-                f"{self.endpoint}/api/generate",
+                f"{self.endpoint}/v1/chat/completions",
                 headers=self.headers,
                 json={
                     "model": "llama3.2",
-                    "prompt": prompt,
+                    "messages": [
+                        {"role": "user", "content": prompt}
+                    ],
                     "stream": False
                 },
                 timeout=ServiceConfig.get_timeout("llm")
             )
-            
             logger.info(f"Received response with status code: {response.status_code}")
-            
             if response.status_code != 200:
                 error_detail = response.text if response.text else "No error details available"
                 logger.error(f"LLM service returned error status: {response.status_code}")
                 logger.error(f"Response content: {error_detail}")
                 raise Exception(f"LLM service error: {response.status_code} - {error_detail}")
-                
             try:
                 result = response.json()
                 logger.info("Successfully parsed response JSON")
-                
-                # Handle Ollama response format
-                if "response" in result:
-                    content = result["response"]
+                # The llm_text service returns a 'message' key with 'content'
+                if "message" in result and "content" in result["message"]:
+                    content = result["message"]["content"]
                 else:
                     logger.error(f"Unexpected response format: {result}")
                     raise ValueError(f"Unexpected response format from LLM service")
-                
                 # Parse the content as JSON
                 try:
                     questions_data = json.loads(content)
                     logger.info("Successfully parsed questions data")
-                    
                     if "questions" not in questions_data:
                         logger.error(f"Response missing 'questions' key: {questions_data}")
                         raise ValueError("Response missing 'questions' key")
-                        
                     questions = questions_data["questions"]
                     logger.info(f"Successfully extracted {len(questions)} questions")
-                    
                     # Validate question format
                     valid_questions = []
                     for i, q in enumerate(questions):
@@ -135,31 +129,24 @@ Return the questions in this JSON format:
                                 logger.warning(f"Question {i+1} has invalid options format")
                         else:
                             logger.warning(f"Question {i+1} is missing required fields")
-                    
                     if not valid_questions:
                         logger.error("No valid questions found in response")
                         raise ValueError("No valid questions found in LLM response")
-                        
                     return valid_questions
-                    
                 except json.JSONDecodeError as e:
                     logger.error(f"Error parsing LLM response content as JSON: {str(e)}")
                     logger.error(f"Raw content: {content}")
                     raise ValueError(f"Invalid JSON in LLM response: {str(e)}")
-                    
             except json.JSONDecodeError as e:
                 logger.error(f"Failed to parse JSON response: {str(e)}")
                 logger.error(f"Raw response: {response.text}")
                 raise ValueError(f"Invalid JSON in LLM response: {str(e)}")
-                
         except requests.exceptions.Timeout:
             logger.error("Request to LLM service timed out")
             raise TimeoutError("LLM service request timed out")
-            
         except requests.exceptions.ConnectionError:
             logger.error(f"Failed to connect to LLM service at {self.endpoint}")
             raise ConnectionError(f"Failed to connect to LLM service at {self.endpoint}")
-            
         except Exception as e:
             logger.error(f"Unexpected error generating questions: {str(e)}", exc_info=True)
             raise
@@ -187,12 +174,13 @@ Evaluate if the answer is correct and provide feedback in Japanese.
             response = requests.post(
                 f"{self.endpoint}/validate",
                 headers=self.headers,
-                json=prompt
+                json=prompt,
+                timeout=ServiceConfig.get_timeout("llm")
             )
             response.raise_for_status()
             return response.json()
         except Exception as e:
-            print(f"Error validating response: {str(e)}")
+            logger.error(f"Error validating response: {str(e)}")
             return {
                 "correct": False,
                 "feedback": "エラーが発生しました。もう一度お試しください。"
@@ -224,12 +212,13 @@ Conversation:
             response = requests.post(
                 f"{self.endpoint}/analyze",
                 headers=self.headers,
-                json=prompt
+                json=prompt,
+                timeout=ServiceConfig.get_timeout("llm")
             )
             response.raise_for_status()
             return response.json()["speakers"]
         except Exception as e:
-            print(f"Error analyzing conversation: {str(e)}")
+            logger.error(f"Error analyzing conversation: {str(e)}")
             return []
 
     def generate_embedding(self, text: str) -> Optional[List[float]]:
@@ -241,10 +230,11 @@ Conversation:
             response = requests.post(
                 f"{self.endpoint}/embed",
                 headers=self.headers,
-                json={"text": text}
+                json={"text": text},
+                timeout=ServiceConfig.get_timeout("llm")
             )
             response.raise_for_status()
             return response.json()["embedding"]
         except Exception as e:
-            print(f"Error generating embedding in chat: {str(e)}")
+            logger.error(f"Error generating embedding in chat: {str(e)}")
             return None

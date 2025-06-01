@@ -1,4 +1,3 @@
-
 services:
   # Game server / API Gateway
   vn-game-server:
@@ -17,7 +16,7 @@ services:
       - CHROMADB_URL=http://chromadb:8050
       - TTS_URL=http://tts:9200
       - ASR_URL=http://asr:9300
-      - LLM_VISION_URL=http://llm-vision:9100
+      - LLM_VISION_URL=http://llm-vision:9101
       - WAIFU_DIFFUSION_URL=http://waifu-diffusion:9500
       - EMBEDDINGS_URL=http://embeddings:6000
       - USE_REMOTE_DB=true

@@ -24,7 +24,7 @@ class Config:
     CHROMADB_URL = os.environ.get('CHROMADB_URL', 'http://chromadb:8050')
     TTS_URL = os.environ.get('TTS_URL', 'http://tts:9200')
     ASR_URL = os.environ.get('ASR_URL', 'http://asr:9300')
-    LLM_VISION_URL = os.environ.get('LLM_VISION_URL', 'http://llm-vision:9100')
+    LLM_VISION_URL = os.environ.get('LLM_VISION_URL', 'http://llm-vision:9101')
     IMAGE_GEN_URL = os.environ.get('WAIFU_DIFFUSION_URL', 'http://waifu-diffusion:9500')
     EMBEDDINGS_URL = os.environ.get('EMBEDDINGS_URL', 'http://embeddings:6000')
 

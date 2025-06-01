@@ -9,5 +9,7 @@ fi
 
 # Activate virtual environment and run the script
 source .venv-main/bin/activate
+echo "Downloading models..."
 python3 download_models.py
+echo "Running project..."
 streamlit run project_start.py 

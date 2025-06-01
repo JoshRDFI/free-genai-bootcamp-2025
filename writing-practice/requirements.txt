@@ -5,7 +5,6 @@
 PyYAML>=6.0.1
 flask>=3.0.0
 streamlit-drawable-canvas>=0.9.0
-manga-ocr>=0.1.8  # Japanese OCR - required locally
 
 # Testing dependencies
 pytest>=7.4.3

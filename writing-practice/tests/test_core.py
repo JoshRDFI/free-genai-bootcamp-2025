@@ -16,6 +16,7 @@ from app import (
     grade_response,
     generate_sentence
 )
+from writing_practice.src.core.ocr import OCRProcessor
 
 def test_load_prompts(test_prompts):
     """Test loading prompts from YAML file"""
@@ -51,22 +52,15 @@ def test_save_sentence(test_dir):
     assert any(s['japanese'] == test_sentence['japanese'] for s in sentences)
 
 def test_process_image_with_ocr(test_dir):
-    """Test OCR processing"""
-    # Create a test image with Japanese text
+    """Test OCR processing via API"""
     img = Image.new('RGB', (200, 50), color='white')
-    # Add some text (this is just a placeholder - real OCR would need actual text)
     img_array = np.array(img)
     img = Image.fromarray(img_array)
-    
-    # Save test image
     test_image_path = Path(test_dir) / "test_image.png"
     img.save(test_image_path)
-    
-    # Process image
-    result = process_image_with_ocr(test_image_path)
+    ocr = OCRProcessor()
+    result = ocr.process_image(test_image_path)
     assert isinstance(result, str)
-    
-    # Cleanup
     test_image_path.unlink()
 
 def test_translate_text(test_prompts):

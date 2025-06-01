@@ -12,9 +12,6 @@ import importlib.util
 import os
 import numpy as np
 
-# Force CPU mode for MangaOCR
-os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
-
 # ---- Path Configuration ----
 BASE_DIR = Path(__file__).parent.absolute()
 PROJECT_ROOT = BASE_DIR.parent
@@ -41,7 +38,6 @@ def is_package_installed(package_name):
 # Check required packages
 required_packages = {
     "streamlit_drawable_canvas": "streamlit-drawable-canvas",
-    "manga_ocr": "manga-ocr"
 }
 
 missing_packages = []
@@ -56,17 +52,6 @@ if missing_packages:
 
 # Now it's safe to import
 from streamlit_drawable_canvas import st_canvas
-import manga_ocr
-
-# Initialize MangaOCR
-@st.cache_resource
-def get_ocr():
-    try:
-        logger.info("Initializing MangaOCR in CPU mode")
-        return manga_ocr.MangaOcr()
-    except Exception as e:
-        logger.error(f"Error initializing MangaOCR: {e}")
-        return None
 
 # Load prompts from YAML file
 def load_prompts():
@@ -107,27 +92,24 @@ def save_sentence(sentence_data):
 
 # Process image with MangaOCR
 def process_image_with_ocr(image):
-    ocr = get_ocr()
-    if ocr is None:
-        return "OCR not available"
-
+    # Use MangaOCR API container
+    endpoint = "http://localhost:9000/analyze"  # Optionally, load from config
     try:
         # Convert to PIL Image if it's not already
         if not isinstance(image, Image.Image):
             image = Image.open(image)
-
-        # Save to a temporary file (MangaOCR works better with files)
         temp_path = "temp_image.png"
         image.save(temp_path)
-
-        # Process with OCR
-        text = ocr(temp_path)
-
-        # Clean up
+        with open(temp_path, 'rb') as f:
+            files = {'image': f}
+            response = requests.post(endpoint, files=files, timeout=30)
         if Path(temp_path).exists():
             Path(temp_path).unlink()
-
-        return text
+        if response.status_code == 200:
+            return response.json().get('text', '')
+        else:
+            logger.error(f"MangaOCR API error: {response.status_code} {response.text}")
+            return "Error processing image"
     except Exception as e:
         logger.error(f"OCR error: {e}")
         return "Error processing image"

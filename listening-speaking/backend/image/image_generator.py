@@ -33,9 +33,10 @@ class ImageGenerator:
             Optional[Dict]: Analysis result if successful, None otherwise
         """
         try:
-            endpoint = ServiceConfig.get_endpoint("vision", "analyze")
+            # Use mangaocr for image analysis
+            endpoint = ServiceConfig.get_endpoint("mangaocr", "analyze")
             if not endpoint:
-                logger.error("Vision analyze endpoint not configured")
+                logger.error("MangaOCR analyze endpoint not configured")
                 return None
 
             files = {
@@ -66,7 +67,8 @@ class ImageGenerator:
             Optional[bytes]: Generated image data if successful, None otherwise
         """
         try:
-            endpoint = ServiceConfig.get_endpoint("vision", "generate")
+            # Use waifu-diffusion for image generation
+            endpoint = ServiceConfig.get_endpoint("waifu-diffusion", "generate")
             if not endpoint:
                 logger.error("Waifu-diffusion generate endpoint not configured")
                 return None
@@ -117,7 +119,8 @@ class ImageGenerator:
             Optional[Dict]: Analysis result if successful, None otherwise
         """
         try:
-            endpoint = ServiceConfig.get_endpoint("vision", "analyze_manga")
+            # Use mangaocr for manga text analysis
+            endpoint = ServiceConfig.get_endpoint("mangaocr", "analyze_manga")
             if not endpoint:
                 logger.error("MangaOCR analyze endpoint not configured")
                 return None
@@ -149,7 +152,8 @@ class ImageGenerator:
             Optional[Dict]: Analysis result if successful, None otherwise
         """
         try:
-            endpoint = ServiceConfig.get_endpoint("vision", "analyze_image")
+            # Use llm-vision for LLaVA image analysis
+            endpoint = ServiceConfig.get_endpoint("llm-vision", "analyze_image")
             if not endpoint:
                 logger.error("LLaVA analyze endpoint not configured")
                 return None

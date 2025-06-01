@@ -80,28 +80,28 @@ PROJECTS = {
     "listening-speaking": {
         "name": "Listening & Speaking Practice",
         "description": "Practice listening and speaking with AI feedback",
-        "docker_services": ["llm", "tts", "asr", "embeddings", "chromadb", "guardrails", "mangaocr", "llava"],
+        "docker_services": ["llm_text", "tts", "asr", "embeddings", "chromadb", "guardrails", "mangaocr", "llm-vision"],
         "requires_gpu": True,
         "run_command": "listening-speaking/frontend/streamlit_app.py --server.port 8502"
     },
     "vocabulary_generator": {
         "name": "Vocabulary Generator and Practice Exercises",
         "description": "Generate vocabulary lists and practice exercises",
-        "docker_services": ["llm", "embeddings", "chromadb", "guardrails", "mangaocr", "llava"],
+        "docker_services": ["llm_text", "embeddings", "chromadb", "guardrails", "mangaocr", "llm-vision"],
         "requires_gpu": True,
         "run_command": "vocabulary_generator/main.py --server.port 8503"
     },
     "writing-practice": {
         "name": "Writing Practice",
         "description": "Practice writing with AI feedback",
-        "docker_services": ["llm", "mangaocr", "llava", "embeddings", "chromadb", "guardrails"],
+        "docker_services": ["llm_text", "mangaocr", "llm-vision", "embeddings", "chromadb", "guardrails"],
         "requires_gpu": True,
         "run_command": "writing-practice/run_app.py --server.port 8504"
     },
     "visual-novel": {
         "name": "Visual Novel",
         "description": "Interactive story with AI-generated content",
-        "docker_services": ["llm", "tts", "asr", "mangaocr", "llava", "embeddings", "chromadb", "guardrails", "waifu-diffusion"],
+        "docker_services": ["llm_text", "tts", "asr", "mangaocr", "llm-vision", "embeddings", "chromadb", "guardrails", "waifu-diffusion"],
         "requires_gpu": True,
         "run_command": "visual-novel/app.py --server.port 8505"
     }

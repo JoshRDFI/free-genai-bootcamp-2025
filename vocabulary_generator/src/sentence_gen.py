@@ -31,8 +31,22 @@ class SentenceGenerator:
         else:
             raise Exception(f"Failed to generate sentences: {response.status_code}")
 
-    def validate_sentence_level(self, sentence: str, level: str = "N5") -> bool:
+    async def validate_sentence_level(self, sentence: str, level: str = "N5") -> bool:
         """Verify if a sentence uses appropriate level vocabulary and grammar"""
-        # This would need to be implemented with a comprehensive grammar checker
-        # For now, we'll return True and implement proper validation later
-        return True
+        prompt = (
+            f"Does the following Japanese sentence use only JLPT {level} grammar and vocabulary? "
+            f"Answer 'yes' or 'no'. Sentence: {sentence}"
+        )
+        response = requests.post(
+            self.endpoint,
+            json={
+                "model": "llama3.2",
+                "messages": [{"role": "user", "content": prompt}],
+                "temperature": 0.0
+            }
+        )
+        if response.status_code == 200:
+            answer = response.json()["message"]["content"].strip().lower()
+            return answer.startswith("yes")
+        else:
+            raise Exception(f"Failed to validate sentence: {response.status_code}")
