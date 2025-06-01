@@ -57,7 +57,7 @@ MODELS = [
     },
     {
         'name': 'Waifu Diffusion',
-        'repo': 'hakurei/waifu-diffusion-v1-4',  # Changed to a compatible repo
+        'repo': 'hakurei/waifu-diffusion',
         'path': Path('data/waifu'),
         'download_fn': lambda repo, path: (
             StableDiffusionPipeline.from_pretrained(repo, cache_dir=path)

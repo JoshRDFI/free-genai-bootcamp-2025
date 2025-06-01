@@ -33,6 +33,7 @@ ehthumbs.db
 Thumbs.db
 
 # Data directories
+data/
 logs/
 *.db
 *.sqlite3

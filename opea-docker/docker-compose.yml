@@ -197,7 +197,7 @@ services:
       - ${SHARED_DB_PATH:-../data/shared_db}:/app/db
     environment:
       - WAIFU_DIFFUSION_PORT=${WAIFU_DIFFUSION_PORT:-9500}
-      - WAIFU_MODEL_ID=${WAIFU_MODEL_ID:-hakurei/waifu-diffusion-v1-4}
+      - WAIFU_MODEL_ID=${WAIFU_MODEL_ID:-hakurei/waifu-diffusion}
     depends_on:
       - llm_text
     deploy:
