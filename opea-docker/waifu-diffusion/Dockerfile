@@ -1,5 +1,4 @@
 # Base image with NVIDIA GPU support
-# FROM nvidia/cuda:11.8.0-cudnn8-runtime-ubuntu22.04
 FROM nvidia/cuda:12.1.0-runtime-ubuntu22.04
 
 WORKDIR /app
@@ -12,6 +11,9 @@ RUN apt-get update && apt-get install -y \
 
 # Update pip to the latest version
 RUN python3 -m pip install --upgrade pip
+
+# Install PyTorch with CUDA 12.1 support first
+RUN pip install --no-cache-dir torch torchvision --index-url https://download.pytorch.org/whl/cu121
 
 # Copy and install base requirements
 COPY requirements/base.txt .

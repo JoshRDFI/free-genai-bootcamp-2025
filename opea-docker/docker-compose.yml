@@ -191,6 +191,7 @@ services:
     environment:
       - WAIFU_DIFFUSION_PORT=${WAIFU_DIFFUSION_PORT:-9500}
       - WAIFU_MODEL_ID=${WAIFU_MODEL_ID:-hakurei/waifu-diffusion}
+      - CUDA_VISIBLE_DEVICES=0
     depends_on:
       - llm_text
     deploy:
@@ -214,15 +215,9 @@ services:
       - EMBEDDING_SERVICE_HOST_IP=0.0.0.0
       - EMBEDDING_SERVICE_PORT=${EMBEDDING_SERVICE_PORT:-6000}
       - EMBEDDING_MODEL=${EMBEDDING_MODEL:-all-MiniLM-L6-v2}
+      - CUDA_VISIBLE_DEVICES=""
     depends_on:
       - chromadb
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: all
-              capabilities: [gpu]
     restart: unless-stopped
 
 networks:

@@ -8,7 +8,7 @@ import json
 import logging
 from datetime import datetime
 import re
-from utils.helper import get_file_path
+from backend.utils.helper import get_file_path
 
 # Add the backend directory to Python path using relative path
 current_dir = os.path.dirname(os.path.abspath(__file__))
