@@ -241,12 +241,22 @@ def render_interactive_practice():
         elif st.session_state.current_question:
             if st.button("Generate Audio"):
                 with st.spinner("Generating audio..."):
+                    question_text = st.session_state.current_question['Question']
+                    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+                    output_file = os.path.join("backend", "data", "audio", f"question_{timestamp}.mp3")
+                    print(f"Generating audio for question: {question_text}")
+                    print(f"Output file path: {output_file}")
                     audio_file = st.session_state.audio_generator.generate_audio(
-                        st.session_state.current_question
+                        question_text,
+                        output_file
                     )
                     if audio_file:
+                        print(f"Audio file generated: {audio_file}")
+                        print(f"File exists: {os.path.exists(audio_file)}")
                         st.session_state.current_audio = audio_file
                         st.rerun()
+                    else:
+                        print("Audio generation failed.")
 
 def render_sidebar():
     """Render sidebar with saved questions"""
@@ -265,6 +275,11 @@ def render_sidebar():
                     st.rerun()
         else:
             st.info("No saved questions yet. Process a video or generate questions to see them here!")
+        # Add button to generate images for old questions
+        if st.button("Generate Images for Old Questions"):
+            with st.spinner("Generating images for old questions..."):
+                st.session_state.question_generator.generate_image_for_old_questions()
+                st.success("Images generated for old questions!")
 
 def render_rag_visualization():
     """New tab: Visualize the RAG process via similarity queries"""

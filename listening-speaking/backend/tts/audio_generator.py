@@ -7,6 +7,7 @@ import tempfile
 import re
 import requests
 import torch
+from backend.config import ServiceConfig
 
 class AudioGenerator:
     def __init__(self, tts_engine: str = "coqui", language: str = "ja"):

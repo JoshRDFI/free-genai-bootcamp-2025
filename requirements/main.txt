@@ -3,7 +3,7 @@
 streamlit>=1.31.0
 
 # Database and Storage
-chromadb==0.4.24
+chromadb
 
 # Docker
 docker>=6.1.3

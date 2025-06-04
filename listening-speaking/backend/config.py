@@ -5,7 +5,7 @@ class ServiceConfig:
     """Central configuration for all services"""
     
     # Backend port
-    BACKEND_PORT = int(os.getenv("BACKEND_PORT", "8181"))
+    BACKEND_PORT = int(os.getenv("BACKEND_PORT", "8180"))
     
     # Service ports from docker-compose
     LLM_TEXT_PORT = int(os.getenv("LLM_TEXT_PORT", "9000"))
@@ -14,8 +14,8 @@ class ServiceConfig:
     ASR_SERVICE_PORT = int(os.getenv("ASR_SERVICE_PORT", "9300"))
     MANGAOCR_PORT = int(os.getenv("MANGAOCR_PORT", "9100"))
     LLM_VISION_PORT = int(os.getenv("LLM_VISION_PORT", "9101"))
-    EMBEDDING_SERVICE_PORT = int(os.getenv("EMBEDDING_SERVICE_PORT", "6000"))
     WAIFU_DIFFUSION_PORT = int(os.getenv("WAIFU_DIFFUSION_PORT", "9500"))
+    CHROMADB_PORT = int(os.getenv("CHROMADB_PORT", "8000"))
     
     # Service base URLs
     BASE_URL = "http://localhost"
@@ -28,6 +28,7 @@ class ServiceConfig:
     VISION_URL = f"{BASE_URL}:{LLM_VISION_PORT}"
     EMBEDDING_URL = f"{BASE_URL}:{EMBEDDING_SERVICE_PORT}"
     WAIFU_DIFFUSION_URL = f"{BASE_URL}:{WAIFU_DIFFUSION_PORT}"
+    CHROMADB_URL = f"{BASE_URL}:{CHROMADB_PORT}"
     
     # API endpoints
     ENDPOINTS = {
@@ -52,6 +53,9 @@ class ServiceConfig:
         },
         "embedding": {
             "embed": f"{EMBEDDING_URL}/embed"
+        },
+        "chromadb": {
+            "base": CHROMADB_URL
         }
     }
     
@@ -63,7 +67,8 @@ class ServiceConfig:
         "asr": 60,
         "vision": 60,
         "embedding": 30,
-        "waifu-diffusion": 120  # Longer timeout for image generation
+        "waifu-diffusion": 120,  # Longer timeout for image generation
+        "chromadb": 30  # Timeout for ChromaDB operations
     }
     
     # Retry configuration

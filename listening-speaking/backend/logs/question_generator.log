@@ -1,2 +1,42 @@
 2025-03-01 08:38:56,031 - TTS.tts.models - INFO - Using model: xtts
 2025-05-10 10:12:56,794 - matplotlib.font_manager - INFO - generated new fontManager
+2025-06-04 10:11:54,780 - backend.llm.question_generator - INFO - No old questions needed image generation.
+2025-06-04 11:58:19,138 - backend.llm.question_generator - INFO - Loaded 4 questions from JSON file.
+2025-06-04 11:58:19,156 - backend.llm.question_generator - INFO - Question 20250215_204111 missing image_path, generating image.
+2025-06-04 11:58:20,624 - backend.llm.question_generator - WARNING - Failed to generate image for question 20250215_204111.
+2025-06-04 11:58:20,625 - backend.llm.question_generator - INFO - Question 20250215_204153 missing image_path, generating image.
+2025-06-04 11:58:20,635 - backend.llm.question_generator - WARNING - Failed to generate image for question 20250215_204153.
+2025-06-04 11:58:20,635 - backend.llm.question_generator - INFO - Question 20250215_211441 missing image_path, generating image.
+2025-06-04 11:58:20,644 - backend.llm.question_generator - WARNING - Failed to generate image for question 20250215_211441.
+2025-06-04 11:58:20,644 - backend.llm.question_generator - INFO - Question 20250215_211742 missing image_path, generating image.
+2025-06-04 11:58:20,652 - backend.llm.question_generator - WARNING - Failed to generate image for question 20250215_211742.
+2025-06-04 11:58:20,652 - backend.llm.question_generator - INFO - No old questions needed image generation.
+2025-06-04 13:33:33,337 - backend.llm.question_generator - INFO - Loaded 4 questions from JSON file.
+2025-06-04 13:33:33,358 - backend.llm.question_generator - INFO - Question 20250215_204111 missing image_path, generating image.
+2025-06-04 13:33:33,495 - backend.llm.question_generator - WARNING - Failed to generate image for question 20250215_204111.
+2025-06-04 13:33:33,496 - backend.llm.question_generator - INFO - Question 20250215_204153 missing image_path, generating image.
+2025-06-04 13:33:33,505 - backend.llm.question_generator - WARNING - Failed to generate image for question 20250215_204153.
+2025-06-04 13:33:33,505 - backend.llm.question_generator - INFO - Question 20250215_211441 missing image_path, generating image.
+2025-06-04 13:33:33,513 - backend.llm.question_generator - WARNING - Failed to generate image for question 20250215_211441.
+2025-06-04 13:33:33,513 - backend.llm.question_generator - INFO - Question 20250215_211742 missing image_path, generating image.
+2025-06-04 13:33:33,521 - backend.llm.question_generator - WARNING - Failed to generate image for question 20250215_211742.
+2025-06-04 13:33:33,521 - backend.llm.question_generator - INFO - No old questions needed image generation.
+2025-06-04 14:13:58,466 - backend.llm.question_generator - INFO - Extracted transcript text for video 8jLOx1hD3_o
+2025-06-04 14:13:58,467 - backend.llm.question_generator - INFO - Initialized ChatInterface
+2025-06-04 14:13:58,467 - backend.llm.question_generator - INFO - Generating 3 questions for video 8jLOx1hD3_o
+2025-06-04 14:13:58,532 - backend.llm.question_generator - ERROR - Unexpected error in LLM question generation: LLM service error: 404 - {"detail":"Not Found"}
+2025-06-04 14:13:58,533 - backend.llm.question_generator - ERROR - Unexpected error in generate_questions: Failed to generate questions: LLM service error: 404 - {"detail":"Not Found"}
+Traceback (most recent call last):
+  File "/home/sage/free-genai-bootcamp-2025/listening-speaking/backend/llm/question_generator.py", line 158, in generate_questions
+    raw_questions = chat.generate_questions(transcript_text, num_questions)
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/sage/free-genai-bootcamp-2025/listening-speaking/backend/llm/chat.py", line 106, in generate_questions
+    raise Exception(f"LLM service error: {response.status_code} - {error_detail}")
+Exception: LLM service error: 404 - {"detail":"Not Found"}
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/home/sage/free-genai-bootcamp-2025/listening-speaking/backend/llm/question_generator.py", line 168, in generate_questions
+    raise RuntimeError(f"Failed to generate questions: {str(e)}")
+RuntimeError: Failed to generate questions: LLM service error: 404 - {"detail":"Not Found"}

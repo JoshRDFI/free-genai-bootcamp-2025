@@ -13,6 +13,7 @@ from backend.utils.helper import (
     load_json_file,
     save_json_file
 )
+from backend.image.image_generator import ImageGenerator
 
 # Get the absolute path to the logs directory
 logs_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "logs")
@@ -168,12 +169,26 @@ class QuestionGenerator:
 
             # Process and format each question
             processed_questions = []
+            image_generator = ImageGenerator()
             for i, raw_question in enumerate(raw_questions, 1):
                 try:
                     logger.info(f"Processing question {i}")
                     # Save the question
                     if self.save_question(raw_question, video_id, i):
                         logger.info(f"Successfully saved question {i}")
+                        # Generate image for the question
+                        prompt = raw_question.get("Question", "")
+                        options = raw_question.get("Options", [])
+                        # Use a simple prompt: question + options
+                        image_prompt = prompt + " " + ", ".join(options)
+                        image_data = image_generator.generate_image(image_prompt)
+                        image_path = None
+                        if image_data:
+                            image_filename = f"question_{video_id}_{i}.png"
+                            image_path = os.path.join("backend", "data", "images", image_filename)
+                            image_generator.save_image(image_data, image_path)
+                        # Add image_path to the question dict
+                        raw_question["image_path"] = image_path
                         processed_questions.append(raw_question)
                     else:
                         logger.error(f"Failed to save question {i}")
@@ -274,4 +289,40 @@ class QuestionGenerator:
         except Exception as e:
             logger.error(f"Error generating feedback: {str(e)}")
             return "エラーが発生しました。(An error occurred.)"
+
+    def generate_image_for_old_questions(self):
+        """Generate images for old questions that do not have an image_path."""
+        print("generate_image_for_old_questions called")
+        try:
+            # Load existing questions from JSON file
+            questions = load_json_file(self.questions_file) or {}
+            logger.info(f"Loaded {len(questions)} questions from JSON file.")
+            if not questions:
+                logger.info("No stored questions found.")
+                return
+            image_generator = ImageGenerator()
+            updated = False
+            for qid, qdata in questions.items():
+                question = qdata.get("question", {})
+                if not question.get("image_path"):
+                    logger.info(f"Question {qid} missing image_path, generating image.")
+                    prompt = question.get("Question", "")
+                    options = question.get("Options", [])
+                    image_prompt = prompt + " " + ", ".join(options)
+                    image_data = image_generator.generate_image(image_prompt)
+                    if image_data:
+                        image_filename = f"question_{qid}.png"
+                        image_path = os.path.join("backend", "data", "images", image_filename)
+                        image_generator.save_image(image_data, image_path)
+                        question["image_path"] = image_path
+                        updated = True
+                    else:
+                        logger.warning(f"Failed to generate image for question {qid}.")
+            if updated:
+                save_json_file(self.questions_file, questions)
+                logger.info("Updated old questions with generated images.")
+            else:
+                logger.info("No old questions needed image generation.")
+        except Exception as e:
+            logger.error(f"Error generating images for old questions: {str(e)}")
     

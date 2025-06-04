@@ -1,2 +1,4 @@
 python-multipart>=0.0.5
 opea-comps>=1.0.0 
+PIL
+io

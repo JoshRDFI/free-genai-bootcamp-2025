@@ -21,22 +21,26 @@ from backend.utils.helper import get_file_path
 from backend.config import ServiceConfig
 
 # Configure logging
+log_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "logs")
+os.makedirs(log_dir, exist_ok=True)
+log_file = os.path.join(log_dir, "knowledge_base.log")
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     handlers=[
-        logging.FileHandler("data/shared_db/logs/knowledge_base.log"),
+        logging.FileHandler(log_file),
         logging.StreamHandler()
     ]
 )
 logger = logging.getLogger(__name__)
 
 class KnowledgeBase:
-    def __init__(self, db_path: str = "data/shared_db/knowledge_base.db"):
+    def __init__(self, db_path: str = None):
         """Initialize the database connection and ChromaDB client"""
+        if db_path is None:
+            # Always use an absolute path relative to this file
+            db_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "knowledge_base.db")
         self.db_path = db_path
-
-        # Create database directory if it doesn't exist
         os.makedirs(os.path.dirname(self.db_path), exist_ok=True)
 
         self._create_tables()
@@ -52,8 +56,7 @@ class KnowledgeBase:
                     chroma_server_http_port=8000,
                     allow_reset=True,
                     anonymized_telemetry=False,
-                    is_persistent=True,
-                    chroma_api_version="v2"
+                    is_persistent=True
                 )
             )
             logger.info("Successfully initialized ChromaDB client")

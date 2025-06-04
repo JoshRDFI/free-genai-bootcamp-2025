@@ -27,11 +27,6 @@ RUN pip install --no-cache-dir -r main.txt
 COPY extra-requirements.txt .
 RUN pip install --no-cache-dir -r extra-requirements.txt
 
-
-# Download spaCy model and link it for the "en" shortcut
-# RUN python3 -m spacy download en_core_web_sm && \
-#     python3 -m spacy link en_core_web_sm en #--force
-
 # Create logs directory
 RUN mkdir -p /data/guardrails/logs
 

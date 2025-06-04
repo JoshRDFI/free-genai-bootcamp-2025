@@ -1,16 +1,16 @@
 #!/bin/bash
 
-# Stop all running containers
+echo "Stopping all running containers"
 docker compose down
 
-# Remove any dangling images
+echo "Removing any dangling images"
 docker system prune -f
 
-# Rebuild all services
+echo "Rebuilding all services"
 docker compose build --no-cache
 
-# Start the services
+echo "Starting the services"
 docker compose up -d
 
-# Show logs
+echo "Showing logs"
 docker compose logs -f

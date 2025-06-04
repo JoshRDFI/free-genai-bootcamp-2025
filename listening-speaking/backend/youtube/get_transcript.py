@@ -8,6 +8,7 @@ import json
 import logging
 from datetime import datetime
 import re
+from utils.helper import get_file_path
 
 # Add the backend directory to Python path using relative path
 current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -15,11 +16,14 @@ backend_dir = os.path.dirname(current_dir)
 sys.path.insert(0, backend_dir)
 
 # Configure logging
+log_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "logs")
+os.makedirs(log_dir, exist_ok=True)
+log_file = os.path.join(log_dir, "transcript_downloader.log")
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     handlers=[
-        logging.FileHandler("backend/logs/transcript_downloader.log"),
+        logging.FileHandler(log_file),
         logging.StreamHandler()
     ]
 )
@@ -52,14 +56,27 @@ class YouTubeTranscriptDownloader:
             if not video_id:
                 raise ValueError("Invalid video ID or URL")
 
-            transcript = YouTubeTranscriptApi.get_transcript(
-                video_id,
-                languages=self.languages
-            )
-            logger.info(f"Successfully downloaded transcript for video {video_id}")
-            return transcript
+            logger.info(f"Attempting to download transcript for video {video_id}")
+            try:
+                transcript = YouTubeTranscriptApi.get_transcript(
+                    video_id,
+                    languages=self.languages
+                )
+                logger.info(f"Successfully downloaded transcript for video {video_id}")
+                return transcript
+            except Exception as e:
+                logger.error(f"Error getting transcript from YouTube API: {str(e)}")
+                # Try getting transcript without language specification
+                try:
+                    logger.info(f"Attempting to get transcript without language specification for video {video_id}")
+                    transcript = YouTubeTranscriptApi.get_transcript(video_id)
+                    logger.info(f"Successfully downloaded transcript without language specification for video {video_id}")
+                    return transcript
+                except Exception as e2:
+                    logger.error(f"Error getting transcript without language specification: {str(e2)}")
+                    return None
         except Exception as e:
-            logger.error(f"Error getting transcript: {str(e)}")
+            logger.error(f"Error in get_transcript: {str(e)}")
             return None
 
     def save_transcript(self, transcript: List[Dict], video_id: str) -> bool:

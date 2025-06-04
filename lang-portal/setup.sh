@@ -52,7 +52,7 @@ fi
 
 # Install Python dependencies
 echo -e "${YELLOW}Installing Python dependencies...${NC}"
-pip install -r requirements.txt
+pip install -r extra-requirements.txt
 
 # Install frontend dependencies
 echo -e "${YELLOW}Installing frontend dependencies...${NC}"

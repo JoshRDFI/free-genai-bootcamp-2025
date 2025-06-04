@@ -1,13 +1,13 @@
 # requirements.txt
 # This file contains only project-specific dependencies not already covered by base.txt or main.txt.
 # Install with: pip install -r requirements.txt
-
+chromadb
 # YouTube transcript downloader
 youtube_transcript_api==0.6.1
 
 # Content validation and regex
 regex==2023.10.3
-
+numpy<2.0.0
 # Additional utilities
 pykakasi==2.2.1
 pytest==7.4.0

@@ -82,84 +82,91 @@ PROJECTS = {
         "description": "Practice listening and speaking with AI feedback",
         "docker_services": ["llm_text", "tts", "asr", "embeddings", "chromadb", "guardrails", "mangaocr", "llm-vision"],
         "requires_gpu": True,
-        "run_command": "listening-speaking/frontend/streamlit_app.py --server.port 8502"
+        "run_command": "listening-speaking/frontend streamlit_app.py 8502"
     },
     "vocabulary_generator": {
         "name": "Vocabulary Generator and Practice Exercises",
         "description": "Generate vocabulary lists and practice exercises",
         "docker_services": ["llm_text", "embeddings", "chromadb", "guardrails", "mangaocr", "llm-vision"],
         "requires_gpu": True,
-        "run_command": "vocabulary_generator/main.py --server.port 8503"
+        "run_command": "vocabulary_generator main.py 8503"
     },
     "writing-practice": {
         "name": "Writing Practice",
         "description": "Practice writing with AI feedback",
         "docker_services": ["llm_text", "mangaocr", "llm-vision", "embeddings", "chromadb", "guardrails"],
         "requires_gpu": True,
-        "run_command": "writing-practice/run_app.py --server.port 8504"
+        "run_command": "writing-practice run_app.py 8504"
     },
     "visual-novel": {
         "name": "Visual Novel",
         "description": "Interactive story with AI-generated content",
         "docker_services": ["llm_text", "tts", "asr", "mangaocr", "llm-vision", "embeddings", "chromadb", "guardrails", "waifu-diffusion"],
         "requires_gpu": True,
-        "run_command": "visual-novel/app.py --server.port 8505"
+        "run_command": "visual-novel app.py 8505"
     }
 }
 
 def check_backend_health():
-    """Check if backend service is healthy"""
-    try:
-        # First check if LLM service is running
-        test_request = {
-            "messages": [{"role": "user", "content": "test"}],
-            "model": "llama3.2"
-        }
-        headers = {"Content-Type": "application/json"}
-        llm_response = requests.post(
-            "http://localhost:9000/v1/chat/completions",
-            json=test_request,
-            headers=headers,
-            timeout=10
-        )
-        llm_data = llm_response.json()
-        if not ("message" in llm_data and llm_data["done"] == True):
-            logger.error("LLM service not responding correctly")
-            return False
+    """Check if backend service is healthy (parallelized)"""
+    import threading
+    results = {}
 
-        # Check MangaOCR service
+    def check_llm():
         try:
-            mangaocr_response = requests.get("http://localhost:9000/health", timeout=5)
-            if mangaocr_response.status_code != 200:
-                logger.error("MangaOCR service not responding correctly")
-                return False
-        except requests.exceptions.RequestException as e:
+            test_request = {
+                "messages": [{"role": "user", "content": "test"}],
+                "model": "llama3.2"
+            }
+            headers = {"Content-Type": "application/json"}
+            llm_response = requests.post(
+                "http://localhost:9000/v1/chat/completions",
+                json=test_request,
+                headers=headers,
+                timeout=10
+            )
+            llm_data = llm_response.json()
+            results['llm'] = ("message" in llm_data and llm_data.get("done") == True)
+        except Exception as e:
+            logger.error(f"LLM service not responding correctly: {str(e)}")
+            results['llm'] = False
+
+    def check_mangaocr():
+        try:
+            mangaocr_response = requests.get("http://localhost:9000/health", timeout=30)
+            results['mangaocr'] = (mangaocr_response.status_code == 200)
+        except Exception as e:
             logger.error(f"MangaOCR service not available: {str(e)}")
-            return False
+            results['mangaocr'] = False
 
-        # Check LLaVA service
+    def check_llava():
         try:
-            llava_response = requests.get("http://localhost:9101/health", timeout=5)
-            if llava_response.status_code != 200:
-                logger.error("LLaVA service not responding correctly")
-                return False
-        except requests.exceptions.RequestException as e:
+            llava_response = requests.get("http://localhost:9101/health", timeout=60)
+            results['llava'] = (llava_response.status_code == 200)
+        except Exception as e:
             logger.error(f"LLaVA service not available: {str(e)}")
-            return False
+            results['llava'] = False
 
-        # Then check if backend API is running
-        backend_response = requests.get("http://localhost:8180/health")
-        if backend_response.status_code != 200:
-            logger.error(f"Backend API returned status {backend_response.status_code}")
-            return False
+    def check_backend():
+        try:
+            backend_response = requests.get("http://localhost:8180/health", timeout=30)
+            results['backend'] = (backend_response.status_code == 200)
+        except Exception as e:
+            logger.error(f"Backend API not available: {str(e)}")
+            results['backend'] = False
 
-        return True
-    except requests.exceptions.ConnectionError as e:
-        logger.error(f"Connection error checking services: {str(e)}")
-        return False
-    except Exception as e:
-        logger.error(f"Error checking services: {str(e)}")
-        return False
+    threads = [
+        threading.Thread(target=check_llm),
+        threading.Thread(target=check_mangaocr),
+        threading.Thread(target=check_llava),
+        threading.Thread(target=check_backend)
+    ]
+    for t in threads:
+        t.start()
+    for t in threads:
+        t.join()
+
+    return all(results.get(k, False) for k in ['llm', 'mangaocr', 'llava', 'backend'])
 
 def log_process_output(process, name):
     """Log process output"""
@@ -247,7 +254,7 @@ def get_venv_streamlit(project_name):
                 logger.error(f"Failed to install streamlit: {e}")
                 return "streamlit"
         
-        return str(streamlit_path)
+        return str(streamlit_path.resolve())
     return "streamlit"  # Fallback to system streamlit
 
 def check_docker_service(service_name):
@@ -557,9 +564,14 @@ def run_project(project_name):
                 
                 # Run frontend on a different port
                 status_placeholder.info("Starting frontend...")
+                # Parse run_command for working directory, script, and port
+                run_cmd = project['run_command'].split()
+                frontend_work_dir = run_cmd[0]
+                frontend_script = run_cmd[1]
+                frontend_port = run_cmd[2] if len(run_cmd) > 2 else "8502"
                 frontend_process = subprocess.Popen(
-                    [streamlit_cmd, "run", project['run_command'].split()[1], "--server.port", project['run_command'].split()[2]],
-                    cwd=project['run_command'].split()[0],
+                    [streamlit_cmd, "run", frontend_script, "--server.port", frontend_port],
+                    cwd=frontend_work_dir,
                     stdout=subprocess.PIPE,
                     stderr=subprocess.PIPE,
                     text=True,
@@ -595,32 +607,30 @@ def run_project(project_name):
                 if is_wsl():
                     st.info(f"""
                     The application is running! Since you're using WSL, please open this URL in your Windows browser:
-                    http://localhost:{project['run_command'].split()[2]}
+                    http://localhost:{frontend_port}
                     
                     Note: If you can't access the application, make sure:
                     1. You're using the Windows browser (not WSL)
-                    2. The port {project['run_command'].split()[2]} is not blocked by your firewall
+                    2. The port {frontend_port} is not blocked by your firewall
                     3. You're using 'localhost' and not the WSL IP address
                     """)
                 else:
-                    st.info(f"The application should open in your browser. If it doesn't, you can access it at: http://localhost:{project['run_command'].split()[2]}")
+                    st.info(f"The application should open in your browser. If it doesn't, you can access it at: http://localhost:{frontend_port}")
                 return True
             else:
                 # For other projects, run the command directly
                 run_cmd = project['run_command'].split()
-                script_path = run_cmd[0]
-                port = run_cmd[-1] if len(run_cmd) > 1 else "8501"
+                work_dir = run_cmd[0]
+                script_path = run_cmd[1]
+                port = run_cmd[2] if len(run_cmd) > 2 else "8501"
                 
                 # Ensure the script exists
-                if not os.path.exists(script_path):
-                    raise Exception(f"Script not found: {script_path}")
-                
-                # Get the working directory
-                work_dir = os.path.dirname(script_path) if os.path.dirname(script_path) else "."
+                if not os.path.exists(os.path.join(work_dir, script_path)):
+                    raise Exception(f"Script not found: {os.path.join(work_dir, script_path)}")
                 
                 # Run the command
                 process = subprocess.Popen(
-                    [streamlit_cmd, "run", os.path.abspath(script_path), "--server.port", port],
+                    [streamlit_cmd, "run", script_path, "--server.port", port],
                     cwd=work_dir,
                     stdout=subprocess.PIPE,
                     stderr=subprocess.PIPE,

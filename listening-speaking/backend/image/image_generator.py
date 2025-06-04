@@ -22,92 +22,6 @@ class ImageGenerator:
         self.session.mount("http://", adapter)
         self.session.mount("https://", adapter)
 
-    def analyze_image(self, image_data: bytes) -> Optional[Dict]:
-        """
-        Analyze image content using MangaOCR service.
-        
-        Args:
-            image_data (bytes): Image data to analyze
-            
-        Returns:
-            Optional[Dict]: Analysis result if successful, None otherwise
-        """
-        try:
-            # Use mangaocr for image analysis
-            endpoint = ServiceConfig.get_endpoint("mangaocr", "analyze")
-            if not endpoint:
-                logger.error("MangaOCR analyze endpoint not configured")
-                return None
-
-            files = {
-                'image': ('image.jpg', image_data, 'image/jpeg')
-            }
-
-            response = self.session.post(
-                endpoint,
-                files=files,
-                timeout=ServiceConfig.get_timeout("vision")
-            )
-            response.raise_for_status()
-            return response.json()
-
-        except requests.exceptions.RequestException as e:
-            logger.error(f"Error analyzing image: {str(e)}")
-            return None
-
-    def generate_image(self, prompt: str, style: str = "anime") -> Optional[bytes]:
-        """
-        Generate image from prompt using Waifu-diffusion service.
-        
-        Args:
-            prompt (str): Text prompt for image generation
-            style (str): Image style (default: anime)
-            
-        Returns:
-            Optional[bytes]: Generated image data if successful, None otherwise
-        """
-        try:
-            # Use waifu-diffusion for image generation
-            endpoint = ServiceConfig.get_endpoint("waifu-diffusion", "generate")
-            if not endpoint:
-                logger.error("Waifu-diffusion generate endpoint not configured")
-                return None
-
-            response = self.session.post(
-                endpoint,
-                json={
-                    "prompt": prompt,
-                    "style": style
-                },
-                timeout=ServiceConfig.get_timeout("waifu-diffusion")
-            )
-            response.raise_for_status()
-            return response.content
-
-        except requests.exceptions.RequestException as e:
-            logger.error(f"Error generating image: {str(e)}")
-            return None
-
-    def save_image(self, image_data: bytes, filepath: str) -> bool:
-        """
-        Save image data to file.
-        
-        Args:
-            image_data (bytes): Image data to save
-            filepath (str): Path to save the image file
-            
-        Returns:
-            bool: True if successful, False otherwise
-        """
-        try:
-            os.makedirs(os.path.dirname(filepath), exist_ok=True)
-            with open(filepath, 'wb') as f:
-                f.write(image_data)
-            return True
-        except Exception as e:
-            logger.error(f"Error saving image file: {str(e)}")
-            return False
-
     def analyze_manga_text(self, image_data: bytes) -> Optional[Dict]:
         """
         Analyze Japanese text in image using MangaOCR service.
@@ -120,7 +34,7 @@ class ImageGenerator:
         """
         try:
             # Use mangaocr for manga text analysis
-            endpoint = ServiceConfig.get_endpoint("mangaocr", "analyze_manga")
+            endpoint = ServiceConfig.get_endpoint("vision", "analyze_manga")
             if not endpoint:
                 logger.error("MangaOCR analyze endpoint not configured")
                 return None
@@ -153,7 +67,7 @@ class ImageGenerator:
         """
         try:
             # Use llm-vision for LLaVA image analysis
-            endpoint = ServiceConfig.get_endpoint("llm-vision", "analyze_image")
+            endpoint = ServiceConfig.get_endpoint("vision", "analyze_image")
             if not endpoint:
                 logger.error("LLaVA analyze endpoint not configured")
                 return None
@@ -173,6 +87,73 @@ class ImageGenerator:
         except requests.exceptions.RequestException as e:
             logger.error(f"Error analyzing image content: {str(e)}")
             return None
+
+    def generate_image(self, prompt: str, style: str = "anime") -> Optional[bytes]:
+        """
+        Generate image from prompt using Waifu-diffusion service.
+        
+        Args:
+            prompt (str): Text prompt for image generation
+            style (str): Image style (default: anime)
+            
+        Returns:
+            Optional[bytes]: Generated image data if successful, None otherwise
+        """
+        try:
+            # Use waifu-diffusion for image generation
+            endpoint = ServiceConfig.get_endpoint("vision", "generate")
+            if not endpoint:
+                logger.error("Waifu-diffusion generate endpoint not configured")
+                return None
+
+            # Truncate prompt to avoid token length issues
+            # Split by commas and take first few items to stay under token limit
+            prompt_parts = prompt.split(',')
+            truncated_prompt = ','.join(prompt_parts[:3])  # Take first 3 parts
+            if len(prompt_parts) > 3:
+                logger.warning(f"Prompt truncated from {len(prompt_parts)} to 3 parts")
+
+            logger.info(f"Sending image generation request to {endpoint} with prompt: {truncated_prompt}")
+            response = self.session.post(
+                endpoint,
+                json={
+                    "prompt": truncated_prompt,
+                    "style": style
+                },
+                timeout=ServiceConfig.get_timeout("waifu-diffusion")
+            )
+            response.raise_for_status()
+            return response.content
+
+        except requests.exceptions.RequestException as e:
+            logger.error(f"Error generating image: {str(e)}")
+            if hasattr(e, 'response') and e.response is not None:
+                logger.error(f"Response status code: {e.response.status_code}")
+                try:
+                    logger.error(f"Response content: {e.response.text}")
+                except:
+                    logger.error("Could not read response content")
+            return None
+
+    def save_image(self, image_data: bytes, filepath: str) -> bool:
+        """
+        Save image data to file.
+        
+        Args:
+            image_data (bytes): Image data to save
+            filepath (str): Path to save the image file
+            
+        Returns:
+            bool: True if successful, False otherwise
+        """
+        try:
+            os.makedirs(os.path.dirname(filepath), exist_ok=True)
+            with open(filepath, 'wb') as f:
+                f.write(image_data)
+            return True
+        except Exception as e:
+            logger.error(f"Error saving image file: {str(e)}")
+            return False
 
     def analyze_file(self, filepath: str, analyze_type: str = "content") -> Optional[Dict]:
         """

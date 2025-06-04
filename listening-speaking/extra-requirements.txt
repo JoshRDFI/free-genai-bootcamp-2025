@@ -6,7 +6,8 @@ youtube_transcript_api==0.6.2
 
 # Database
 sqlalchemy==2.0.28
-
+chromadb
+numpy<2.0.0
 # Note: All heavy processing (TTS, ASR, Vector DB) is handled by Docker services
 
 

@@ -17,6 +17,7 @@ logger = logging.getLogger(__name__)
 class TTSEngine:
     def __init__(self):
         """Initialize TTS engine with retry configuration"""
+        logger.info("Initializing TTS engine...")
         self.session = requests.Session()
         retry_strategy = Retry(
             total=ServiceConfig.RETRY_CONFIG["max_retries"],
@@ -26,6 +27,7 @@ class TTSEngine:
         adapter = HTTPAdapter(max_retries=retry_strategy)
         self.session.mount("http://", adapter)
         self.session.mount("https://", adapter)
+        logger.info("TTS engine initialized successfully")
 
     def synthesize_speech(self, text: str, voice_id: str = "default", language: str = "ja") -> Optional[bytes]:
         """
@@ -40,11 +42,13 @@ class TTSEngine:
             Optional[bytes]: Audio data if successful, None otherwise
         """
         try:
+            logger.info(f"Attempting to synthesize speech for text: {text[:50]}...")
             endpoint = ServiceConfig.get_endpoint("tts", "synthesize")
             if not endpoint:
                 logger.error("TTS synthesize endpoint not configured")
                 return None
 
+            logger.info(f"Using TTS endpoint: {endpoint}")
             response = self.session.post(
                 endpoint,
                 json={
@@ -58,10 +62,14 @@ class TTSEngine:
             
             # Decode base64 audio data
             audio_data = base64.b64decode(response.json()["audio"])
+            logger.info(f"Successfully synthesized speech, received {len(audio_data)} bytes of audio data")
             return audio_data
 
         except requests.exceptions.RequestException as e:
             logger.error(f"Error synthesizing speech: {str(e)}")
+            return None
+        except Exception as e:
+            logger.error(f"Unexpected error in synthesize_speech: {str(e)}")
             return None
 
     def get_available_voices(self) -> List[Dict]:
@@ -100,9 +108,11 @@ class TTSEngine:
             bool: True if successful, False otherwise
         """
         try:
+            logger.info(f"Attempting to save audio to: {filepath}")
             os.makedirs(os.path.dirname(filepath), exist_ok=True)
             with open(filepath, 'wb') as f:
                 f.write(audio_data)
+            logger.info(f"Successfully saved audio file to: {filepath}")
             return True
         except Exception as e:
             logger.error(f"Error saving audio file: {str(e)}")
