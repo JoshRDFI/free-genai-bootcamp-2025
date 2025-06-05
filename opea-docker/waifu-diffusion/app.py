@@ -30,13 +30,15 @@ def load_model():
             print(f"Loading model from local path: {MODEL_PATH}")
             pipe = StableDiffusionPipeline.from_pretrained(
                 MODEL_PATH,
-                torch_dtype=torch.float16 if device == "cuda" else torch.float32
+                torch_dtype=torch.float16 if device == "cuda" else torch.float32,
+                safety_checker=None  # Disable safety checker for better performance
             ).to(device)
         else:
             print(f"Downloading model from Hugging Face: {MODEL_ID}")
             pipe = StableDiffusionPipeline.from_pretrained(
                 MODEL_ID,
-                torch_dtype=torch.float16 if device == "cuda" else torch.float32
+                torch_dtype=torch.float16 if device == "cuda" else torch.float32,
+                safety_checker=None  # Disable safety checker for better performance
             ).to(device)
             
             # Save the model locally if USE_LOCAL is True
@@ -63,7 +65,18 @@ class ImageRequest(BaseModel):
 @app.on_event("startup")
 async def startup_event():
     global pipe
-    pipe = load_model()
+    try:
+        pipe = load_model()
+    except Exception as e:
+        print(f"Failed to load model: {str(e)}")
+        if device == "cuda":
+            print("Attempting to fall back to CPU...")
+            device = "cpu"
+            try:
+                pipe = load_model()
+            except Exception as e:
+                print(f"Failed to load model on CPU: {str(e)}")
+                raise e
 
 @app.post("/generate")
 async def generate_image(request: ImageRequest):

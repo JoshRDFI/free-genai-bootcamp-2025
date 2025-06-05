@@ -41,11 +41,21 @@ def get_tts_model():
         try:
             logger.info("Loading Coqui XTTS v2 model...")
             device = "cuda" if torch.cuda.is_available() else "cpu"
+            logger.info(f"Using device: {device}")
+            
             _tts_model = TTS("tts_models/multilingual/multi-dataset/xtts_v2").to(device)
-            logger.info("Coqui XTTS v2 model loaded successfully.")
+            logger.info(f"Coqui XTTS v2 model loaded successfully on {device}")
         except Exception as e:
-            logger.error(f"Failed to load Coqui XTTS v2: {e}\n{traceback.format_exc()}")
-            raise
+            logger.error(f"Failed to load Coqui XTTS v2: {e}")
+            if device == "cuda":
+                logger.info("Attempting to fall back to CPU...")
+                device = "cpu"
+                try:
+                    _tts_model = TTS("tts_models/multilingual/multi-dataset/xtts_v2").to(device)
+                    logger.info("Coqui XTTS v2 model loaded successfully on CPU")
+                except Exception as e:
+                    logger.error(f"Failed to load Coqui XTTS v2 on CPU: {e}")
+                    raise e
     return _tts_model
 
 def resolve_voice_path(voice_id: Optional[str]) -> Optional[str]:

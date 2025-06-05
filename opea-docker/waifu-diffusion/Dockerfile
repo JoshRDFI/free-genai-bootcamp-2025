@@ -12,8 +12,13 @@ RUN apt-get update && apt-get install -y \
 # Update pip to the latest version
 RUN python3 -m pip install --upgrade pip
 
-# Install PyTorch with CUDA 12.1 support first
-RUN pip install --no-cache-dir torch torchvision --index-url https://download.pytorch.org/whl/cu121
+# Install PyTorch with CUDA support first
+ARG FORCE_CPU=false
+RUN if [ "$FORCE_CPU" = "true" ] ; then \
+        pip install --no-cache-dir torch torchvision --index-url https://download.pytorch.org/whl/cpu ; \
+    else \
+        pip install --no-cache-dir torch torchvision --index-url https://download.pytorch.org/whl/cu121 ; \
+    fi
 
 # Copy and install base requirements
 COPY requirements/base.txt .

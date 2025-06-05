@@ -88,10 +88,107 @@ def cleanup_venvs():
                 return False
     return True
 
+def check_gpu_availability():
+    """Check if GPU is available and compatible with PyTorch"""
+    try:
+        # First check if NVIDIA driver is available
+        nvidia_smi = subprocess.run(
+            ["nvidia-smi"],
+            capture_output=True,
+            text=True
+        )
+        if nvidia_smi.returncode != 0:
+            logger.warning("NVIDIA driver not found. System will run in CPU mode.")
+            return False
+            
+        # Get GPU info from nvidia-smi
+        gpu_info = nvidia_smi.stdout
+        logger.info(f"Detected GPU info:\n{gpu_info}")
+        
+        # Try to import torch and check CUDA availability
+        import torch
+        if not torch.cuda.is_available():
+            logger.warning("CUDA not available in PyTorch despite NVIDIA driver being present.")
+            logger.warning("This could be due to:")
+            logger.warning("1. Incompatible GPU architecture")
+            logger.warning("2. Incompatible CUDA version")
+            logger.warning("3. PyTorch not built with CUDA support")
+            logger.warning("System will run in CPU mode.")
+            return False
+            
+        # Check CUDA version and compatibility
+        cuda_version = torch.version.cuda
+        logger.info(f"PyTorch CUDA version: {cuda_version}")
+        
+        # Get GPU compute capability
+        try:
+            gpu_name = torch.cuda.get_device_name(0)
+            gpu_memory = torch.cuda.get_device_properties(0).total_memory / 1024**3  # Convert to GB
+            compute_capability = torch.cuda.get_device_capability(0)
+            logger.info(f"GPU: {gpu_name} ({gpu_memory:.1f}GB)")
+            logger.info(f"Compute Capability: {compute_capability[0]}.{compute_capability[1]}")
+            
+            # Check if compute capability is supported
+            if compute_capability[0] < 7:  # PyTorch typically requires compute capability 7.0 or higher
+                logger.warning(f"GPU compute capability {compute_capability[0]}.{compute_capability[1]} may not be fully supported.")
+                logger.warning("Some operations may fall back to CPU or fail.")
+                return False
+                
+        except Exception as e:
+            logger.warning(f"Could not get detailed GPU information: {e}")
+            logger.warning("Proceeding with basic GPU support.")
+        
+        # Try a simple CUDA operation to verify functionality
+        try:
+            x = torch.rand(5, 3).cuda()
+            y = torch.rand(5, 3).cuda()
+            z = x + y  # Simple CUDA operation
+            del x, y, z  # Clean up
+            torch.cuda.empty_cache()
+            logger.info("CUDA functionality verified successfully")
+        except Exception as e:
+            logger.warning(f"CUDA functionality test failed: {e}")
+            logger.warning("System will run in CPU mode.")
+            return False
+            
+        return True
+        
+    except ImportError:
+        logger.warning("PyTorch not installed. System will run in CPU mode.")
+        return False
+    except Exception as e:
+        logger.warning(f"Error checking GPU availability: {e}. System will run in CPU mode.")
+        return False
+
+def setup_environment():
+    """Set up the environment variables for GPU/CPU mode"""
+    gpu_available = check_gpu_availability()
+    
+    if gpu_available:
+        logger.info("GPU detected and verified compatible, configuring for GPU mode")
+        os.environ["DOCKER_RUNTIME"] = "nvidia"
+        os.environ["GPU_DRIVER"] = "nvidia"
+        os.environ["GPU_COUNT"] = "all"
+        os.environ["FORCE_CPU"] = "false"
+    else:
+        logger.info("No compatible GPU detected, configuring for CPU mode")
+        os.environ["DOCKER_RUNTIME"] = "runc"
+        os.environ["GPU_DRIVER"] = "none"
+        os.environ["GPU_COUNT"] = "0"
+        os.environ["FORCE_CPU"] = "true"
+
 def install_pytorch(venv_python):
-    """Install PyTorch with CUDA support in a virtual environment."""
-    logger.info(f"Installing PyTorch with CUDA support using {venv_python}...")
-    pytorch_cmd = f"{venv_python} -m pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu128"
+    """Install PyTorch with appropriate CUDA support in a virtual environment."""
+    logger.info(f"Installing PyTorch using {venv_python}...")
+    
+    # Check if we should use CPU or GPU version
+    if os.environ.get("FORCE_CPU", "false").lower() == "true":
+        logger.info("Installing CPU-only version of PyTorch")
+        pytorch_cmd = f"{venv_python} -m pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu"
+    else:
+        logger.info("Installing CUDA-enabled version of PyTorch")
+        pytorch_cmd = f"{venv_python} -m pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121"
+    
     if not run_command(pytorch_cmd):
         logger.error("Failed to install PyTorch")
         return False
@@ -498,6 +595,9 @@ def install_cuda():
 def main():
     """Main setup function."""
     try:
+        # Set up environment variables first
+        setup_environment()
+        
         # Clean up existing virtual environments
         if not cleanup_venvs():
             logger.error("Failed to clean up existing virtual environments")

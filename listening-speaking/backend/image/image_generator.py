@@ -100,6 +100,30 @@ class ImageGenerator:
             Optional[bytes]: Generated image data if successful, None otherwise
         """
         try:
+            # First translate the prompt to English if it's in Japanese
+            llm_endpoint = ServiceConfig.get_endpoint("llm_text", "translate")
+            if not llm_endpoint:
+                logger.error("LLM translate endpoint not configured")
+                return None
+
+            # Check if prompt contains Japanese characters
+            if any(ord(c) > 0x4e00 for c in prompt):
+                logger.info("Translating Japanese prompt to English")
+                translation_response = self.session.post(
+                    llm_endpoint,
+                    json={
+                        "text": prompt,
+                        "source_lang": "ja",
+                        "target_lang": "en"
+                    },
+                    timeout=ServiceConfig.get_timeout("llm_text")
+                )
+                translation_response.raise_for_status()
+                translated_prompt = translation_response.json().get("translated_text", prompt)
+                logger.info(f"Translated prompt: {translated_prompt}")
+            else:
+                translated_prompt = prompt
+
             # Use waifu-diffusion for image generation
             endpoint = ServiceConfig.get_endpoint("vision", "generate")
             if not endpoint:
@@ -108,7 +132,7 @@ class ImageGenerator:
 
             # Truncate prompt to avoid token length issues
             # Split by commas and take first few items to stay under token limit
-            prompt_parts = prompt.split(',')
+            prompt_parts = translated_prompt.split(',')
             truncated_prompt = ','.join(prompt_parts[:3])  # Take first 3 parts
             if len(prompt_parts) > 3:
                 logger.warning(f"Prompt truncated from {len(prompt_parts)} to 3 parts")

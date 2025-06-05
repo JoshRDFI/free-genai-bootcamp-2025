@@ -40,6 +40,9 @@ def get_llava_model():
     global _llava_processor, _llava_model
     if _llava_processor is None or _llava_model is None:
         try:
+            device = "cuda" if torch.cuda.is_available() else "cpu"
+            print(f"Using device: {device}")
+            
             _llava_processor = LlavaProcessor.from_pretrained(
                 VISION_MODEL_ID,
                 cache_dir=MODEL_CACHE_DIR
@@ -47,11 +50,31 @@ def get_llava_model():
             _llava_model = LlavaForConditionalGeneration.from_pretrained(
                 VISION_MODEL_ID,
                 cache_dir=MODEL_CACHE_DIR,
-                torch_dtype=torch.float16,
-                device_map="auto"
-            )
+                torch_dtype=torch.float16 if device == "cuda" else torch.float32,
+                device_map="auto" if device == "cuda" else None
+            ).to(device)
+            
+            print(f"LLaVA model loaded successfully on {device}")
         except Exception as e:
             print(f"Warning: LLaVA model initialization failed: {e}")
+            if device == "cuda":
+                print("Attempting to fall back to CPU...")
+                device = "cpu"
+                try:
+                    _llava_processor = LlavaProcessor.from_pretrained(
+                        VISION_MODEL_ID,
+                        cache_dir=MODEL_CACHE_DIR
+                    )
+                    _llava_model = LlavaForConditionalGeneration.from_pretrained(
+                        VISION_MODEL_ID,
+                        cache_dir=MODEL_CACHE_DIR,
+                        torch_dtype=torch.float32,
+                        device_map=None
+                    ).to(device)
+                    print("LLaVA model loaded successfully on CPU")
+                except Exception as e:
+                    print(f"Failed to load LLaVA model on CPU: {e}")
+                    raise e
     return _llava_processor, _llava_model
 
 @app.post("/vision")

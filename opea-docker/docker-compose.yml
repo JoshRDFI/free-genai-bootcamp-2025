@@ -182,7 +182,7 @@ services:
   waifu-diffusion:
     image: opea-docker-waifu-diffusion:latest
     container_name: waifu-diffusion
-    runtime: nvidia
+    runtime: ${DOCKER_RUNTIME:-nvidia}
     ports:
       - "${WAIFU_DIFFUSION_PORT:-9500}:9500"
     volumes:
@@ -191,15 +191,14 @@ services:
     environment:
       - WAIFU_DIFFUSION_PORT=${WAIFU_DIFFUSION_PORT:-9500}
       - WAIFU_MODEL_ID=${WAIFU_MODEL_ID:-hakurei/waifu-diffusion}
-      - CUDA_VISIBLE_DEVICES=0
-    depends_on:
-      - llm_text
+      - CUDA_VISIBLE_DEVICES=${CUDA_VISIBLE_DEVICES:-0}
+      - FORCE_CPU=${FORCE_CPU:-false}
     deploy:
       resources:
         reservations:
           devices:
-            - driver: nvidia
-              count: all
+            - driver: ${GPU_DRIVER:-nvidia}
+              count: ${GPU_COUNT:-all}
               capabilities: [gpu]
     restart: unless-stopped
 

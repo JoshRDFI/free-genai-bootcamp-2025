@@ -1,5 +1,20 @@
 #!/bin/bash
 
+# Check if GPU is available
+if command -v nvidia-smi &> /dev/null; then
+    echo "NVIDIA GPU detected"
+    export DOCKER_RUNTIME=nvidia
+    export GPU_DRIVER=nvidia
+    export GPU_COUNT=all
+    export FORCE_CPU=false
+else
+    echo "No NVIDIA GPU detected, running in CPU mode"
+    export DOCKER_RUNTIME=runc
+    export GPU_DRIVER=none
+    export GPU_COUNT=0
+    export FORCE_CPU=true
+fi
+
 # Create necessary data directories
 ./create-data-dirs.sh
 
