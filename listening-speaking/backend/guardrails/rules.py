@@ -6,11 +6,13 @@ from typing import Dict, List, Optional, Tuple
 class ContentGuardrails:
     def __init__(self):
         """Initialize content filtering rules"""
-        # Inappropriate content patterns
+        # Inappropriate content patterns - more context-aware
         self.inappropriate_patterns = [
-            r'(?i)(死|殺|暴力|セックス|ポルノ|麻薬|違法)',  # Death, violence, adult content, drugs
-            r'(?i)(差別|人種|ヘイト)',  # Discrimination, racism, hate
-            # r'(?i)(政治|宗教)',  # Political or religious content
+            r'(?i)(殺人|殺害|殺戮)',  # Explicit killing/violence
+            r'(?i)(暴力|暴行|虐待)',  # Violence, assault, abuse
+            r'(?i)(セックス|ポルノ|性的)',  # Adult content
+            r'(?i)(麻薬|違法薬物)',  # Drugs
+            r'(?i)(差別|人種差別|ヘイトスピーチ)',  # Discrimination, hate speech
         ]
 
         # Question structure requirements

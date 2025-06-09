@@ -96,7 +96,7 @@ PROJECTS = {
         "description": "Practice writing with AI feedback",
         "docker_services": ["llm_text", "mangaocr", "llm-vision", "embeddings", "chromadb", "guardrails"],
         "requires_gpu": True,
-        "run_command": "writing-practice run_app.py 8504"
+        "run_command": "writing-practice app.py 8504"
     },
     "visual-novel": {
         "name": "Visual Novel",
@@ -104,6 +104,13 @@ PROJECTS = {
         "docker_services": ["llm_text", "tts", "asr", "mangaocr", "llm-vision", "embeddings", "chromadb", "guardrails", "waifu-diffusion"],
         "requires_gpu": True,
         "run_command": "visual-novel app.py 8505"
+    },
+    "lang-portal": {
+        "name": "Language Portal",
+        "description": "Interactive language learning portal",
+        "docker_services": [],  # No Docker services required
+        "requires_gpu": False,
+        "run_command": "lang-portal start_portal.py 5173"
     }
 }
 
@@ -361,8 +368,7 @@ def validate_project(project_name: str, project: dict) -> tuple[bool, str]:
             ]
         elif project_name == "writing-practice":
             required_files = [
-                "run_app.py",
-                "images"
+                "run_app.py"
             ]
         elif project_name == "visual-novel":
             required_files = [
@@ -737,10 +743,12 @@ def main():
         
         # Display project cards
         for i, (project_id, project) in enumerate(PROJECTS.items()):
-            with col1 if i % 2 == 0 else col2:
+            # For the Language Portal, create a centered column
+            if project_id == "lang-portal":
+                st.markdown("<br>", unsafe_allow_html=True)  # Add some spacing
                 with st.container():
                     st.markdown(f"""
-                    <div class="project-card">
+                    <div class="project-card" style="max-width: 50%; margin: 0 auto;">
                         <h3>{project['name']}</h3>
                         <p>{project['description']}</p>
                     </div>
@@ -749,6 +757,20 @@ def main():
                     # Add start button
                     if st.button(f"Start {project['name']}", key=project_id):
                         run_project(project_id)
+            else:
+                # Regular projects in two columns
+                with col1 if i % 2 == 0 else col2:
+                    with st.container():
+                        st.markdown(f"""
+                        <div class="project-card">
+                            <h3>{project['name']}</h3>
+                            <p>{project['description']}</p>
+                        </div>
+                        """, unsafe_allow_html=True)
+                        
+                        # Add start button
+                        if st.button(f"Start {project['name']}", key=project_id):
+                            run_project(project_id)
         
     except Exception as e:
         st.error(f"An error occurred: {str(e)}")

@@ -192,3 +192,19 @@ ls data/asr_data
 ## **License**
 
 MIT License
+
+## Running the Writing Practice App
+
+There are two ways to run the writing practice app:
+
+1. **Through Project Start** (Recommended):
+   - Start the project using `project_start.py`
+   - Click on "Writing Practice" in the interface
+   - The app will start automatically with all required services
+
+2. **Standalone Mode**:
+   - Navigate to the writing-practice directory
+   - Run `python3 run_app.py`
+   - This will start the Streamlit interface on port 8504
+
+Note: The standalone mode is provided for development and testing purposes. For normal usage, it's recommended to start the app through project_start.py to ensure all required services are running.

@@ -365,7 +365,7 @@ PROJECTS = {
     "writing-practice": {
         "name": "Writing Practice",
         "venv": ".venv-wp",
-        "run_command": "cd writing-practice && {python} -m streamlit run run_app.py --server.port 8504",
+        "run_command": "writing-practice && {python} -m streamlit run app.py --server.port 8504",
         "docker_services": ["llm", "mangaocr", "llava", "embeddings", "chromadb", "guardrails"],
         "requires_gpu": True
     },
@@ -418,6 +418,18 @@ def start_docker_services():
     if ollama_container.stdout.strip():
         logger.info("Stopping existing Ollama container...")
         run_command("docker stop ollama", check=False)
+    
+    # Set environment variables for Docker
+    if os.environ.get("FORCE_CPU", "false").lower() == "true":
+        logger.info("Starting services in CPU mode")
+        os.environ["DOCKER_RUNTIME"] = "runc"
+        os.environ["GPU_DRIVER"] = "none"
+        os.environ["GPU_COUNT"] = "0"
+    else:
+        logger.info("Starting services in GPU mode")
+        os.environ["DOCKER_RUNTIME"] = "nvidia"
+        os.environ["GPU_DRIVER"] = "nvidia"
+        os.environ["GPU_COUNT"] = "all"
     
     # Start services
     if not run_command("docker compose up -d", cwd="opea-docker"):

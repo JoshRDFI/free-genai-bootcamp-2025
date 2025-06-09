@@ -7,6 +7,7 @@ from datetime import datetime
 import logging
 import random # Added for MUD ingredient selection
 import streamlit as st
+import aiosqlite
 
 from src.generator import VocabularyGenerator
 from src.validator import JLPTValidator
@@ -14,25 +15,29 @@ from src.converter import JapaneseConverter
 from src.sentence_gen import SentenceGenerator
 from src.database import DatabaseManager
 
-print("DEBUG: main.py - Script started") # DEBUG
-
 # Configure logging
 logging.basicConfig(
-    level=logging.INFO,
+    level=logging.DEBUG,  # Changed to DEBUG for more verbose output
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     handlers=[
-        logging.FileHandler('vocabulary_generator.log', mode='a'),
+        logging.FileHandler('vocabulary_generator.log', mode='w'),  # Changed to 'w' to clear previous logs
         logging.StreamHandler()
     ]
 )
 logger = logging.getLogger(__name__)
+
+# Add immediate debug print
+print("DEBUG: main.py - Script started")
+logger.debug("main.py - Script started")
 
 DEFAULT_USER_ID = 1
 DEFAULT_USER_NAME = 'Default User'
 DEFAULT_USER_LEVEL = 'N5'
 
 # Get the project root directory using relative path
-PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+print(f"DEBUG: PROJECT_ROOT set to: {PROJECT_ROOT}")
+logger.debug(f"PROJECT_ROOT set to: {PROJECT_ROOT}")
 
 # --- Adventure MUD Constants ---
 DEFAULT_RAMEN_INGREDIENTS_TO_COLLECT = 3
@@ -97,30 +102,59 @@ class VocabularyManager:
 
     async def initialize(self):
         """Initialize the database and create necessary directories"""
-        print("DEBUG: VocabularyManager - initialize() started") # DEBUG
+        print("DEBUG: VocabularyManager - initialize() started")
+        logger.debug("VocabularyManager - initialize() started")
         try:
             # Correct DB path is now set in __init__ before DatabaseManager is instantiated.
             # DatabaseManager's own __init__ handles os.makedirs for its db_path.
+            print(f"DEBUG: Using database path: {self.db.db_path}")
+            logger.debug(f"Using database path: {self.db.db_path}")
             
             # Ensure storage directories exist (using absolute paths from config)
+            print(f"DEBUG: Creating storage directories")
+            logger.debug("Creating storage directories")
             Path(self.config['storage']['json_output_dir']).mkdir(parents=True, exist_ok=True)
             Path(self.config['storage']['import_dir']).mkdir(parents=True, exist_ok=True)
             
+            # Apply database schema
+            schema_path = os.path.join(PROJECT_ROOT, "data", "shared_db", "schema.sql")
+            print(f"DEBUG: Looking for schema at: {schema_path}")
+            logger.debug(f"Looking for schema at: {schema_path}")
+            
+            if not os.path.exists(schema_path):
+                error_msg = f"Schema file not found at {schema_path}"
+                print(f"ERROR: {error_msg}")
+                logger.error(error_msg)
+                raise FileNotFoundError(error_msg)
+            
+            print("DEBUG: Applying database schema")
+            logger.debug("Applying database schema")
+            async with aiosqlite.connect(self.db.db_path) as db:
+                with open(schema_path, 'r') as f:
+                    await db.executescript(f.read())
+                await db.commit()
+            
+            print("DEBUG: Initializing database connection pool")
+            logger.debug("Initializing database connection pool")
             # Backup is handled by DatabaseManager if needed. Connection pool init is also there.
             # Ensure connection pool is initialized before first use by any method that needs it.
             await self.db.init_db() # Initializes pool
 
             backup_target_dir = self.config['storage'].get('backup_dir')
             if os.path.exists(self.db.db_path):
+                print("DEBUG: Creating database backup")
+                logger.debug("Creating database backup")
                 if backup_target_dir:
                     await self.db.backup_database(backup_dir=backup_target_dir)
                 else:
                     await self.db.backup_database() # Uses default in DatabaseManager
             
+            print("DEBUG: VocabularyManager initialization completed")
             logger.info(f"VocabularyManager initialization completed. DB at: {self.db.db_path}")
-            print("DEBUG: VocabularyManager - initialize() completed") # DEBUG
         except Exception as e:
-            logger.error(f"VocabularyManager initialization failed: {str(e)}")
+            error_msg = f"VocabularyManager initialization failed: {str(e)}"
+            print(f"ERROR: {error_msg}")
+            logger.error(error_msg)
             st.error(f"App Initialization Error: {e}") # Show error in Streamlit UI
             raise
 

@@ -1,10 +1,20 @@
-2025-06-04 20:29:26,962 - backend.llm.question_generator - INFO - Loaded 4 questions from JSON file.
-2025-06-04 20:29:26,979 - backend.llm.question_generator - INFO - Question 20250215_204111 missing image_path, generating image.
-2025-06-04 20:29:27,933 - backend.llm.question_generator - WARNING - Failed to generate image for question 20250215_204111.
-2025-06-04 20:29:27,934 - backend.llm.question_generator - INFO - Question 20250215_204153 missing image_path, generating image.
-2025-06-04 20:29:27,955 - backend.llm.question_generator - WARNING - Failed to generate image for question 20250215_204153.
-2025-06-04 20:29:27,955 - backend.llm.question_generator - INFO - Question 20250215_211441 missing image_path, generating image.
-2025-06-04 20:29:27,963 - backend.llm.question_generator - WARNING - Failed to generate image for question 20250215_211441.
-2025-06-04 20:29:27,963 - backend.llm.question_generator - INFO - Question 20250215_211742 missing image_path, generating image.
-2025-06-04 20:29:27,970 - backend.llm.question_generator - WARNING - Failed to generate image for question 20250215_211742.
-2025-06-04 20:29:27,970 - backend.llm.question_generator - INFO - No old questions needed image generation.
+2025-06-05 17:01:54,097 - backend.llm.question_generator - INFO - Loaded 4 questions from JSON file.
+2025-06-05 17:01:54,098 - backend.llm.question_generator - INFO - Question 20250215_204111 missing image_path, generating image.
+2025-06-05 17:01:54,098 - backend.llm.question_generator - WARNING - Failed to generate image for question 20250215_204111.
+2025-06-05 17:01:54,098 - backend.llm.question_generator - INFO - Question 20250215_204153 missing image_path, generating image.
+2025-06-05 17:01:54,098 - backend.llm.question_generator - WARNING - Failed to generate image for question 20250215_204153.
+2025-06-05 17:01:54,098 - backend.llm.question_generator - INFO - Question 20250215_211441 missing image_path, generating image.
+2025-06-05 17:01:54,099 - backend.llm.question_generator - WARNING - Failed to generate image for question 20250215_211441.
+2025-06-05 17:01:54,099 - backend.llm.question_generator - INFO - Question 20250215_211742 missing image_path, generating image.
+2025-06-05 17:01:54,099 - backend.llm.question_generator - WARNING - Failed to generate image for question 20250215_211742.
+2025-06-05 17:01:54,099 - backend.llm.question_generator - INFO - No old questions needed image generation.
+2025-06-05 22:16:33,387 - backend.llm.question_generator - INFO - Loaded 4 questions from JSON file.
+2025-06-05 22:16:33,476 - backend.llm.question_generator - INFO - Question 20250215_204111 missing image_path, generating image.
+2025-06-05 22:16:33,476 - backend.llm.question_generator - WARNING - Failed to generate image for question 20250215_204111.
+2025-06-05 22:16:33,476 - backend.llm.question_generator - INFO - Question 20250215_204153 missing image_path, generating image.
+2025-06-05 22:16:33,476 - backend.llm.question_generator - WARNING - Failed to generate image for question 20250215_204153.
+2025-06-05 22:16:33,476 - backend.llm.question_generator - INFO - Question 20250215_211441 missing image_path, generating image.
+2025-06-05 22:16:33,476 - backend.llm.question_generator - WARNING - Failed to generate image for question 20250215_211441.
+2025-06-05 22:16:33,476 - backend.llm.question_generator - INFO - Question 20250215_211742 missing image_path, generating image.
+2025-06-05 22:16:33,476 - backend.llm.question_generator - WARNING - Failed to generate image for question 20250215_211742.
+2025-06-05 22:16:33,476 - backend.llm.question_generator - INFO - No old questions needed image generation.

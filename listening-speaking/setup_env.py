@@ -3,6 +3,7 @@ import os
 import shutil
 from pathlib import Path
 import sys
+import subprocess
 
 def validate_env_file(env_file):
     """Validate that the .env file contains all required variables."""
@@ -71,6 +72,14 @@ def setup_environment():
             full_path = project_root / dir_path
             full_path.mkdir(parents=True, exist_ok=True)
             print(f"Created directory: {dir_path}")
+        
+        # Install FFmpeg in the virtual environment
+        setup_ffmpeg_script = project_root / 'setup' / 'setup_ffmpeg.py'
+        if setup_ffmpeg_script.exists():
+            print("\nInstalling FFmpeg in the virtual environment...")
+            subprocess.run([sys.executable, str(setup_ffmpeg_script)], check=True)
+        else:
+            print("Warning: FFmpeg setup script not found!")
         
         print("\nEnvironment setup complete!")
         print("Please review and modify the .env file if needed.")

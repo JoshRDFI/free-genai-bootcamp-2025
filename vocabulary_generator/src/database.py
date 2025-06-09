@@ -15,7 +15,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 class DatabaseManager:
-    def __init__(self, db_path: str = "data/shared_db/db.sqlite3", pool_size: int = 5):
+    def __init__(self, db_path: str = "../data/shared_db/db.sqlite3", pool_size: int = 5):
         print(f"DEBUG: DatabaseManager - __init__ started. DB Path: {db_path}") # DEBUG
         """Initialize database manager with shared database path"""
         # Use environment variable if available, otherwise use provided path

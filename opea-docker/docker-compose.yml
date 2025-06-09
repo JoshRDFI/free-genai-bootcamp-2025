@@ -4,7 +4,7 @@ services:
   ollama-server:
     image: ollama/ollama:latest
     container_name: ollama-server
-    runtime: nvidia
+    runtime: ${DOCKER_RUNTIME:-nvidia}
     ports:
       - "${LLM_ENDPOINT_PORT:-8008}:11434"
     volumes:
@@ -12,20 +12,18 @@ services:
       - ${SHARED_DB_PATH:-../data/shared_db}:/app/db
     environment:
       - LLM_MODEL_ID=${LLM_MODEL_ID:-llama3.2}
-      - CUDA_VISIBLE_DEVICES=0
+      - CUDA_VISIBLE_DEVICES=${CUDA_VISIBLE_DEVICES:-0}
+      - FORCE_CPU=${FORCE_CPU:-false}
     deploy:
       resources:
         reservations:
-          devices:
-            - driver: nvidia
-              count: all
-              capabilities: [gpu]
+          devices: []
     restart: unless-stopped
 
   llm_text:
     image: opea-docker-llm-text:latest
     container_name: llm_text
-    runtime: nvidia
+    runtime: ${DOCKER_RUNTIME:-nvidia}
     ports:
       - "${LLM_TEXT_PORT:-9000}:9000"
     volumes:
@@ -36,21 +34,19 @@ services:
       - OLLAMA_HOST=ollama-server
       - LLM_SERVICE_PORT=${LLM_TEXT_PORT:-9000}
       - DEFAULT_MODEL=${DEFAULT_MODEL:-llama3.2}
+      - FORCE_CPU=${FORCE_CPU:-false}
     depends_on:
       - ollama-server
     deploy:
       resources:
         reservations:
-          devices:
-            - driver: nvidia
-              count: all
-              capabilities: [gpu]
+          devices: []
     restart: unless-stopped
 
   guardrails:
     image: opea-docker-guardrails:latest
     container_name: guardrails
-    runtime: nvidia
+    runtime: ${DOCKER_RUNTIME:-nvidia}
     ports:
       - "${GUARDRAILS_SERVICE_PORT:-9400}:9400"
     volumes:
@@ -59,16 +55,14 @@ services:
     environment:
       - OLLAMA_HOST=ollama-server
       - GUARDRAILS_SERVICE_PORT=${GUARDRAILS_SERVICE_PORT:-9400}
+      - FORCE_CPU=${FORCE_CPU:-false}
     depends_on:
       - ollama-server
       - embeddings
     deploy:
       resources:
         reservations:
-          devices:
-            - driver: nvidia
-              count: all
-              capabilities: [gpu]
+          devices: []
     restart: unless-stopped
 
   chromadb:
@@ -89,7 +83,7 @@ services:
   tts:
     image: opea-docker-tts:latest
     container_name: tts
-    runtime: nvidia
+    runtime: ${DOCKER_RUNTIME:-nvidia}
     ports:
       - "${TTS_SERVICE_PORT:-9200}:9200"
     volumes:
@@ -100,21 +94,19 @@ services:
       - TTS_DATA_PATH=/app/data/tts_data
       - TTS_MODEL=${TTS_MODEL:-xtts_v2}
       - TTS_SERVICE_PORT=${TTS_SERVICE_PORT:-9200}
+      - FORCE_CPU=${FORCE_CPU:-false}
     depends_on:
       - llm_text
     deploy:
       resources:
         reservations:
-          devices:
-            - driver: nvidia
-              count: all
-              capabilities: [gpu]
+          devices: []
     restart: unless-stopped
 
   asr:
     image: opea-docker-asr:latest
     container_name: asr
-    runtime: nvidia
+    runtime: ${DOCKER_RUNTIME:-nvidia}
     ports:
       - "${ASR_SERVICE_PORT:-9300}:9300"
     volumes:
@@ -123,15 +115,13 @@ services:
     environment:
       - ASR_SERVICE_PORT=${ASR_SERVICE_PORT:-9300}
       - ASR_MODEL=${ASR_MODEL:-large-v3}
+      - FORCE_CPU=${FORCE_CPU:-false}
     depends_on:
       - tts
     deploy:
       resources:
         reservations:
-          devices:
-            - driver: nvidia
-              count: all
-              capabilities: [gpu]
+          devices: []
     restart: unless-stopped
 
   llm-vision:

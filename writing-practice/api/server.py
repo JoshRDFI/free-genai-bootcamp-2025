@@ -8,14 +8,14 @@ import logging
 # Setup paths
 BASE_DIR = Path(__file__).parent.parent.absolute()
 DATA_DIR = Path(BASE_DIR.parent, "data")  # Use shared data directory
-DB_PATH = DATA_DIR / "db.sqlite3"  # Use shared database
+DB_PATH = DATA_DIR / "shared_db" / "db.sqlite3"  # Use shared database
 
 # Setup logging
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     handlers=[
-        logging.FileHandler(DATA_DIR / "api.log") if DATA_DIR.exists() else logging.StreamHandler(),
+        logging.FileHandler(BASE_DIR / "api.log"),  # Save log in writing-practice directory
         logging.StreamHandler()
     ]
 )

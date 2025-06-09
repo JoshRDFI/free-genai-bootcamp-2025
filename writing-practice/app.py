@@ -11,12 +11,13 @@ from PIL import Image
 import importlib.util
 import os
 import numpy as np
+import time
 
 # ---- Path Configuration ----
 BASE_DIR = Path(__file__).parent.absolute()
 PROJECT_ROOT = BASE_DIR.parent
 DATA_DIR = PROJECT_ROOT / "data"
-DB_PATH = DATA_DIR / "db.sqlite3"
+DB_PATH = DATA_DIR / "shared_db" / "db.sqlite3"
 SENTENCES_PATH = BASE_DIR / "sentences.json"
 PROMPTS_PATH = BASE_DIR / "prompts.yaml"
 
@@ -30,6 +31,69 @@ logging.basicConfig(
     ]
 )
 logger = logging.getLogger(__name__)
+
+# Log startup information
+logger.info(f"Starting Streamlit app...")
+logger.info(f"BASE_DIR: {BASE_DIR}")
+logger.info(f"PROJECT_ROOT: {PROJECT_ROOT}")
+logger.info(f"DATA_DIR: {DATA_DIR}")
+logger.info(f"DB_PATH: {DB_PATH}")
+logger.info(f"DB_PATH exists: {DB_PATH.exists()}")
+logger.info(f"SENTENCES_PATH: {SENTENCES_PATH}")
+logger.info(f"PROMPTS_PATH: {PROMPTS_PATH}")
+
+# Service endpoints
+SERVICES = {
+    "api": "http://localhost:5000/api/health",
+    "mangaocr": "http://localhost:9100/ocr",
+    "llm": "http://localhost:9000/v1/chat/completions",
+    "embeddings": "http://localhost:6000/health"
+}
+
+# Health check endpoints
+HEALTH_ENDPOINTS = {
+    "api": "http://localhost:5000/api/health",
+    "mangaocr": "http://localhost:9100/health",
+    "llm": "http://localhost:9000/health",
+    "embeddings": "http://localhost:6000/health"
+}
+
+def check_service_health(service_name, endpoint, timeout=30):
+    """Check if a service is healthy"""
+    try:
+        # Use health endpoints for checks
+        health_endpoint = HEALTH_ENDPOINTS[service_name]
+        response = requests.get(health_endpoint, timeout=timeout)
+            
+        if response.status_code == 200:
+            # Check the response content for actual health status
+            health_data = response.json()
+            if service_name == "mangaocr":
+                is_healthy = health_data.get("status") == "healthy"
+            elif service_name == "llm":
+                is_healthy = health_data.get("status") == "healthy" and health_data.get("ollama_status") == "connected"
+            else:
+                is_healthy = True  # For other services, 200 is enough
+                
+            if is_healthy:
+                logger.info(f"{service_name} service is healthy")
+                return True
+            else:
+                logger.error(f"{service_name} service reports unhealthy status: {health_data}")
+                return False
+        else:
+            logger.error(f"{service_name} service returned status code {response.status_code}")
+            return False
+    except Exception as e:
+        logger.error(f"Error checking {service_name} service: {e}")
+        return False
+
+def check_all_services():
+    """Check health of all required services"""
+    health_status = {}
+    for service, _ in SERVICES.items():
+        health_status[service] = check_service_health(service, HEALTH_ENDPOINTS[service])
+    return health_status
 
 # Check if a package is installed
 def is_package_installed(package_name):
@@ -69,7 +133,9 @@ def load_sample_sentences():
     try:
         if SENTENCES_PATH.exists():
             with open(SENTENCES_PATH, "r") as f:
-                return json.load(f)
+                sentences = json.load(f)
+                logger.info(f"Loaded {len(sentences)} sample sentences")
+                return sentences
         else:
             logger.warning("Sentences file not found, creating empty file")
             with open(SENTENCES_PATH, "w") as f:
@@ -92,8 +158,10 @@ def save_sentence(sentence_data):
 
 # Process image with MangaOCR
 def process_image_with_ocr(image):
-    # Use MangaOCR API container
-    endpoint = "http://localhost:9000/analyze"  # Optionally, load from config
+    if not check_service_health("mangaocr", SERVICES["mangaocr"]):
+        st.error("MangaOCR service is not available")
+        return "Error: MangaOCR service is not available"
+        
     try:
         # Convert to PIL Image if it's not already
         if not isinstance(image, Image.Image):
@@ -102,7 +170,7 @@ def process_image_with_ocr(image):
         image.save(temp_path)
         with open(temp_path, 'rb') as f:
             files = {'image': f}
-            response = requests.post(endpoint, files=files, timeout=30)
+            response = requests.post(SERVICES["mangaocr"], files=files, timeout=30)
         if Path(temp_path).exists():
             Path(temp_path).unlink()
         if response.status_code == 200:
@@ -116,14 +184,17 @@ def process_image_with_ocr(image):
 
 # Translate Japanese text to English
 def translate_text(text, prompts):
+    if not check_service_health("llm", SERVICES["llm"]):
+        st.error("LLM service is not available")
+        return "Error: LLM service is not available"
+        
     try:
         system_prompt = prompts['translation']['system']
         user_prompt = prompts['translation']['user'].format(text=text)
 
         response = requests.post(
-            "http://localhost:11434/api/generate",
+            SERVICES["llm"],
             json={
-                "model": "llama3",
                 "prompt": f"{system_prompt}\n\n{user_prompt}",
                 "stream": False
             },
@@ -134,12 +205,16 @@ def translate_text(text, prompts):
             result = response.json()
             return result.get("response", "Translation not available")
     except Exception as e:
-        logger.warning(f"Translation error: {e}")
+        logger.error(f"Translation error: {e}")
 
     return "Translation not available"
 
 # Grade user response
 def grade_response(target_sentence, submission, translation, prompts):
+    if not check_service_health("llm", SERVICES["llm"]):
+        st.error("LLM service is not available")
+        return "Error: LLM service is not available"
+        
     try:
         system_prompt = prompts['grading']['system']
         user_prompt = prompts['grading']['user'].format(
@@ -149,9 +224,8 @@ def grade_response(target_sentence, submission, translation, prompts):
         )
 
         response = requests.post(
-            "http://localhost:11434/api/generate",
+            SERVICES["llm"],
             json={
-                "model": "llama3",
                 "prompt": f"{system_prompt}\n\n{user_prompt}",
                 "stream": False
             },
@@ -162,7 +236,7 @@ def grade_response(target_sentence, submission, translation, prompts):
             result = response.json()
             return result.get("response", "Grading not available")
     except Exception as e:
-        logger.warning(f"Grading error: {e}")
+        logger.error(f"Grading error: {e}")
 
     # Fallback grading
     if submission.strip() == "":
@@ -180,16 +254,19 @@ def grade_response(target_sentence, submission, translation, prompts):
             grade = "C"
         return f"Grade: {grade}\nFeedback: Your response has approximately {int(similarity*100)}% character overlap with the original."
 
-# Generate sentence using Ollama
+# Generate sentence using LLM service
 def generate_sentence(category, word, prompts):
+    if not check_service_health("llm", SERVICES["llm"]):
+        st.error("LLM service is not available")
+        return "Error: LLM service is not available"
+        
     try:
         system_prompt = prompts['sentence_generation']['system']
         user_prompt = prompts['sentence_generation']['user'].format(word=word)
 
         response = requests.post(
-            "http://localhost:11434/api/generate",
+            SERVICES["llm"],
             json={
-                "model": "llama3",
                 "prompt": f"{system_prompt}\n\n{user_prompt}",
                 "stream": False
             },
@@ -197,41 +274,12 @@ def generate_sentence(category, word, prompts):
         )
 
         if response.status_code == 200:
-            result = response.json().get("response", "")
-
-            # Extract Japanese and English sentences
-            lines = result.strip().split('\n')
-            japanese = ""
-            english = ""
-
-            for line in lines:
-                if line.startswith("Japanese:"):
-                    japanese = line.replace("Japanese:", "").strip()
-                elif line.startswith("English:"):
-                    english = line.replace("English:", "").strip()
-
-            if japanese and english:
-                return {
-                    "japanese": japanese,
-                    "english": english,
-                    "category": category,
-                    "level": "N5"  # Default level
-                }
+            result = response.json()
+            return result.get("response", "Sentence generation not available")
     except Exception as e:
-        logger.error(f"Error generating sentence: {e}")
+        logger.error(f"Sentence generation error: {e}")
 
-    # Fallback to sample sentences
-    sample_sentences = load_sample_sentences()
-    if sample_sentences:
-        return random.choice(sample_sentences)
-
-    # Ultimate fallback
-    return {
-        "japanese": "これは日本語の文です。",
-        "english": "This is a Japanese sentence.",
-        "level": "N5",
-        "category": "Fallback"
-    }
+    return "Sentence generation not available"
 
 # Initialize session state
 if 'app_state' not in st.session_state:
@@ -263,6 +311,17 @@ prompts = load_prompts()
 
 # Main app
 st.title("Japanese Writing Practice")
+
+# Check service health and display status
+health_status = check_all_services()
+
+# Display service status
+st.sidebar.title("Service Status")
+for service, is_healthy in health_status.items():
+    if is_healthy:
+        st.sidebar.success(f"✅ {service}")
+    else:
+        st.sidebar.error(f"❌ {service}")
 
 # SETUP STATE
 if st.session_state.app_state == "setup":

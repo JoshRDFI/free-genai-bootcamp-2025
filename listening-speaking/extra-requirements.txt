@@ -2,7 +2,9 @@
 # Not covered by main.txt or base.txt
 
 # YouTube transcript handling
-youtube_transcript_api==0.6.2
+youtube_transcript_api
+yt_dlp
+
 
 # Database
 sqlalchemy==2.0.28

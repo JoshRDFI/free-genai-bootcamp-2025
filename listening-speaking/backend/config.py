@@ -43,7 +43,7 @@ class ServiceConfig:
             "voices": f"{TTS_URL}/voices"
         },
         "asr": {
-            "transcribe": f"{ASR_URL}/transcribe",
+            "transcribe": f"{ASR_URL}/asr",
             "languages": f"{ASR_URL}/languages"
         },
         "vision": {
