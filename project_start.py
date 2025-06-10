@@ -81,28 +81,28 @@ PROJECTS = {
         "name": "Listening & Speaking Practice",
         "description": "Practice listening and speaking with AI feedback",
         "docker_services": ["llm_text", "tts", "asr", "embeddings", "chromadb", "guardrails", "mangaocr", "llm-vision"],
-        "requires_gpu": True,
+        "requires_gpu": False,
         "run_command": "listening-speaking/frontend streamlit_app.py 8502"
     },
     "vocabulary_generator": {
         "name": "Vocabulary Generator and Practice Exercises",
         "description": "Generate vocabulary lists and practice exercises",
         "docker_services": ["llm_text", "embeddings", "chromadb", "guardrails", "mangaocr", "llm-vision"],
-        "requires_gpu": True,
+        "requires_gpu": False,
         "run_command": "vocabulary_generator main.py 8503"
     },
     "writing-practice": {
         "name": "Writing Practice",
         "description": "Practice writing with AI feedback",
         "docker_services": ["llm_text", "mangaocr", "llm-vision", "embeddings", "chromadb", "guardrails"],
-        "requires_gpu": True,
+        "requires_gpu": False,
         "run_command": "writing-practice app.py 8504"
     },
     "visual-novel": {
         "name": "Visual Novel",
         "description": "Interactive story with AI-generated content",
         "docker_services": ["llm_text", "tts", "asr", "mangaocr", "llm-vision", "embeddings", "chromadb", "guardrails", "waifu-diffusion"],
-        "requires_gpu": True,
+        "requires_gpu": False,
         "run_command": "visual-novel app.py 8505"
     },
     "lang-portal": {
@@ -322,12 +322,9 @@ def verify_services(required_services, vn_services=None):
     return True
 
 def check_gpu_availability():
-    """Check if GPU is available and return True if it is"""
-    try:
-        import torch
-        return torch.cuda.is_available()
-    except ImportError:
-        return False
+    """Check if GPU is available and compatible with PyTorch"""
+    logger.info("System will run in CPU mode.")
+    return False
 
 def validate_project(project_name: str, project: dict) -> tuple[bool, str]:
     """
@@ -402,11 +399,10 @@ def validate_project(project_name: str, project: dict) -> tuple[bool, str]:
             except Exception as e:
                 return False, f"Docker is required but not available: {str(e)}"
 
-        # Check for GPU if required
-        if project.get('requires_gpu'):
-            gpu_available = check_gpu_availability()
-            if not gpu_available:
-                st.warning("GPU is not available. The application will run in CPU mode, which may be slower.")
+        # Check GPU availability and show appropriate warnings
+        gpu_available = check_gpu_availability()
+        if not gpu_available and project.get('gpu_benefits'):
+            st.warning(f"Running in CPU mode. {project['gpu_benefits']}")
 
         # Check if required Docker services are running
         if project.get('docker_services'):
@@ -428,16 +424,53 @@ def is_wsl():
         return False
 
 def run_project(project_name):
-    """Run a specific project"""
+    """Run a project with its specific virtual environment."""
     if project_name not in PROJECTS:
-        st.error(f"Project {project_name} not found!")
+        logger.error(f"Unknown project: {project_name}")
         return False
-
+        
     project = PROJECTS[project_name]
-    python_cmd = get_venv_python(project_name)
-    streamlit_cmd = get_venv_streamlit(project_name)
     
-    # Create a placeholder for status messages
+    # Special handling for lang-portal
+    if project_name == "lang-portal":
+        try:
+            # Get the Python interpreter for lang-portal
+            python_cmd = get_venv_python(project_name)
+            
+            # Run start_portal.py directly
+            process = subprocess.Popen(
+                [python_cmd, "start_portal.py"],
+                cwd="lang-portal",
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True
+            )
+            
+            # Store process for later cleanup
+            project['processes'] = [process]
+            
+            # Wait a moment for the portal to start
+            time.sleep(2)
+            
+            # Check if process is running
+            if process.poll() is not None:
+                stdout, stderr = process.communicate()
+                raise Exception(f"Failed to start Language Portal: {stderr}")
+            
+            st.success("Language Portal started successfully!")
+            st.info("The portal should open in your browser at http://localhost:5173")
+            return True
+            
+        except Exception as e:
+            st.error(f"Error starting Language Portal: {str(e)}")
+            if 'processes' in project:
+                for process in project['processes']:
+                    if process.poll() is None:
+                        process.terminate()
+                project['processes'] = []
+            return False
+    
+    # For all other projects, proceed with normal validation and startup
     status_placeholder = st.empty()
     
     try:
@@ -465,217 +498,53 @@ def run_project(project_name):
         # Run the project command
         status_placeholder.info(f"Starting {project_name}...")
         
-        try:
-            # For listening-speaking practice, we need to handle it specially
-            if project_name == "listening-speaking":
-                # Set TTS_DATA_PATH environment variable
-                tts_data_path = os.path.abspath("data/tts_data")
-                os.environ["TTS_DATA_PATH"] = tts_data_path
-                
-                # Run setup
-                status_placeholder.info("Running setup...")
-                setup_process = subprocess.Popen(
-                    [python_cmd, "run.py", "--setup"],
-                    cwd="listening-speaking",
-                    stdout=subprocess.PIPE,
-                    stderr=subprocess.PIPE,
-                    text=True,
-                    env=dict(os.environ, TTS_DATA_PATH=tts_data_path)
-                )
-                stdout, stderr = setup_process.communicate()
-                if setup_process.returncode != 0:
-                    raise Exception(f"Setup failed: {stderr}")
-                
-                # Run backend
-                status_placeholder.info("Starting backend...")
-                logger.info("Starting backend process")
-                
-                # Kill any existing process on port 8180
-                try:
-                    subprocess.run(["fuser", "-k", "8180/tcp"], capture_output=True)
-                except:
-                    pass  # Ignore if fuser is not available
-                
-                backend_cmd = [python_cmd, "run.py", "--backend"]
-                logger.info(f"Running command: {' '.join(backend_cmd)} in {os.path.abspath('listening-speaking')}")
-
-                # Now start the actual backend process
-                backend_process = subprocess.Popen(
-                    backend_cmd,
-                    cwd="listening-speaking",
-                    stdout=subprocess.PIPE,
-                    stderr=subprocess.PIPE,
-                    text=True,
-                    env=dict(os.environ,
-                        TTS_DATA_PATH=tts_data_path,
-                        LLM_SERVICE_URL="http://localhost:9000",
-                        EMBEDDINGS_SERVICE_URL="http://localhost:6000",
-                        PYTHONUNBUFFERED="1",  # Ensure Python output is not buffered
-                        PYTHONPATH=os.path.abspath("listening-speaking"),  # Add project root to Python path
-                        CHROMA_SERVER_PORT="8000"  # Match the port in docker-compose.yml
-                    ),
-                    bufsize=1,
-                    universal_newlines=True
-                )
-
-                # Start backend logger thread
-                backend_logger = threading.Thread(
-                    target=log_process_output,
-                    args=(backend_process, "Backend")
-                )
-
-                backend_logger.daemon = True
-                backend_logger.start()
-                logger.debug("Backend logger thread started")
-                
-                # Wait for backend to be healthy
-                status_placeholder.info("Waiting for backend to be ready...")
-                retries = 15  # Increased retries
-                backend_started = False
-                while retries > 0:
-                    logger.debug(f"Checking backend health (attempts remaining: {retries})")
-                    
-                    # Check if process has terminated
-                    if backend_process.poll() is not None:
-                        stdout, stderr = backend_process.communicate()
-                        logger.error("Backend process terminated unexpectedly")
-                        logger.error(f"Exit code: {backend_process.returncode}")
-                        logger.error(f"stdout: {stdout}")
-                        logger.error(f"stderr: {stderr}")
-                        raise Exception(f"Backend process terminated with exit code {backend_process.returncode}")
-                    
-                    # Check LLM service
-                    try:
-                        if check_backend_health():
-                            backend_started = True
-                            logger.info("Backend health check passed")
-                            break
-                    except Exception as e:
-                        logger.debug(f"Health check failed (attempt {16-retries}/15): {str(e)}")
-                    
-                    logger.debug("Backend not ready yet, waiting...")
-                    time.sleep(2)
-                    retries -= 1
-                
-                if not backend_started:
-                    logger.error("Backend failed to start within timeout period")
-                    stdout, stderr = backend_process.communicate()
-                    logger.error(f"Final stdout: {stdout}")
-                    logger.error(f"Final stderr: {stderr}")
-                    backend_process.terminate()
-                    raise Exception("Backend failed to start properly")
-                
-                status_placeholder.info("Backend is ready!")
-                logger.info("Backend startup completed successfully")
-                
-                # Run frontend on a different port
-                status_placeholder.info("Starting frontend...")
-                # Parse run_command for working directory, script, and port
-                run_cmd = project['run_command'].split()
-                frontend_work_dir = run_cmd[0]
-                frontend_script = run_cmd[1]
-                frontend_port = run_cmd[2] if len(run_cmd) > 2 else "8502"
-                frontend_process = subprocess.Popen(
-                    [streamlit_cmd, "run", frontend_script, "--server.port", frontend_port],
-                    cwd=frontend_work_dir,
-                    stdout=subprocess.PIPE,
-                    stderr=subprocess.PIPE,
-                    text=True,
-                    env=dict(os.environ, 
-                        TTS_DATA_PATH=tts_data_path,
-                        LLM_SERVICE_URL="http://localhost:9000",
-                        EMBEDDINGS_SERVICE_URL="http://localhost:6000"
-                    ),
-                    bufsize=1,
-                    universal_newlines=True
-                )
-
-                # Start frontend logger thread
-                frontend_logger = threading.Thread(
-                    target=log_process_output,
-                    args=(frontend_process, "Frontend")
-                )
-                frontend_logger.daemon = True
-                frontend_logger.start()
-                
-                # Store processes for later cleanup
-                project['processes'] = [backend_process, frontend_process]
-                
-                # Wait a moment for frontend to start
-                time.sleep(2)
-                
-                # Check if frontend is running
-                if frontend_process.poll() is not None:
-                    stdout, stderr = frontend_process.communicate()
-                    raise Exception(f"Frontend failed to start: {stderr}")
-                
-                status_placeholder.success(f"Launched {project_name}!")
-                if is_wsl():
-                    st.info(f"""
-                    The application is running! Since you're using WSL, please open this URL in your Windows browser:
-                    http://localhost:{frontend_port}
-                    
-                    Note: If you can't access the application, make sure:
-                    1. You're using the Windows browser (not WSL)
-                    2. The port {frontend_port} is not blocked by your firewall
-                    3. You're using 'localhost' and not the WSL IP address
-                    """)
-                else:
-                    st.info(f"The application should open in your browser. If it doesn't, you can access it at: http://localhost:{frontend_port}")
-                return True
-            else:
-                # For other projects, run the command directly
-                run_cmd = project['run_command'].split()
-                work_dir = run_cmd[0]
-                script_path = run_cmd[1]
-                port = run_cmd[2] if len(run_cmd) > 2 else "8501"
-                
-                # Ensure the script exists
-                if not os.path.exists(os.path.join(work_dir, script_path)):
-                    raise Exception(f"Script not found: {os.path.join(work_dir, script_path)}")
-                
-                # Run the command
-                process = subprocess.Popen(
-                    [streamlit_cmd, "run", script_path, "--server.port", port],
-                    cwd=work_dir,
-                    stdout=subprocess.PIPE,
-                    stderr=subprocess.PIPE,
-                    text=True,
-                    env=dict(os.environ, PYTHONPATH=work_dir)  # Add project directory to Python path
-                )
-                project['processes'] = [process]
-                
-                # Wait a moment and check if process is still running
-                time.sleep(2)
-                if process.poll() is not None:
-                    stdout, stderr = process.communicate()
-                    raise Exception(f"Failed to start {project_name}: {stderr}")
-                
-                # For Streamlit apps, provide URL information
-                if is_wsl():
-                    st.info(f"""
-                    The application is running! Since you're using WSL, please open this URL in your Windows browser:
-                    http://localhost:{port}
-                    
-                    Note: If you can't access the application, make sure:
-                    1. You're using the Windows browser (not WSL)
-                    2. The port {port} is not blocked by your firewall
-                    3. You're using 'localhost' and not the WSL IP address
-                    """)
-                else:
-                    st.info(f"The application should open in your browser. If it doesn't, you can access it at: http://localhost:{port}")
-                
-                status_placeholder.success(f"Launched {project_name}!")
-                return True
+        # Get the appropriate Python interpreter and Streamlit command
+        python_cmd = get_venv_python(project_name)
+        streamlit_cmd = get_venv_streamlit(project_name)
+        
+        # Run the project command
+        run_cmd = project['run_command'].split()
+        work_dir = run_cmd[0]
+        script_path = run_cmd[1]
+        port = run_cmd[2] if len(run_cmd) > 2 else "8501"
+        
+        # Ensure the script exists
+        if not os.path.exists(os.path.join(work_dir, script_path)):
+            raise Exception(f"Script not found: {os.path.join(work_dir, script_path)}")
+        
+        # Run the command
+        process = subprocess.Popen(
+            [streamlit_cmd, "run", script_path, "--server.port", port],
+            cwd=work_dir,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            env=dict(os.environ, PYTHONPATH=work_dir)  # Add project directory to Python path
+        )
+        project['processes'] = [process]
+        
+        # Wait a moment and check if process is still running
+        time.sleep(2)
+        if process.poll() is not None:
+            stdout, stderr = process.communicate()
+            raise Exception(f"Failed to start {project_name}: {stderr}")
+        
+        # For Streamlit apps, provide URL information
+        if is_wsl():
+            st.info(f"""
+            The application is running! Since you're using WSL, please open this URL in your Windows browser:
+            http://localhost:{port}
             
-        except Exception as e:
-            status_placeholder.error(f"Error launching {project_name}: {str(e)}")
-            if 'processes' in project:
-                for process in project['processes']:
-                    if process.poll() is None:
-                        process.terminate()
-                project['processes'] = []
-            return False
+            Note: If you can't access the application, make sure:
+            1. You're using the Windows browser (not WSL)
+            2. The port {port} is not blocked by your firewall
+            3. You're using 'localhost' and not the WSL IP address
+            """)
+        else:
+            st.info(f"The application should open in your browser. If it doesn't, you can access it at: http://localhost:{port}")
+        
+        status_placeholder.success(f"Launched {project_name}!")
+        return True
 
     except Exception as e:
         status_placeholder.error(f"Unexpected error launching {project_name}: {str(e)}")

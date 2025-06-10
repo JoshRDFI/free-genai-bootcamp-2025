@@ -4,49 +4,37 @@ services:
   ollama-server:
     image: ollama/ollama:latest
     container_name: ollama-server
-    runtime: ${DOCKER_RUNTIME:-nvidia}
     ports:
-      - "${LLM_ENDPOINT_PORT:-8008}:11434"
+      - "11434:11434"
     volumes:
-      - ${OLLAMA_DATA_PATH:-../data/ollama_data}:/root/.ollama
-      - ${SHARED_DB_PATH:-../data/shared_db}:/app/db
+      - ./ollama_data:/root/.ollama
     environment:
-      - LLM_MODEL_ID=${LLM_MODEL_ID:-llama3.2}
-      - CUDA_VISIBLE_DEVICES=${CUDA_VISIBLE_DEVICES:-0}
-      - FORCE_CPU=${FORCE_CPU:-false}
-    deploy:
-      resources:
-        reservations:
-          devices: []
+      - CUDA_VISIBLE_DEVICES=""
+      - OLLAMA_HOST=http://0.0.0.0:11434
+      - OLLAMA_ORIGINS=*
     restart: unless-stopped
 
   llm_text:
     image: opea-docker-llm-text:latest
     container_name: llm_text
-    runtime: ${DOCKER_RUNTIME:-nvidia}
     ports:
       - "${LLM_TEXT_PORT:-9000}:9000"
     volumes:
       - ${OLLAMA_DATA_PATH:-../data/ollama_data}:/root/.ollama
       - ${SHARED_DB_PATH:-../data/shared_db}:/app/db
-      - ${LLM_XTTS_DATA_PATH:-../data/llm_xtts}:/home/llm/.xtts_data
     environment:
       - OLLAMA_HOST=ollama-server
       - LLM_SERVICE_PORT=${LLM_TEXT_PORT:-9000}
       - DEFAULT_MODEL=${DEFAULT_MODEL:-llama3.2}
-      - FORCE_CPU=${FORCE_CPU:-false}
+      - FORCE_CPU=true
+      - CUDA_VISIBLE_DEVICES=""
     depends_on:
       - ollama-server
-    deploy:
-      resources:
-        reservations:
-          devices: []
     restart: unless-stopped
 
   guardrails:
     image: opea-docker-guardrails:latest
     container_name: guardrails
-    runtime: ${DOCKER_RUNTIME:-nvidia}
     ports:
       - "${GUARDRAILS_SERVICE_PORT:-9400}:9400"
     volumes:
@@ -55,14 +43,11 @@ services:
     environment:
       - OLLAMA_HOST=ollama-server
       - GUARDRAILS_SERVICE_PORT=${GUARDRAILS_SERVICE_PORT:-9400}
-      - FORCE_CPU=${FORCE_CPU:-false}
+      - FORCE_CPU=true
+      - CUDA_VISIBLE_DEVICES=""
     depends_on:
       - ollama-server
       - embeddings
-    deploy:
-      resources:
-        reservations:
-          devices: []
     restart: unless-stopped
 
   chromadb:
@@ -83,7 +68,6 @@ services:
   tts:
     image: opea-docker-tts:latest
     container_name: tts
-    runtime: ${DOCKER_RUNTIME:-nvidia}
     ports:
       - "${TTS_SERVICE_PORT:-9200}:9200"
     volumes:
@@ -94,19 +78,15 @@ services:
       - TTS_DATA_PATH=/app/data/tts_data
       - TTS_MODEL=${TTS_MODEL:-xtts_v2}
       - TTS_SERVICE_PORT=${TTS_SERVICE_PORT:-9200}
-      - FORCE_CPU=${FORCE_CPU:-false}
+      - FORCE_CPU=true
+      - CUDA_VISIBLE_DEVICES=""
     depends_on:
       - llm_text
-    deploy:
-      resources:
-        reservations:
-          devices: []
     restart: unless-stopped
 
   asr:
     image: opea-docker-asr:latest
     container_name: asr
-    runtime: ${DOCKER_RUNTIME:-nvidia}
     ports:
       - "${ASR_SERVICE_PORT:-9300}:9300"
     volumes:
@@ -115,19 +95,15 @@ services:
     environment:
       - ASR_SERVICE_PORT=${ASR_SERVICE_PORT:-9300}
       - ASR_MODEL=${ASR_MODEL:-large-v3}
-      - FORCE_CPU=${FORCE_CPU:-false}
+      - FORCE_CPU=true
+      - CUDA_VISIBLE_DEVICES=""
     depends_on:
       - tts
-    deploy:
-      resources:
-        reservations:
-          devices: []
     restart: unless-stopped
 
   llm-vision:
     image: opea-docker-llm-vision:latest
     container_name: llm-vision
-    runtime: ${DOCKER_RUNTIME:-nvidia}
     ports:
       - "${LLM_VISION_PORT:-9101}:9101"
     volumes:
@@ -135,21 +111,14 @@ services:
     environment:
       - VISION_SERVICE_PORT=${LLM_VISION_PORT:-9101}
       - VISION_MODEL_ID=${VISION_MODEL_ID:-llava-hf/llava-1.5-7b-hf}
+      - CUDA_VISIBLE_DEVICES=""
     depends_on:
       - llm_text
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: ${GPU_DRIVER:-nvidia}
-              count: ${GPU_COUNT:-all}
-              capabilities: [gpu]
     restart: unless-stopped
 
   mangaocr:
     image: opea-docker-mangaocr:latest
     container_name: mangaocr
-    runtime: ${DOCKER_RUNTIME:-nvidia}
     ports:
       - "${MANGAOCR_PORT:-9100}:9100"
     volumes:
@@ -158,21 +127,14 @@ services:
     environment:
       - MANGAOCR_MODEL_PATH=/app/data/mangaocr_models
       - MANGAOCR_SERVICE_PORT=${MANGAOCR_PORT:-9100}
+      - CUDA_VISIBLE_DEVICES=""
     depends_on:
       - llm_text
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: ${GPU_DRIVER:-nvidia}
-              count: ${GPU_COUNT:-all}
-              capabilities: [gpu]
     restart: unless-stopped
 
   waifu-diffusion:
     image: opea-docker-waifu-diffusion:latest
     container_name: waifu-diffusion
-    runtime: ${DOCKER_RUNTIME:-nvidia}
     ports:
       - "${WAIFU_DIFFUSION_PORT:-9500}:9500"
     volumes:
@@ -181,15 +143,8 @@ services:
     environment:
       - WAIFU_DIFFUSION_PORT=${WAIFU_DIFFUSION_PORT:-9500}
       - WAIFU_MODEL_ID=${WAIFU_MODEL_ID:-hakurei/waifu-diffusion}
-      - CUDA_VISIBLE_DEVICES=${CUDA_VISIBLE_DEVICES:-0}
-      - FORCE_CPU=${FORCE_CPU:-false}
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: ${GPU_DRIVER:-nvidia}
-              count: ${GPU_COUNT:-all}
-              capabilities: [gpu]
+      - CUDA_VISIBLE_DEVICES=""
+      - FORCE_CPU=true
     restart: unless-stopped
 
   embeddings:

@@ -258,7 +258,7 @@ def grade_response(target_sentence, submission, translation, prompts):
 def generate_sentence(category, word, prompts):
     if not check_service_health("llm", SERVICES["llm"]):
         st.error("LLM service is not available")
-        return "Error: LLM service is not available"
+        return None
         
     try:
         system_prompt = prompts['sentence_generation']['system']
@@ -275,11 +275,26 @@ def generate_sentence(category, word, prompts):
 
         if response.status_code == 200:
             result = response.json()
-            return result.get("response", "Sentence generation not available")
+            response_text = result.get("response", "")
+            
+            # Parse the response to extract Japanese and English parts
+            if "Japanese:" in response_text and "English:" in response_text:
+                japanese = response_text.split("Japanese:")[1].split("English:")[0].strip()
+                english = response_text.split("English:")[1].strip()
+                return {
+                    "japanese": japanese,
+                    "english": english,
+                    "category": category,
+                    "level": "N5"  # Default to N5 for now
+                }
+            else:
+                logger.error(f"Invalid response format: {response_text}")
+                return None
     except Exception as e:
         logger.error(f"Sentence generation error: {e}")
+        return None
 
-    return "Sentence generation not available"
+    return None
 
 # Initialize session state
 if 'app_state' not in st.session_state:
@@ -403,6 +418,8 @@ if st.session_state.app_state == "setup":
                                     st.session_state.current_sentence = sentence_data
                                     st.session_state.app_state = "practice"
                                     st.rerun()
+                                else:
+                                    st.error("Failed to generate a sentence. Please try again.")
                     else:
                         st.warning(f"No words found for category: {selected_name}")
             except Exception as e:

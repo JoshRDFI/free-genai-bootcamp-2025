@@ -1,5 +1,5 @@
-# Use NVIDIA CUDA base image
-FROM nvidia/cuda:12.1.0-runtime-ubuntu22.04
+# Use standard Python base image
+FROM python:3.10-slim
 
 # Set environment variables
 ENV PYTHONUNBUFFERED=1
@@ -23,6 +23,7 @@ COPY requirements/main.txt .
 RUN pip3 install --no-cache-dir -r main.txt
 
 # Copy and install container-specific requirements
+RUN pip3 install --no-cache-dir torch torchvision --index-url https://download.pytorch.org/whl/cpu
 RUN pip3 install --no-cache-dir transformers>=4.39.0
 COPY extra-requirements.txt .
 RUN pip3 install --no-cache-dir -r extra-requirements.txt
