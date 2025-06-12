@@ -7,6 +7,18 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 from flask_migrate import Migrate
 from flask_sqlalchemy import SQLAlchemy
+import httpx
+from fastapi import HTTPException
+from pydantic import BaseModel
+
+class TextGenerationRequest(BaseModel):
+    prompt: str
+
+class TextExplanationRequest(BaseModel):
+    text: str
+
+class TextAnalysisRequest(BaseModel):
+    text: str
 
 # Initialize extensions 
 db = SQLAlchemy()
@@ -15,7 +27,7 @@ migrate = Migrate()
 # Configuration
 # Direct access to opea-docker services
 OLLAMA_SERVER_URL = os.environ.get('OLLAMA_SERVER_URL', 'http://localhost:8008')
-LLM_TEXT_URL = os.environ.get('LLM_TEXT_URL', 'http://localhost:9000')
+LLM_TEXT_URL = os.environ.get('LLM_TEXT_URL', 'http://localhost:11434')
 GUARDRAILS_URL = os.environ.get('GUARDRAILS_URL', 'http://localhost:9400')
 CHROMADB_URL = os.environ.get('CHROMADB_URL', 'http://localhost:8050')
 TTS_URL = os.environ.get('TTS_URL', 'http://localhost:9200')
@@ -24,6 +36,10 @@ LLM_VISION_URL = os.environ.get('LLM_VISION_URL', 'http://localhost:9101')
 IMAGE_GEN_URL = os.environ.get('WAIFU_DIFFUSION_URL', 'http://localhost:9500')
 EMBEDDINGS_URL = os.environ.get('EMBEDDINGS_URL', 'http://localhost:6000')
 DB_PATH = os.environ.get('DB_PATH', '../opea-docker/data/shared_db/visual_novel.db')
+
+# LLM Service Configuration
+OLLAMA_URL = os.environ.get('OLLAMA_URL', 'http://localhost:11434')
+OLLAMA_MODEL = os.environ.get('OLLAMA_MODEL', 'llama3.2')
 
 # Initialize database
 def init_db():
@@ -486,6 +502,71 @@ def create_app(config_object=None):
                 return jsonify({'error': 'Image generation error', 'details': response.text}), 500
         except requests.RequestException as e:
             return jsonify({'error': 'Image generation service unavailable', 'details': str(e)}), 503
+
+    @app.post("/generate")
+    async def generate_text(request: TextGenerationRequest):
+        try:
+            response = await httpx.post(
+                f"{OLLAMA_URL}/api/chat",
+                json={
+                    "model": "llama3.2",
+                    "messages": [
+                        {"role": "user", "content": request.prompt}
+                    ],
+                    "stream": False
+                },
+                timeout=30.0
+            )
+            response.raise_for_status()
+            result = response.json()
+            return {"text": result.get("message", {}).get("content", "")}
+        except Exception as e:
+            logger.error(f"Error generating text: {e}")
+            raise HTTPException(status_code=500, detail=str(e))
+
+    @app.post("/explain")
+    async def explain_text(request: TextExplanationRequest):
+        try:
+            response = await httpx.post(
+                f"{OLLAMA_URL}/api/chat",
+                json={
+                    "model": "llama3.2",
+                    "messages": [
+                        {"role": "system", "content": "You are a helpful assistant that explains Japanese text in simple terms."},
+                        {"role": "user", "content": f"Please explain this Japanese text in simple terms: {request.text}"}
+                    ],
+                    "stream": False
+                },
+                timeout=30.0
+            )
+            response.raise_for_status()
+            result = response.json()
+            return {"explanation": result.get("message", {}).get("content", "")}
+        except Exception as e:
+            logger.error(f"Error explaining text: {e}")
+            raise HTTPException(status_code=500, detail=str(e))
+
+    @app.post("/analyze")
+    async def analyze_text(request: TextAnalysisRequest):
+        try:
+            response = await httpx.post(
+                f"{OLLAMA_URL}/api/chat",
+                json={
+                    "model": "llama3.2",
+                    "messages": [
+                        {"role": "system", "content": "You are a helpful assistant that analyzes Japanese text for grammar and vocabulary."},
+                        {"role": "user", "content": f"Please analyze this Japanese text: {request.text}"}
+                    ],
+                    "stream": False
+                },
+                timeout=30.0
+            )
+            response.raise_for_status()
+            result = response.json()
+            return {"analysis": result.get("message", {}).get("content", "")}
+        except Exception as e:
+            logger.error(f"Error analyzing text: {e}")
+            raise HTTPException(status_code=500, detail=str(e))
 
     return app
 

@@ -15,7 +15,6 @@ import time
 import subprocess
 import sys
 import atexit
-import re
 
 def start_api_server():
     api_dir = Path(__file__).parent / "api"
@@ -115,7 +114,7 @@ else:
 SERVICES = {
     "api": "http://localhost:5001/api/health",
     "mangaocr": "http://localhost:9100/ocr",
-    "ollama": "http://localhost:11434/api/chat",  # Direct Ollama endpoint
+    "llm": "http://localhost:9000/v1/chat/completions",
     "embeddings": "http://localhost:6000/health"
 }
 
@@ -123,7 +122,7 @@ SERVICES = {
 HEALTH_ENDPOINTS = {
     "api": "http://localhost:5001/api/health",
     "mangaocr": "http://localhost:9100/health",
-    "ollama": "http://localhost:11434/api/version",  # Ollama version endpoint
+    "llm": "http://localhost:9000/health",
     "embeddings": "http://localhost:6000/health"
 }
 
@@ -136,12 +135,12 @@ def check_service_health(service_name, endpoint, timeout=30):
             
         if response.status_code == 200:
             # Check the response content for actual health status
+            health_data = response.json()
             if service_name == "mangaocr":
                 # MangaOCR returns 200 OK when healthy, no need to check status field
                 is_healthy = True
-            elif service_name == "ollama":
-                # Ollama returns 200 OK when healthy
-                is_healthy = True
+            elif service_name == "llm":
+                is_healthy = health_data.get("status") == "healthy" and health_data.get("ollama_status") == "connected"
             else:
                 is_healthy = True  # For other services, 200 is enough
                 
@@ -149,7 +148,7 @@ def check_service_health(service_name, endpoint, timeout=30):
                 logger.info(f"{service_name} service is healthy")
                 return True
             else:
-                logger.error(f"{service_name} service reports unhealthy status")
+                logger.error(f"{service_name} service reports unhealthy status: {health_data}")
                 return False
         else:
             logger.error(f"{service_name} service returned status code {response.status_code}")
@@ -254,43 +253,36 @@ def process_image_with_ocr(image):
 
 # Translate Japanese text to English
 def translate_text(text, prompts):
-    if not check_service_health("ollama", SERVICES["ollama"]):
-        st.error("Ollama service is not available")
-        return None
+    if not check_service_health("llm", SERVICES["llm"]):
+        st.error("LLM service is not available")
+        return "Error: LLM service is not available"
         
     try:
         system_prompt = prompts['translation']['system']
         user_prompt = prompts['translation']['user'].format(text=text)
 
         response = requests.post(
-            SERVICES["ollama"],
+            SERVICES["llm"],
             json={
-                "model": "llama3.2",
-                "messages": [
-                    {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": user_prompt}
-                ],
+                "prompt": f"{system_prompt}\n\n{user_prompt}",
                 "stream": False
             },
-            timeout=30
+            timeout=10
         )
 
         if response.status_code == 200:
             result = response.json()
-            response_text = result.get("message", {}).get("content", "")
-            return response_text.strip()
-        else:
-            logger.error(f"Translation API error: {response.status_code} {response.text}")
-            return None
+            return result.get("response", "Translation not available")
     except Exception as e:
-        logger.error(f"Error during translation: {e}")
-        return None
+        logger.error(f"Translation error: {e}")
+
+    return "Translation not available"
 
 # Grade user response
 def grade_response(target_sentence, submission, translation, prompts):
-    if not check_service_health("ollama", SERVICES["ollama"]):
-        st.error("Ollama service is not available")
-        return None
+    if not check_service_health("llm", SERVICES["llm"]):
+        st.error("LLM service is not available")
+        return "Error: LLM service is not available"
         
     try:
         system_prompt = prompts['grading']['system']
@@ -301,64 +293,40 @@ def grade_response(target_sentence, submission, translation, prompts):
         )
 
         response = requests.post(
-            SERVICES["ollama"],
+            SERVICES["llm"],
             json={
-                "model": "llama3.2",
-                "messages": [
-                    {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": user_prompt}
-                ],
+                "prompt": f"{system_prompt}\n\n{user_prompt}",
                 "stream": False
             },
-            timeout=30
+            timeout=10
         )
 
         if response.status_code == 200:
             result = response.json()
-            response_text = result.get("message", {}).get("content", "")
-            
-            # Parse the response to extract score and feedback
-            try:
-                # First try to find a numeric score
-                score_match = re.search(r'Score:\s*(\d+)', response_text)
-                if score_match:
-                    score = int(score_match.group(1))
-                else:
-                    # If no numeric score, try to parse letter grade
-                    grade_match = re.search(r'Grade:\s*([A-F])', response_text)
-                    if grade_match:
-                        grade = grade_match.group(1)
-                        # Convert letter grade to numeric score
-                        grade_map = {'A': 90, 'B': 80, 'C': 70, 'D': 60, 'F': 50}
-                        score = grade_map.get(grade, 70)  # Default to C if grade not found
-                    else:
-                        score = 70  # Default to C if no grade found
-                
-                # Extract feedback
-                feedback_match = re.search(r'Feedback:(.*?)(?=Score:|$)', response_text, re.DOTALL)
-                feedback = feedback_match.group(1).strip() if feedback_match else "No feedback provided"
-                
-                return {
-                    "score": score,
-                    "feedback": feedback
-                }
-            except Exception as e:
-                logger.error(f"Error parsing grading response: {e}")
-                return {
-                    "score": 70,  # Default to C
-                    "feedback": "Error parsing grading response. Please try again."
-                }
-        else:
-            logger.error(f"Grading API error: {response.status_code} {response.text}")
-            return None
+            return result.get("response", "Grading not available")
     except Exception as e:
-        logger.error(f"Error during grading: {e}")
-        return None
+        logger.error(f"Grading error: {e}")
 
-# Generate sentence using Ollama service
+    # Fallback grading
+    if submission.strip() == "":
+        return "Grade: C\nFeedback: No response provided."
+    elif submission.strip() == target_sentence.strip():
+        return "Grade: S\nFeedback: Perfect match with the original sentence!"
+    else:
+        # Simple character-based similarity
+        similarity = len(set(submission) & set(target_sentence)) / len(set(target_sentence))
+        if similarity > 0.8:
+            grade = "A"
+        elif similarity > 0.5:
+            grade = "B"
+        else:
+            grade = "C"
+        return f"Grade: {grade}\nFeedback: Your response has approximately {int(similarity*100)}% character overlap with the original."
+
+# Generate sentence using LLM service
 def generate_sentence(category, word, prompts):
-    if not check_service_health("ollama", SERVICES["ollama"]):
-        st.error("Ollama service is not available")
+    if not check_service_health("llm", SERVICES["llm"]):
+        st.error("LLM service is not available")
         return None
         
     try:
@@ -366,7 +334,7 @@ def generate_sentence(category, word, prompts):
         user_prompt = prompts['sentence_generation']['user'].format(word=word)
 
         response = requests.post(
-            SERVICES["ollama"],
+            SERVICES["llm"],
             json={
                 "model": "llama3.2",
                 "messages": [

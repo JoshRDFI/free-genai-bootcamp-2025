@@ -80,28 +80,28 @@ PROJECTS = {
     "listening-speaking": {
         "name": "Listening & Speaking Practice",
         "description": "Practice listening and speaking with AI feedback",
-        "docker_services": ["llm_text", "tts", "asr", "embeddings", "chromadb", "guardrails", "mangaocr", "llm-vision"],
+        "docker_services": ["ollama-server", "tts", "asr", "embeddings", "chromadb", "guardrails", "mangaocr", "llm-vision"],
         "requires_gpu": False,
         "run_command": "listening-speaking/frontend streamlit_app.py 8502"
     },
     "vocabulary_generator": {
         "name": "Vocabulary Generator and Practice Exercises",
         "description": "Generate vocabulary lists and practice exercises",
-        "docker_services": ["llm_text", "embeddings", "chromadb", "guardrails", "mangaocr", "llm-vision"],
+        "docker_services": ["ollama-server", "embeddings", "chromadb", "guardrails", "mangaocr", "llm-vision"],
         "requires_gpu": False,
         "run_command": "vocabulary_generator main.py 8503"
     },
     "writing-practice": {
         "name": "Writing Practice",
         "description": "Practice writing with AI feedback",
-        "docker_services": ["llm_text", "mangaocr", "llm-vision", "embeddings", "chromadb", "guardrails"],
+        "docker_services": ["ollama-server", "mangaocr", "llm-vision", "embeddings", "chromadb", "guardrails"],
         "requires_gpu": False,
         "run_command": "writing-practice app.py 8504"
     },
     "visual-novel": {
         "name": "Visual Novel",
         "description": "Interactive story with AI-generated content",
-        "docker_services": ["llm_text", "tts", "asr", "mangaocr", "llm-vision", "embeddings", "chromadb", "guardrails", "waifu-diffusion"],
+        "docker_services": ["ollama-server", "tts", "asr", "mangaocr", "llm-vision", "embeddings", "chromadb", "guardrails", "waifu-diffusion"],
         "requires_gpu": False,
         "run_command": "visual-novel app.py 8505"
     },
@@ -127,7 +127,7 @@ def check_backend_health():
             }
             headers = {"Content-Type": "application/json"}
             llm_response = requests.post(
-                "http://localhost:9000/v1/chat/completions",
+                "http://localhost:11434/api/chat",
                 json=test_request,
                 headers=headers,
                 timeout=10

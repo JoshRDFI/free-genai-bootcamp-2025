@@ -39,7 +39,7 @@ class GuardrailsRequest(BaseModel):
     class Config:
         schema_extra = {
             "example": {
-                "model": "llama3",
+                "model": "llama3.2",
                 "messages": [
                     {"role": "system", "content": "You are a helpful assistant."},
                     {"role": "user", "content": "Hello, how are you today?"}

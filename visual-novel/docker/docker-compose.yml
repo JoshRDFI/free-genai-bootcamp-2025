@@ -20,6 +20,8 @@ services:
       - WAIFU_DIFFUSION_URL=http://waifu-diffusion:9500
       - EMBEDDINGS_URL=http://embeddings:6000
       - USE_REMOTE_DB=true
+      - OLLAMA_HOST=http://ollama-server:11434
+      - OLLAMA_MODEL=llama3.2
     networks:
       - vn-network
       - opea-network

@@ -12,6 +12,9 @@ RUN apt-get update && apt-get install -y \
 # Update pip to the latest version
 RUN python3 -m pip install --upgrade pip
 
+# Install PyTorch with CPU support
+RUN pip install --no-cache-dir torch torchvision --index-url https://download.pytorch.org/whl/cpu
+
 # Copy and install base requirements
 COPY requirements/base.txt .
 RUN pip install --no-cache-dir -r base.txt
@@ -34,6 +37,9 @@ COPY . .
 
 # Expose the port
 EXPOSE 9100
+
+# Set environment variables
+ENV FORCE_CPU=true
 
 # Run the application
 CMD ["python3", "app.py"]

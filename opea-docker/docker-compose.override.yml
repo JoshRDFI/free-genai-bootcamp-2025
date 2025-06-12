@@ -1,0 +1,41 @@
+services:
+  ollama-server:
+    deploy:
+      resources:
+        reservations:
+          devices: []
+  llm-vision:
+    deploy:
+      resources:
+        reservations:
+          devices: []
+  waifu-diffusion:
+    deploy:
+      resources:
+        reservations:
+          devices: []
+  mangaocr:
+    deploy:
+      resources:
+        reservations:
+          devices: []
+  tts:
+    deploy:
+      resources:
+        reservations:
+          devices: []
+  asr:
+    deploy:
+      resources:
+        reservations:
+          devices: []
+  embeddings:
+    deploy:
+      resources:
+        reservations:
+          devices: []
+  guardrails:
+    deploy:
+      resources:
+        reservations:
+          devices: []

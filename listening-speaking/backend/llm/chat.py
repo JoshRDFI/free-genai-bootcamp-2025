@@ -7,8 +7,9 @@ from typing import Dict, Optional, List
 from datetime import datetime
 from backend.config import ServiceConfig
 from requests.adapters import HTTPAdapter
-from requests.packages.urllib3.util.retry import Retry
+from urllib3.util import Retry
 import time
+import httpx
 
 # Configure logging
 log_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "logs")
@@ -27,10 +28,11 @@ logger = logging.getLogger(__name__)
 class ChatInterface:
     def __init__(self):
         """Initialize chat interface with retry mechanism"""
-        self.endpoint = ServiceConfig.LLM_TEXT_URL
+        self.endpoint = f"{ServiceConfig.OLLAMA_URL}/api/generate"
         self.headers = {
             "Content-Type": "application/json"
         }
+        self.model = ServiceConfig.OLLAMA_MODEL
         
         # Configure retry strategy
         retry_strategy = Retry(
@@ -68,7 +70,7 @@ class ChatInterface:
 
             # Prepare the request payload
             payload = {
-                "model": "llama3.2",
+                "model": self.model,
                 "messages": [
                     {"role": "system", "content": "You are a Japanese language teacher creating listening comprehension questions."},
                     {"role": "user", "content": prompt}
@@ -252,3 +254,31 @@ Conversation:
         except Exception as e:
             logger.error(f"Error parsing LLM response: {str(e)}")
             return []
+
+class ChatService:
+    def __init__(self):
+        self.endpoint = ServiceConfig.OLLAMA_URL
+        self.model = "llama3.2"
+        
+    async def generate_response(self, prompt, system_prompt=None):
+        try:
+            messages = []
+            if system_prompt:
+                messages.append({"role": "system", "content": system_prompt})
+            messages.append({"role": "user", "content": prompt})
+            
+            response = await httpx.post(
+                self.endpoint,
+                json={
+                    "model": self.model,
+                    "messages": messages,
+                    "stream": False
+                },
+                timeout=ServiceConfig.get_timeout("ollama")
+            )
+            response.raise_for_status()
+            result = response.json()
+            return result.get("message", {}).get("content", "")
+        except Exception as e:
+            logger.error(f"Error generating response: {e}")
+            return None

@@ -3,45 +3,54 @@
 import requests
 import json
 import os
+import httpx
+import logging
+
+logger = logging.getLogger(__name__)
 
 class LLMService:
     """Service for interacting with the LLM Text service"""
     
     def __init__(self, base_url=None):
-        # Use the direct LLM text service URL
-        self.llm_text_url = base_url or os.environ.get('LLM_TEXT_URL', 'http://localhost:9000')
+        self.ollama_url = base_url or os.environ.get('OLLAMA_URL', 'http://localhost:11434')
         
-    def generate_dialogue(self, context, characters, length=200):
-        """Generate dialogue based on context and characters"""
+    async def generate_text(self, prompt, max_tokens=1000):
         try:
-            response = requests.post(
-                f"{self.llm_text_url}/generate",
+            response = await httpx.post(
+                f"{self.ollama_url}/api/chat",
                 json={
-                    "context": context,
-                    "characters": characters,
-                    "max_length": length
+                    "model": "llama3.2",
+                    "messages": [
+                        {"role": "user", "content": prompt}
+                    ],
+                    "stream": False
                 },
-                timeout=30
+                timeout=30.0
             )
             response.raise_for_status()
-            return response.json()
+            result = response.json()
+            return result.get("message", {}).get("content", "")
         except Exception as e:
-            print(f"Error calling LLM service: {e}")
-            return {"error": str(e)}
-    
-    def explain_grammar(self, grammar_point, language="en"):
-        """Get explanation for a grammar point"""
+            logger.error(f"Error generating text: {e}")
+            return None
+
+    async def explain_text(self, text):
         try:
-            response = requests.post(
-                f"{self.llm_text_url}/explain",
+            response = await httpx.post(
+                f"{self.ollama_url}/api/chat",
                 json={
-                    "grammar_point": grammar_point,
-                    "language": language
+                    "model": "llama3.2",
+                    "messages": [
+                        {"role": "system", "content": "You are a helpful assistant that explains Japanese text in simple terms."},
+                        {"role": "user", "content": f"Please explain this Japanese text in simple terms: {text}"}
+                    ],
+                    "stream": False
                 },
-                timeout=30
+                timeout=30.0
             )
             response.raise_for_status()
-            return response.json()
+            result = response.json()
+            return result.get("message", {}).get("content", "")
         except Exception as e:
-            print(f"Error calling LLM service: {e}")
-            return {"error": str(e)}
+            logger.error(f"Error explaining text: {e}")
+            return None

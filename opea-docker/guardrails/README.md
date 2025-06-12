@@ -49,7 +49,7 @@ Main endpoint for content filtering and LLM interaction.
 **Request:**
 ```json
 {
-  "model": "llama3",
+  "model": "llama3.2",
   "messages": [
     {"role": "system", "content": "You are a helpful assistant."},
     {"role": "user", "content": "Hello, how are you today?"}
@@ -67,7 +67,7 @@ Main endpoint for content filtering and LLM interaction.
 **Response:**
 ```json
 {
-  "model": "llama3",
+  "model": "llama3.2",
   "message": {
     "role": "assistant",
     "content": "I'm doing well, thank you for asking! How can I assist you today?"

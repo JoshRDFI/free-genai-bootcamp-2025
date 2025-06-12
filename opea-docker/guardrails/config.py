@@ -10,8 +10,9 @@ class GuardrailsConfig(BaseSettings):
     log_format: str = Field(default="<green>{time:YYYY-MM-DD HH:mm:ss.SSS}</green> | <level>{level: <8}</level> | <cyan>{name}</cyan>:<cyan>{function}</cyan>:<cyan>{line}</cyan> - <level>{message}</level>", env="LOG_FORMAT")
     
     # LLM service configuration
-    llm_endpoint: str = Field(default="http://llm_text:9000/v1/chat/completions", env="LLM_ENDPOINT")
-    llm_timeout: float = Field(default=60.0, env="LLM_TIMEOUT")
+    llm_endpoint: str = Field(default="http://localhost:11434/api/chat", env="LLM_ENDPOINT")
+    model: str = Field(default="llama3.2", env="MODEL")
+    llm_timeout: float = Field(default=180.0, env="LLM_TIMEOUT")
     
     # Redis configuration for rate limiting
     redis_host: str = Field(default="redis", env="REDIS_HOST")

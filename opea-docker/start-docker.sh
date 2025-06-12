@@ -26,8 +26,8 @@ docker compose build
 echo "Starting ollama-server..."
 docker compose up -d ollama-server
 
-echo "Starting llm_text..."
-docker compose up -d llm_text
+# echo "Starting llm_text..."
+# docker compose up -d llm_text
 
 echo "Starting guardrails..."
 docker compose up -d guardrails
@@ -52,7 +52,7 @@ docker compose up -d embeddings
 
 echo "OPEA services started. Use 'docker compose logs -f' to view logs."
 echo "Service endpoints:"
-echo "- LLM Text Service: http://localhost:9000/v1/chat/completions"
+echo "- LLM Text Service: http://localhost:11434/api/chat"
 echo "- Embeddings Service: http://localhost:6000/embed"
 echo "- LLM Vision Service: http://localhost:9100/v1/vision"
 echo "- TTS Service: http://localhost:9200/tts"

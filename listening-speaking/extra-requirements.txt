@@ -1,6 +1,6 @@
 # Extra requirements specific to listening-speaking project
 # Not covered by main.txt or base.txt
-
+httpx>=0.24.0 # for async requests
 # YouTube transcript handling
 youtube_transcript_api
 yt_dlp

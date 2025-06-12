@@ -45,20 +45,27 @@ def get_manga_ocr():
     global _manga_ocr
     if _manga_ocr is None:
         try:
-            # Try to use GPU first, fall back to CPU if not available or compatible
-            import torch
-            if torch.cuda.is_available():
-                try:
-                    _manga_ocr = MangaOcr()
-                except RuntimeError as e:
-                    if "CUDA" in str(e):
-                        print(f"GPU not compatible, falling back to CPU: {e}")
-                        _manga_ocr = MangaOcr(force_cpu=True)
-                    else:
-                        raise
-            else:
-                print("CUDA not available, using CPU")
+            # Check if we should force CPU usage
+            force_cpu = os.getenv('FORCE_CPU', 'false').lower() == 'true'
+            
+            if force_cpu:
+                print("Forcing CPU usage for MangaOCR")
                 _manga_ocr = MangaOcr(force_cpu=True)
+            else:
+                # Try to use GPU first, fall back to CPU if not available or compatible
+                import torch
+                if torch.cuda.is_available():
+                    try:
+                        _manga_ocr = MangaOcr()
+                    except RuntimeError as e:
+                        if "CUDA" in str(e):
+                            print(f"GPU not compatible, falling back to CPU: {e}")
+                            _manga_ocr = MangaOcr(force_cpu=True)
+                        else:
+                            raise
+                else:
+                    print("CUDA not available, using CPU")
+                    _manga_ocr = MangaOcr(force_cpu=True)
         except Exception as e:
             print(f"Warning: Model initialization failed: {e}")
     return _manga_ocr

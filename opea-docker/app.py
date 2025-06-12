@@ -52,7 +52,7 @@ async def chat_completion(request: ChatRequest):
                 await client.post(
                     f"{LLM_ENDPOINT}/api/pull",
                     json={"name": request.model},
-                    timeout=30.0
+                    timeout=120.0  # Increased from 30.0 to handle larger models
                 )
             except Exception as e:
                 print(f"Warning: Model pull failed: {e}")
@@ -61,7 +61,7 @@ async def chat_completion(request: ChatRequest):
             response = await client.post(
                 f"{LLM_ENDPOINT}/api/generate",  # or use /api/chat for newer Ollama versions
                 json=ollama_request,
-                timeout=60.0  # Increased timeout for generation
+                timeout=180.0  # Increased from 60.0 for longer responses
             )
 
             if response.status_code != 200:

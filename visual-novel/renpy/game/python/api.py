@@ -16,7 +16,9 @@ GAME_API_BASE_URL = os.environ.get('GAME_API_BASE_URL', 'http://localhost:8080/a
 
 # Direct service endpoints
 OLLAMA_SERVER_URL = os.environ.get('OLLAMA_SERVER_URL', 'http://localhost:8008')
-LLM_TEXT_ENDPOINT = os.environ.get('LLM_TEXT_URL', 'http://localhost:9000/v1/chat/completions')
+OLLAMA_URL = os.environ.get('OLLAMA_URL', 'http://localhost:11434')
+OLLAMA_MODEL = os.environ.get('OLLAMA_MODEL', 'llama3.2')
+LLM_TEXT_ENDPOINT = os.environ.get('LLM_TEXT_URL', 'http://localhost:11434/api/chat')
 GUARDRAILS_URL = os.environ.get('GUARDRAILS_URL', 'http://localhost:9400/v1/guardrails')
 CHROMADB_URL = os.environ.get('CHROMADB_URL', 'http://localhost:8050')
 TTS_ENDPOINT = os.environ.get('TTS_URL', 'http://localhost:9200/tts')

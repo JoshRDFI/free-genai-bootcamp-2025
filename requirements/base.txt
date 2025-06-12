@@ -1,8 +1,9 @@
 # Base requirements for all environments
 # Core ML and data processing
-torch>=2.1.0
-torchvision>=0.16.0
-torchaudio>=2.1.0
+--extra-index-url https://download.pytorch.org/whl/cpu
+torch
+torchvision
+torchaudio
 numpy>=1.26.3
 pandas>=2.2.0
 Pillow>=9.5.0

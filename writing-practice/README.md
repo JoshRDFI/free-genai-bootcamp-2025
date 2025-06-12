@@ -13,7 +13,7 @@ A simple application for practicing Japanese writing skills.
 
 - Python 3.x
 - Streamlit
-- Ollama (running locally with llama3 model)
+- Ollama (running locally with llama3.2 model)
 - **MangaOCR container/service running (see below)**
 
 ## Installation
@@ -34,7 +34,7 @@ docker run -p 9100:9100 mangaocr
 
 This will start the MangaOCR API at `http://localhost:9000/analyze`.
 
-3. Make sure Ollama is running with the llama3 model:
+3. Make sure Ollama is running with the llama3.2 model:
 
 ```bash
 ollama run llama3.2
@@ -104,7 +104,7 @@ This will start the MangaOCR API at `http://localhost:9000/analyze`.
 
 ### 2. Start Ollama
 
-Ensure Ollama is running with the llama3 model:
+Ensure Ollama is running with the llama3.2 model:
 
 ```bash
 ollama run llama3.2
@@ -153,7 +153,7 @@ The application will be available at http://localhost:8501 in your web browser.
 
 - **Frontend**: Streamlit for the user interface
 - **OCR**: MangaOCR via container API for Japanese text recognition
-- **LLM Integration**: Ollama with llama3 model for sentence generation and grading
+- **LLM Integration**: Ollama with llama3.2 model for sentence generation and grading
 - **Database**: SQLite for vocabulary storage
 - **Image Processing**: PIL and streamlit-drawable-canvas for image handling
 

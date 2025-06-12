@@ -497,8 +497,8 @@ if __name__ == '__main__':
     DATA_DIR.mkdir(exist_ok=True, parents=True)
     
     # Log startup information
-    logger.info(f"Starting Vocabulary API server on port 5000")
+    logger.info(f"Starting Vocabulary API server on port 5001")
     logger.info(f"Database path: {DB_PATH}")
     
     # Run the Flask app
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    app.run(host='0.0.0.0', port=5001, debug=True)
