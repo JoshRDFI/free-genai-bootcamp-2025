@@ -350,9 +350,8 @@ def start_docker_services():
         
         # Create a docker-compose.override.yml for CPU mode
         override_content = """
-version: '3.8'
 services:
-  llm_text:
+  ollama-server:
     deploy:
       resources:
         reservations:
@@ -368,6 +367,26 @@ services:
         reservations:
           devices: []
   mangaocr:
+    deploy:
+      resources:
+        reservations:
+          devices: []
+  tts:
+    deploy:
+      resources:
+        reservations:
+          devices: []
+  asr:
+    deploy:
+      resources:
+        reservations:
+          devices: []
+  embeddings:
+    deploy:
+      resources:
+        reservations:
+          devices: []
+  guardrails:
     deploy:
       resources:
         reservations:
@@ -402,7 +421,6 @@ def verify_services():
     
     required_services = [
         "ollama-server",
-        "llm_text",
         "guardrails",
         "chromadb",
         "tts",

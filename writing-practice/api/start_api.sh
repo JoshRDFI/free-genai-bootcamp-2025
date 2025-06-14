@@ -23,29 +23,13 @@ echo "Using Python command: $PYTHON_CMD"
 API_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 echo "API directory: $API_DIR"
 
-# Create virtual environment if it doesn't exist
-if [ ! -d "venv" ]; then
-    echo "Creating virtual environment..."
-    $PYTHON_CMD -m venv venv
-    
-    # If venv creation fails, try using the system's virtualenv command
-    if [ $? -ne 0 ]; then
-        echo "Failed to create virtual environment with venv module"
-        echo "Trying with virtualenv command..."
-        
-        if command -v virtualenv &>/dev/null; then
-            virtualenv venv
-        else
-            echo "Error: Could not create virtual environment"
-            echo "Please install virtualenv with: pip install virtualenv"
-            exit 1
-        fi
-    fi
-fi
+# Use the shared virtual environment
+VENV_PATH="$(cd "$API_DIR/.." && pwd)/.venv-wp"
+echo "Using shared virtual environment: $VENV_PATH"
 
 # Activate virtual environment
 echo "Activating virtual environment..."
-source venv/bin/activate
+source "$VENV_PATH/bin/activate"
 
 # Verify we're in the virtual environment
 if [ -z "$VIRTUAL_ENV" ]; then
@@ -55,9 +39,13 @@ fi
 
 echo "Virtual environment activated: $VIRTUAL_ENV"
 
-# Install requirements
-echo "Installing requirements..."
-pip install -r requirements.txt
+# Only install requirements if --skip-requirements flag is not present
+if [[ "$*" != *"--skip-requirements"* ]]; then
+    echo "Installing requirements..."
+    pip install -r requirements.txt
+else
+    echo "Skipping requirements installation..."
+fi
 
 # Create a PID file directory if it doesn't exist
 mkdir -p /tmp/writing-practice

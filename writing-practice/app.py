@@ -26,12 +26,21 @@ def start_api_server():
         return False
         
     try:
+        # Check if server is already running
+        try:
+            response = requests.get("http://localhost:5001/api/health")
+            if response.status_code == 200:
+                logger.info("API server is already running")
+                return True
+        except requests.exceptions.ConnectionError:
+            pass  # Server is not running, continue with startup
+            
         # Make sure the script is executable
         os.chmod(start_script, 0o755)
         
-        # Start the API server
+        # Start the API server without reinstalling requirements
         process = subprocess.Popen(
-            [str(start_script)],
+            [str(start_script), "--skip-requirements"],  # Add flag to skip requirements
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             text=True
@@ -40,7 +49,7 @@ def start_api_server():
         # Wait for the server to start
         for _ in range(30):  # Wait up to 30 seconds
             try:
-                response = requests.get("http://localhost:5000/api/health")
+                response = requests.get("http://localhost:5001/api/health")
                 if response.status_code == 200:
                     logger.info("API server started successfully")
                     return True
@@ -91,26 +100,6 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# Log startup information
-logger.info(f"Starting Streamlit app...")
-logger.info(f"BASE_DIR: {BASE_DIR}")
-logger.info(f"PROJECT_ROOT: {PROJECT_ROOT}")
-logger.info(f"DATA_DIR: {DATA_DIR}")
-logger.info(f"DB_PATH: {DB_PATH}")
-logger.info(f"DB_PATH exists: {DB_PATH.exists()}")
-logger.info(f"SENTENCES_PATH: {SENTENCES_PATH}")
-logger.info(f"PROMPTS_PATH: {PROMPTS_PATH}")
-
-# Start API server
-api_dir = Path(__file__).parent / "api"
-start_script = api_dir / "start_api.sh"
-if start_script.exists():
-    os.chmod(start_script, 0o755)
-    subprocess.Popen([str(start_script)], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
-    logger.info("Started API server")
-else:
-    logger.error(f"API start script not found at {start_script}")
-
 # Service endpoints
 SERVICES = {
     "api": "http://localhost:5001/api/health",
@@ -126,6 +115,31 @@ HEALTH_ENDPOINTS = {
     "ollama": "http://localhost:11434/api/version",  # Ollama version endpoint
     "embeddings": "http://localhost:6000/health"
 }
+
+def initialize_app():
+    """Initialize the app and cache results in session state"""
+    if 'initialized' not in st.session_state:
+        # Log startup information only once
+        logger.info(f"Starting Streamlit app...")
+        logger.info(f"BASE_DIR: {BASE_DIR}")
+        logger.info(f"PROJECT_ROOT: {PROJECT_ROOT}")
+        logger.info(f"DATA_DIR: {DATA_DIR}")
+        logger.info(f"DB_PATH: {DB_PATH}")
+        logger.info(f"DB_PATH exists: {DB_PATH.exists()}")
+        logger.info(f"SENTENCES_PATH: {SENTENCES_PATH}")
+        logger.info(f"PROMPTS_PATH: {PROMPTS_PATH}")
+
+        # Start API server only if not already running
+        if not start_api_server():
+            logger.error("Failed to start API server")
+            st.error("Failed to start API server. Please check the logs for details.")
+            return False
+
+        # Check all services and cache results
+        st.session_state.service_health = check_all_services()
+        st.session_state.initialized = True
+        return True
+    return True
 
 def check_service_health(service_name, endpoint, timeout=30):
     """Check if a service is healthy"""
@@ -231,26 +245,55 @@ def process_image_with_ocr(image):
     if not check_service_health("mangaocr", SERVICES["mangaocr"]):
         st.error("MangaOCR service is not available")
         return "Error: MangaOCR service is not available"
-        
+    
     try:
         # Convert to PIL Image if it's not already
         if not isinstance(image, Image.Image):
-            image = Image.open(image)
-        temp_path = "temp_image.png"
-        image.save(temp_path)
-        with open(temp_path, 'rb') as f:
-            files = {'image': f}
-            response = requests.post(SERVICES["mangaocr"], files=files, timeout=30)
-        if Path(temp_path).exists():
-            Path(temp_path).unlink()
+            try:
+                image = Image.open(image)
+            except Exception as e:
+                logger.error(f"Failed to open image: {e}")
+                return "Error: Invalid image format"
+        
+        # Ensure image is in RGB mode
+        if image.mode != 'RGB':
+            image = image.convert('RGB')
+        
+        # Create an in-memory byte stream
+        img_byte_arr = io.BytesIO()
+        image.save(img_byte_arr, format='PNG')
+        img_byte_arr = img_byte_arr.getvalue()
+        
+        files = {'file': ('image.png', img_byte_arr, 'image/png')}
+        data = {'language': 'ja'}  # Add language parameter
+        response = requests.post(
+            SERVICES["mangaocr"],
+            files=files,
+            data=data,
+            timeout=30,
+            headers={'Accept': 'application/json'}
+        )
+        
         if response.status_code == 200:
-            return response.json().get('text', '')
+            result = response.json()
+            if 'text' in result:
+                return result['text']
+            else:
+                logger.error(f"Unexpected MangaOCR response format: {result}")
+                return "Error: Invalid response from OCR service"
         else:
             logger.error(f"MangaOCR API error: {response.status_code} {response.text}")
-            return "Error processing image"
+            return f"Error: OCR service returned status {response.status_code}"
+    
+    except requests.exceptions.RequestException as e:
+        logger.error(f"MangaOCR request failed: {e}")
+        return "Error: Failed to communicate with OCR service"
+    except json.JSONDecodeError as e:
+        logger.error(f"Failed to parse MangaOCR response: {e}")
+        return "Error: Invalid response from OCR service"
     except Exception as e:
-        logger.error(f"OCR error: {e}")
-        return "Error processing image"
+        logger.error(f"OCR processing error: {e}")
+        return "Error: Failed to process image"
 
 # Translate Japanese text to English
 def translate_text(text, prompts):
@@ -382,18 +425,53 @@ def generate_sentence(category, word, prompts):
             result = response.json()
             response_text = result.get("message", {}).get("content", "")
             
-            # Parse the response to extract Japanese and English parts
-            if "Japanese:" in response_text and "English:" in response_text:
-                japanese = response_text.split("Japanese:")[1].split("English:")[0].strip()
-                english = response_text.split("English:")[1].strip()
+            # Try to parse the response in different formats
+            try:
+                # First try the expected format with markers
+                if "Japanese:" in response_text and "English:" in response_text:
+                    japanese = response_text.split("Japanese:")[1].split("English:")[0].strip()
+                    english = response_text.split("English:")[1].strip()
+                else:
+                    # If no markers, try to split by newline and assume first line is Japanese
+                    lines = [line.strip() for line in response_text.strip().split('\n') if line.strip()]
+                    if len(lines) >= 2:
+                        # First non-empty line is Japanese
+                        japanese = lines[0]
+                        # Look for English after "English:" or use the second line
+                        english = None
+                        for line in lines[1:]:
+                            if line.startswith("English:"):
+                                english = line[8:].strip()  # Remove "English:" prefix
+                                break
+                        if english is None:
+                            english = lines[1]  # Use second line if no "English:" marker
+                    else:
+                        # If only one line, try to split by comma
+                        parts = response_text.split(',')
+                        if len(parts) >= 2:
+                            japanese = parts[0].strip()
+                            english = parts[1].strip()
+                        else:
+                            logger.error(f"Invalid response format: {response_text}")
+                            return None
+
+                # Clean up the text - remove any square brackets and extra whitespace
+                japanese = japanese.strip('[]').strip()
+                english = english.strip('[]').strip()
+
+                # Validate that we have both Japanese and English
+                if not japanese or not english:
+                    logger.error(f"Missing Japanese or English in response: {response_text}")
+                    return None
+
                 return {
                     "japanese": japanese,
                     "english": english,
                     "category": category,
                     "level": "N5"  # Default to N5 for now
                 }
-            else:
-                logger.error(f"Invalid response format: {response_text}")
+            except Exception as e:
+                logger.error(f"Error parsing response: {e}")
                 return None
     except Exception as e:
         logger.error(f"Sentence generation error: {e}")
@@ -429,6 +507,9 @@ if 'vocabulary_groups' not in st.session_state:
 # Load prompts
 prompts = load_prompts()
 
+# Initialize the app
+initialize_app()
+
 # Main app
 st.title("Japanese Writing Practice")
 
@@ -439,7 +520,7 @@ if st.sidebar.button("🔄 Reload Vocabulary Groups"):
     st.rerun()
 
 # Check service health and display status
-health_status = check_all_services()
+health_status = st.session_state.service_health
 
 # Display service status
 st.sidebar.title("Service Status")

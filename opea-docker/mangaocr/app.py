@@ -1,18 +1,22 @@
-from fastapi import FastAPI, HTTPException, UploadFile, File, Form, Query
+from fastapi import FastAPI, HTTPException, UploadFile, File, Form
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from typing import List, Optional, Dict, Any, Union
-import httpx
+from typing import Optional
 import os
-import base64
-from enum import Enum
-from pathlib import Path
-
-# Configuration
-LLM_ENDPOINT = os.environ.get("LLM_ENDPOINT", "http://llm:11434")
-VISION_MODEL_ID = os.environ.get("VISION_MODEL_ID", "llava:13b")
+from PIL import Image
+import io
 
 # Initialize FastAPI app
 app = FastAPI()
+
+# Add CORS middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # In production, replace with specific origins
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # Global variables
 _manga_ocr = None
@@ -26,19 +30,6 @@ try:
 except ImportError:
     print("MangaOCR not available")
     manga_ocr_available = False
-
-# Models
-class VisionRequest(BaseModel):
-    model: Optional[str] = None
-    prompt: str
-    image: str
-    temperature: Optional[float] = 0.7
-    max_tokens: Optional[int] = 1000
-
-class VisionResponse(BaseModel):
-    model: str
-    content: str
-    done: bool
 
 # Helper functions
 def get_manga_ocr():
@@ -68,85 +59,72 @@ def get_manga_ocr():
                     _manga_ocr = MangaOcr(force_cpu=True)
         except Exception as e:
             print(f"Warning: Model initialization failed: {e}")
+            return None
+        
+# Debug: log the MangaOcr object
+    print(f"MangaOCR object: {_manga_ocr}")
     return _manga_ocr
+
+def validate_image(image: Image.Image) -> None:
+    """Validate image format and size."""
+    # Check image format
+    if image.format not in ['PNG', 'JPEG', 'JPG']:
+        raise HTTPException(status_code=400, detail="Unsupported image format. Please use PNG or JPEG.")
+    
+    # Check image size
+    max_size = 10 * 1024 * 1024  # 10MB
+    if len(image.tobytes()) > max_size:
+        raise HTTPException(status_code=400, detail="Image size too large. Maximum size is 10MB.")
+    
+    # Check image dimensions
+    max_dimension = 4096
+    if image.width > max_dimension or image.height > max_dimension:
+        raise HTTPException(status_code=400, detail=f"Image dimensions too large. Maximum dimension is {max_dimension}px.")
 
 @app.post("/ocr")
 async def ocr_image(file: UploadFile = File(...), language: Optional[str] = Form("ja")):
     try:
         if not manga_ocr_available:
-            raise HTTPException(status_code=500, detail="MangaOCR not available")
+            raise HTTPException(status_code=503, detail="MangaOCR service is not available")
             
         ocr = get_manga_ocr()
         if ocr is None:
-            raise HTTPException(status_code=500, detail="MangaOCR failed to initialize")
-            
+            raise HTTPException(status_code=503, detail="MangaOCR service failed to initialize")
+
+        # Validate file type
+        if not file.content_type.startswith('image/'):
+            raise HTTPException(status_code=400, detail="File must be an image")
+
         # Read the uploaded file
         contents = await file.read()
         
-        # Process with MangaOCR
-        text = ocr(contents)
+        try:
+            # Convert bytes to PIL Image
+            image = Image.open(io.BytesIO(contents))
+            image.load()
+        except Exception as e:
+            raise HTTPException(status_code=400, detail=f"Invalid image file: {str(e)}")
+
+        # Validate image
+        validate_image(image)
         
-        return {"text": text, "language": language}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error processing image: {str(e)}")
-
-@app.post("/vision")
-async def process_vision(request: VisionRequest):
-    try:
-        async with httpx.AsyncClient() as client:
-            response = await client.post(
-                f"{LLM_ENDPOINT}/api/chat",  # Using chat API for vision models
-                json={
-                    "model": request.model or VISION_MODEL_ID,
-                    "messages": [
-                        {
-                            "role": "user",
-                            "content": [
-                                {"type": "text", "text": request.prompt},
-                                {"type": "image_url", "image_url": {"url": request.image}}
-                            ]
-                        }
-                    ],
-                    "temperature": request.temperature,
-                    "max_tokens": request.max_tokens
-                }
-            )
-            
-            if response.status_code != 200:
-                raise HTTPException(
-                    status_code=response.status_code,
-                    detail=f"LLM service error: {response.text}"
-                )
+        # Process with MangaOCR using the PIL Image
+        try:
+            text = ocr(image)
+            if not text:
+                raise HTTPException(status_code=422, detail="No text could be extracted from the image")
+            return {"text": text, "language": language}
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Error processing image with OCR: {str(e)}")
                 
-            result = response.json()
-            content = result.get("message", {}).get("content", "")
-            
-            return VisionResponse(
-                model=request.model or VISION_MODEL_ID,
-                content=content,
-                done=True
-            )
-
+    except HTTPException:
+        raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error processing image: {str(e)}")
-
-@app.post("/upload-image")
-async def upload_image(file: UploadFile = File(...)):
-    try:
-        contents = await file.read()
-        encoded = base64.b64encode(contents).decode("utf-8")
-        return {"image_url": {"url": f"data:image/{file.content_type.split('/')[-1]};base64,{encoded}"}}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error processing image: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Unexpected error: {str(e)}")
 
 @app.get("/health")
 async def health_check():
     try:
-        # Check if Ollama server is responsive
-        async with httpx.AsyncClient() as client:
-            response = await client.get(f"{LLM_ENDPOINT}/api/version")
-            ollama_status = "connected" if response.status_code == 200 else "disconnected"
-            
         # Check MangaOCR status
         manga_ocr_status = "available" if manga_ocr_available else "not available"
         if manga_ocr_available:
@@ -155,8 +133,6 @@ async def health_check():
             
         return {
             "status": "healthy", 
-            "ollama_status": ollama_status, 
-            "model": VISION_MODEL_ID,
             "manga_ocr_status": manga_ocr_status
         }
     except Exception as e:
@@ -168,5 +144,5 @@ async def health_check():
 
 if __name__ == "__main__":
     import uvicorn
-    port = int(os.getenv("VISION_SERVICE_PORT", 9100))
+    port = int(os.getenv("MANGAOCR_PORT", 9100))
     uvicorn.run(app, host="0.0.0.0", port=port)
