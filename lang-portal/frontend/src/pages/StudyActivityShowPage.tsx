@@ -17,6 +17,7 @@ const StudyActivityShowPage: React.FC = () => {
   const sessions = studyActivity.sessions || [];
   const isQuiz = studyActivity.name === "Vocabulary Quiz";
   const isSentenceConstructor = studyActivity.name === "Sentence Construction";
+  const isKanjiWriting = studyActivity.name === "Kanji Writing Practice";
 
   const handleLaunchActivity = () => {
     if (isQuiz) {
@@ -25,6 +26,9 @@ const StudyActivityShowPage: React.FC = () => {
     } else if (isSentenceConstructor) {
       // For sentence constructor, navigate to the sentence constructor page
       navigate('/sentence-constructor');
+    } else if (isKanjiWriting) {
+      // For kanji writing, navigate to selection page
+      navigate('/kanji-writing/select');
     } else if (studyActivity.url) {
       // Only use window.open for activities with a valid URL
       window.open(studyActivity.url, '_blank');
@@ -59,7 +63,7 @@ const StudyActivityShowPage: React.FC = () => {
             onClick={handleLaunchActivity} 
             className="w-full md:w-auto"
           >
-            {isQuiz ? "Start Quiz" : isSentenceConstructor ? "Start Sentence Constructor" : "Launch Activity"}
+            {isQuiz ? "Start Quiz" : isSentenceConstructor ? "Start Sentence Constructor" : isKanjiWriting ? "Start Kanji Writing" : "Launch Activity"}
           </Button>
         </div>
       </div>

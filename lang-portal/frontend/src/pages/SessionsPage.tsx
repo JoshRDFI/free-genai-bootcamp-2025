@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from '@/components/ui/table';
 import { useSessions } from '@/services/api';
 import { PaginationControls } from '@/components/PaginationControls';
@@ -29,29 +30,33 @@ const SessionsPage: React.FC = () => {
             <TableRow key={session.id}>
               <TableCell>
                 <Link
-                  to={`/word-groups/${session.groupId}`}
+                  to={`/word-groups/${session.group_id}`}
                   className="text-blue-600 hover:underline dark:text-blue-400"
                 >
-                  {session.groupName}
+                  {session.group.name}
                 </Link>
               </TableCell>
               <TableCell>
                 <Link
-                  to={`/study-activities/${session.activityId}`}
+                  to={`/study-activities/${session.study_activity_id}`}
                   className="text-blue-600 hover:underline dark:text-blue-400"
                 >
-                  {session.activityName}
+                  {session.study_activity.name}
                 </Link>
               </TableCell>
-              <TableCell>{formatDateTime(session.startTime)}</TableCell>
-              <TableCell>{formatDateTime(session.endTime)}</TableCell>
-              <TableCell>{session.duration} minutes</TableCell>
-              <TableCell>{session.reviewItems.length}</TableCell>
+              <TableCell>{formatDateTime(new Date(session.created_at))}</TableCell>
+              <TableCell>{formatDateTime(new Date(session.updated_at))}</TableCell>
+              <TableCell>{Math.round((new Date(session.updated_at).getTime() - new Date(session.created_at).getTime()) / (1000 * 60))} minutes</TableCell>
+              <TableCell>{session.review_items.length}</TableCell>
             </TableRow>
           ))}
         </TableBody>
       </Table>
-      <PaginationControls page={page} setPage={setPage} totalPages={totalPages} />
+      <PaginationControls 
+        currentPage={page} 
+        totalPages={totalPages} 
+        onPageChange={setPage} 
+      />
     </div>
   );
 };

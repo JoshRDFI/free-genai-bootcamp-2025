@@ -111,6 +111,9 @@ class StudySessionResponse(BaseModel):
 
     class Config:
         from_attributes = True
+        json_encoders = {
+            datetime: lambda v: v.isoformat()
+        }
 
 class PaginationInfo(BaseModel):
     current_page: int
@@ -313,6 +316,13 @@ def get_group(id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Group not found")
     return group
 
+@api_router.get("/groups/{id}/words", response_model=List[WordResponse])
+def get_group_words(id: int, db: Session = Depends(get_db)):
+    group = db.query(Group).get(id)
+    if not group:
+        raise HTTPException(status_code=404, detail="Group not found")
+    return group.words
+
 @api_router.get("/sessions", response_model=PaginatedResponse[StudySessionResponse])
 def get_sessions(
     page: int = 1,
@@ -325,8 +335,18 @@ def get_sessions(
     
     sessions = query.offset((page - 1) * items_per_page).limit(items_per_page).all()
     
+    # Convert sessions to dictionaries with proper datetime formatting
+    formatted_sessions = []
+    for session in sessions:
+        session_dict = session.to_dict()
+        # Add relationships
+        session_dict['group'] = session.group.to_dict()
+        session_dict['study_activity'] = session.study_activity.to_dict()
+        session_dict['review_items'] = [item.to_dict() for item in session.review_items]
+        formatted_sessions.append(session_dict)
+    
     return {
-        "items": sessions,
+        "items": formatted_sessions,
         "pagination": {
             "current_page": page,
             "total_pages": total_pages,

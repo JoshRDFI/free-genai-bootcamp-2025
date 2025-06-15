@@ -35,7 +35,7 @@ class Word(Base):
     kanji = Column(String, nullable=False)
     romaji = Column(String, nullable=False)
     english = Column(String, nullable=False)
-    parts = Column(JSON, nullable=False)
+    parts = Column(JSON, nullable=False)  # Will store: {level: str, strokes: int, strokeOrder: List[Dict[str, List[float]]]}
     correct_count = Column(Integer, default=0)
     wrong_count = Column(Integer, default=0)
     groups = relationship('Group', secondary=word_groups, back_populates='words')

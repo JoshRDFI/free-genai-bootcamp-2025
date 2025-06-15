@@ -2,7 +2,7 @@ import React from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
-import { useWordGroups } from '@/services/api';
+import { useWordGroups, useGroup } from '@/services/api';
 
 interface Word {
   id: number;
@@ -24,55 +24,52 @@ const WordGroupDetailPage: React.FC = () => {
   const { groupId } = useParams();
   const navigate = useNavigate();
   const { wordGroups, loading, error } = useWordGroups();
+  const { group } = useGroup(groupId);
   const wordGroup = wordGroups.find(g => g.id === Number(groupId)) as Group | undefined;
 
-  if (loading) return <p>Loading...</p>;
-  if (error) return <p>Error: {error.message}</p>;
-  if (!wordGroup) return <p>Group not found</p>;
+  if (loading) return <div>Loading...</div>;
+  if (error) return <div>Error: {error.message}</div>;
+  if (!wordGroup) return <div>Group not found</div>;
 
   const handleStartQuiz = () => {
     navigate(`/quiz/${groupId}`);
   };
 
-  return (
-    <div className="container mx-auto px-4 py-8 space-y-8">
-      <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold dark:text-gray-100">{wordGroup.name}</h1>
-        <Button onClick={handleStartQuiz}>
-          Start Quiz
-        </Button>
-      </div>
+  const handleStartKanjiWriting = () => {
+    navigate(`/kanji-writing/${groupId}`);
+  };
 
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Kanji</TableHead>
-            <TableHead>Romaji</TableHead>
-            <TableHead>English</TableHead>
-            <TableHead>Parts</TableHead>
-            <TableHead>Correct</TableHead>
-            <TableHead>Wrong</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {wordGroup.words.map((word: Word) => (
-            <TableRow key={word.id}>
-              <TableCell>{word.kanji}</TableCell>
-              <TableCell>{word.romaji}</TableCell>
-              <TableCell>{word.english}</TableCell>
-              <TableCell>
-                {Object.entries(word.parts).map(([key, value]) => (
-                  <span key={key} className="mr-2">
-                    {key}: {String(value)}
-                  </span>
-                ))}
-              </TableCell>
-              <TableCell>{word.correct_count}</TableCell>
-              <TableCell>{word.wrong_count}</TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
+  return (
+    <div className="container mx-auto px-4 py-8">
+      <div className="max-w-4xl mx-auto">
+        <div className="flex justify-between items-center mb-8">
+          <h1 className="text-3xl font-bold dark:text-gray-100">{wordGroup.name}</h1>
+          <div className="space-x-4">
+            <Button onClick={handleStartQuiz}>
+              Start Quiz
+            </Button>
+            <Button onClick={handleStartKanjiWriting}>
+              Start Kanji Writing Practice
+            </Button>
+          </div>
+        </div>
+
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+          <h2 className="text-xl font-semibold mb-4">Words in this Group</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {wordGroup.words.map((word) => (
+              <div
+                key={word.id}
+                className="p-4 border border-gray-200 dark:border-gray-700 rounded-lg"
+              >
+                <p className="text-2xl font-bold mb-2">{word.kanji}</p>
+                <p className="text-gray-600 dark:text-gray-300">{word.romaji}</p>
+                <p className="text-gray-800 dark:text-gray-200">{word.english}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
     </div>
   );
 };

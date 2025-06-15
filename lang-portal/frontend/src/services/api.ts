@@ -283,6 +283,32 @@ export const useUserProgress = () => {
   return { userProgress, loading, error, updateUserProgress };
 };
 
+export const useGroup = (groupId: string | undefined) => {
+  const [group, setGroup] = useState<Group | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
+
+  useEffect(() => {
+    const fetchGroup = async () => {
+      if (!groupId) return;
+      try {
+        setLoading(true);
+        const response = await axios.get<Group>(`${API_BASE_URL}/groups/${groupId}`);
+        setGroup(response.data);
+        setError(null);
+      } catch (err) {
+        setError(err instanceof Error ? err : new Error('Failed to fetch group'));
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchGroup();
+  }, [groupId]);
+
+  return { group, loading, error };
+};
+
 export const api = {
   // Study Activities
   getStudyActivities: () => 

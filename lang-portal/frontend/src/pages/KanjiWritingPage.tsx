@@ -1,0 +1,501 @@
+import React, { useState, useEffect, useRef } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import {
+  Box,
+  Button,
+  Card,
+  CardContent,
+  Typography,
+  CircularProgress,
+  Alert,
+  Select,
+  MenuItem,
+  InputLabel,
+  FormControl,
+  SelectChangeEvent,
+  Chip,
+} from '@mui/material';
+import { useWords, useWordGroups, useUserProgress } from '../services/api';
+
+interface Point {
+  x: number;
+  y: number;
+}
+
+interface Stroke {
+  points: Point[];
+  isCorrect: boolean;
+}
+
+interface Word {
+  id: number;
+  kanji: string;
+  romaji: string;
+  english: string;
+  parts: {
+    level: string;
+    strokes: number;
+    strokeOrder: Array<{
+      points: Array<[number, number]>;
+    }>;
+  };
+}
+
+const KanjiWritingPage: React.FC = () => {
+  const navigate = useNavigate();
+  const { groupId } = useParams();
+  const { wordGroups, loading: groupsLoading, error: groupsError } = useWordGroups();
+  const { userProgress, loading: progressLoading, error: progressError } = useUserProgress();
+  const [selectedGroupId, setSelectedGroupId] = useState<string>(groupId || '');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [currentWord, setCurrentWord] = useState<Word | null>(null);
+  const [isDrawing, setIsDrawing] = useState(false);
+  const [currentStroke, setCurrentStroke] = useState<number>(0);
+  const [strokes, setStrokes] = useState<Stroke[]>([]);
+  const [feedback, setFeedback] = useState<string>('');
+  const [words, setWords] = useState<Word[]>([]);
+  const [currentWordIndex, setCurrentWordIndex] = useState(0);
+  const [score, setScore] = useState(0);
+  const [showGuide, setShowGuide] = useState(true);
+  const [animationFrame, setAnimationFrame] = useState(0);
+
+  useEffect(() => {
+    if (groupId === 'select') {
+      // If we're in select mode, don't try to start practice
+      return;
+    }
+
+    if (!groupId) {
+      // Don't set error for initial state
+      return;
+    }
+
+    if (groupId && !selectedGroupId) {
+      setSelectedGroupId(groupId);
+    }
+  }, [groupId]);
+
+  const handleGroupChange = (event: SelectChangeEvent<string>) => {
+    const newGroupId = event.target.value;
+    setSelectedGroupId(newGroupId);
+    if (newGroupId) {
+      navigate(`/kanji-writing/${newGroupId}`);
+    }
+  };
+
+  useEffect(() => {
+    const fetchWords = async () => {
+      if (!groupId || groupId === 'select') return; // Don't fetch if no groupId or in select mode
+      
+      try {
+        setLoading(true);
+        const response = await fetch(`http://localhost:5000/api/groups/${groupId}/words`);
+        if (!response.ok) {
+          throw new Error('Failed to fetch words');
+        }
+        const data = await response.json();
+        setWords(data);
+        if (data.length > 0) {
+          setCurrentWord(data[0]);
+          setStrokes([]);
+          setCurrentWordIndex(0);
+          setScore(0);
+        }
+      } catch (error) {
+        console.error('Failed to fetch words:', error);
+        setError('Failed to load words. Please try again.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchWords();
+  }, [groupId]);
+
+  useEffect(() => {
+    if (!canvasRef.current || !currentWord) return;
+
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    // Clear canvas
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    
+    // Draw grid
+    ctx.strokeStyle = '#e5e7eb';
+    ctx.lineWidth = 1;
+    for (let i = 0; i < 3; i++) {
+      ctx.beginPath();
+      ctx.moveTo(canvas.width / 3 * (i + 1), 0);
+      ctx.lineTo(canvas.width / 3 * (i + 1), canvas.height);
+      ctx.stroke();
+      
+      ctx.beginPath();
+      ctx.moveTo(0, canvas.height / 3 * (i + 1));
+      ctx.lineTo(canvas.width, canvas.height / 3 * (i + 1));
+      ctx.stroke();
+    }
+
+    // Draw reference kanji (faded)
+    ctx.font = '48px sans-serif';
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(currentWord.kanji, canvas.width / 2, canvas.height / 2);
+
+    // Draw completed strokes
+    strokes.forEach((stroke, index) => {
+      if (stroke.points.length < 2) return;
+      
+      ctx.beginPath();
+      ctx.moveTo(stroke.points[0].x, stroke.points[0].y);
+      stroke.points.forEach(point => {
+        ctx.lineTo(point.x, point.y);
+      });
+      ctx.strokeStyle = stroke.isCorrect ? '#10B981' : '#EF4444';
+      ctx.lineWidth = 3;
+      ctx.stroke();
+    });
+
+    // Draw current stroke guide if enabled
+    if (showGuide && currentWord.parts.strokeOrder && currentWord.parts.strokeOrder[currentStroke]) {
+      const guideStroke = currentWord.parts.strokeOrder[currentStroke];
+      const startPoint = guideStroke.points[0];
+      const endPoint = guideStroke.points[1];
+      
+      // Animate the guide stroke
+      const progress = (Math.sin(Date.now() / 500) + 1) / 2;
+      const currentX = startPoint[0] + (endPoint[0] - startPoint[0]) * progress;
+      const currentY = startPoint[1] + (endPoint[1] - startPoint[1]) * progress;
+      
+      ctx.beginPath();
+      ctx.moveTo(startPoint[0] * canvas.width, startPoint[1] * canvas.height);
+      ctx.lineTo(currentX * canvas.width, currentY * canvas.height);
+      ctx.strokeStyle = 'rgba(59, 130, 246, 0.5)';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+    }
+  }, [currentWord, strokes, currentStroke, showGuide, animationFrame]);
+
+  // Animation loop for guide stroke
+  useEffect(() => {
+    if (showGuide && currentWord) {
+      const animationId = requestAnimationFrame(() => {
+        setAnimationFrame(prev => prev + 1);
+      });
+      return () => cancelAnimationFrame(animationId);
+    }
+  }, [showGuide, animationFrame, currentWord]);
+
+  const getCanvasPoint = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>): Point => {
+    const canvas = canvasRef.current;
+    if (!canvas) return { x: 0, y: 0 };
+
+    const rect = canvas.getBoundingClientRect();
+    const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
+    const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
+    
+    return {
+      x: clientX - rect.left,
+      y: clientY - rect.top
+    };
+  };
+
+  const startDrawing = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
+    if (!canvasRef.current || !currentWord) return;
+    
+    const point = getCanvasPoint(e);
+    setIsDrawing(true);
+    setStrokes(prev => [...prev, { points: [point], isCorrect: false }]);
+  };
+
+  const draw = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
+    if (!isDrawing || !canvasRef.current || !currentWord) return;
+    
+    const point = getCanvasPoint(e);
+    setStrokes(prev => {
+      const newStrokes = [...prev];
+      const currentStroke = newStrokes[newStrokes.length - 1];
+      currentStroke.points.push(point);
+      return newStrokes;
+    });
+  };
+
+  const stopDrawing = () => {
+    if (!isDrawing || !currentWord) return;
+    
+    setIsDrawing(false);
+    validateStroke();
+  };
+
+  const validateStroke = () => {
+    if (!currentWord) return;
+
+    const currentStrokeData = currentWord.parts.strokeOrder[currentStroke];
+    if (!currentStrokeData) return;
+
+    const drawnStroke = strokes[strokes.length - 1];
+    const startPoint = currentStrokeData.points[0];
+    const endPoint = currentStrokeData.points[1];
+
+    // Calculate the angle and length of both strokes
+    const drawnVector = {
+      x: drawnStroke.points[drawnStroke.points.length - 1].x - drawnStroke.points[0].x,
+      y: drawnStroke.points[drawnStroke.points.length - 1].y - drawnStroke.points[0].y
+    };
+    const correctVector = {
+      x: (endPoint[0] - startPoint[0]) * canvasRef.current!.width,
+      y: (endPoint[1] - startPoint[1]) * canvasRef.current!.height
+    };
+
+    const drawnLength = Math.sqrt(drawnVector.x * drawnVector.x + drawnVector.y * drawnVector.y);
+    const correctLength = Math.sqrt(correctVector.x * correctVector.x + correctVector.y * correctVector.y);
+    const lengthRatio = Math.min(drawnLength, correctLength) / Math.max(drawnLength, correctLength);
+
+    const drawnAngle = Math.atan2(drawnVector.y, drawnVector.x);
+    const correctAngle = Math.atan2(correctVector.y, correctVector.x);
+    const angleDiff = Math.abs(drawnAngle - correctAngle);
+
+    // Consider the stroke correct if the angle difference is less than 45 degrees
+    // and the length ratio is greater than 0.7
+    const isCorrect = angleDiff < Math.PI / 4 && lengthRatio > 0.7;
+
+    setStrokes(prev => {
+      const newStrokes = [...prev];
+      newStrokes[newStrokes.length - 1].isCorrect = isCorrect;
+      return newStrokes;
+    });
+
+    if (isCorrect) {
+      setCurrentStroke(prev => prev + 1);
+      setScore(prev => prev + 1);
+      setFeedback('Correct stroke!');
+    } else {
+      setFeedback('Try again!');
+    }
+
+    // Check if all strokes are complete
+    if (currentStroke + 1 === currentWord.parts.strokeOrder.length) {
+      setFeedback('Great job! Move to next kanji.');
+    }
+  };
+
+  const nextWord = () => {
+    if (currentWordIndex < words.length - 1) {
+      setCurrentWordIndex(prev => prev + 1);
+      setCurrentWord(words[currentWordIndex + 1]);
+      setCurrentStroke(0);
+      setStrokes([]);
+      setFeedback('');
+    }
+  };
+
+  const clearCanvas = () => {
+    if (!canvasRef.current) return;
+    const ctx = canvasRef.current.getContext('2d');
+    if (!ctx) return;
+    ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
+    setCurrentStroke(0);
+    setStrokes([]);
+  };
+
+  if (groupsError || progressError) {
+    return (
+      <Box p={3}>
+        <Alert severity="error">
+          {groupsError?.message || progressError?.message}
+        </Alert>
+      </Box>
+    );
+  }
+
+  if (groupsLoading || progressLoading || loading) {
+    return (
+      <Box display="flex" justifyContent="center" alignItems="center" minHeight="60vh">
+        <CircularProgress />
+      </Box>
+    );
+  }
+
+  if (groupId === 'select' || !selectedGroupId) {
+    return (
+      <Box p={3}>
+        <Card sx={{ bgcolor: '#f9fafb' }}>
+          <CardContent>
+            <Typography variant="h4" gutterBottom>
+              Kanji Writing Practice
+            </Typography>
+            <Typography variant="body1" paragraph>
+              Practice writing Japanese kanji characters with stroke order guidance.
+            </Typography>
+            
+            <Box mb={2}>
+              <Typography variant="subtitle1" gutterBottom>
+                Your Current Level:
+              </Typography>
+              <Chip 
+                label={userProgress?.current_level || 'N5'} 
+                color="primary" 
+                sx={{ fontSize: '1.1rem', padding: '20px 10px' }}
+              />
+            </Box>
+            
+            <FormControl fullWidth sx={{ mt: 2 }}>
+            <InputLabel>Select Word Group</InputLabel>
+              <Select
+                value={selectedGroupId}
+                onChange={handleGroupChange}
+                label="Select Word Group"
+                sx={{
+                  '& .MuiSelect-select': {
+                    bgcolor: '#f9fafb',
+                    color: '#374151'
+                  },
+                  '& .MuiOutlinedInput-notchedOutline': {
+                    borderColor: '#e5e7eb'
+                  },
+                  '&:hover .MuiOutlinedInput-notchedOutline': {
+                    borderColor: '#374151'
+                  },
+                  '& .MuiSelect-icon': {
+                    color: '#374151'
+                  }
+                }}
+                MenuProps={{
+                  PaperProps: {
+                    sx: {
+                      bgcolor: '#f9fafb',
+                      '& .MuiMenuItem-root': {
+                        color: '#374151',
+                        '&:hover': {
+                          bgcolor: '#e5e7eb'
+                        }
+                      }
+                    }
+                  }
+                }}
+              >
+                {wordGroups?.map((group) => (
+                  <MenuItem key={group.id} value={group.id}>
+                    {group.name} ({group.words_count} words)
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+
+            {error && (
+              <Alert severity="error" sx={{ mt: 2 }}>
+                {error}
+              </Alert>
+            )}
+          </CardContent>
+        </Card>
+      </Box>
+    );
+  }
+
+  if (!currentWord) {
+    return (
+      <Box p={3}>
+        <Alert severity="info">
+          No words available in this group. Please select another group.
+        </Alert>
+      </Box>
+    );
+  }
+
+  return (
+    <Box p={3}>
+      <Card sx={{ bgcolor: '#f9fafb' }}>
+        <CardContent>
+          <Typography variant="h4" gutterBottom>
+            Kanji Writing Practice
+          </Typography>
+          <Typography variant="body1" paragraph>
+            Practice writing Japanese kanji characters with stroke order guidance.
+          </Typography>
+          
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 mb-8">
+            <div className="mb-4">
+              <Typography variant="h6" gutterBottom>Current Word</Typography>
+              <div className="flex flex-col items-center mb-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <Typography variant="subtitle1" color="textSecondary">Kanji:</Typography>
+                  <Typography variant="h2" className="text-gray-900 dark:text-white">{currentWord.kanji}</Typography>
+                </div>
+                <div className="flex items-center gap-2 mb-1">
+                  <Typography variant="subtitle1" color="textSecondary">Romaji:</Typography>
+                  <Typography variant="h5" className="text-gray-900 dark:text-white">{currentWord.romaji}</Typography>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Typography variant="subtitle1" color="textSecondary">English:</Typography>
+                  <Typography variant="h6" className="text-gray-900 dark:text-white">{currentWord.english}</Typography>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex flex-col items-center mb-4">
+              <Typography variant="subtitle1" gutterBottom className="text-center">
+                Practice writing the kanji above
+              </Typography>
+              <div className="flex justify-center w-full">
+                <canvas
+                  ref={canvasRef}
+                  width={300}
+                  height={300}
+                  className="border border-gray-300 dark:border-gray-600 rounded-lg mb-4 bg-white dark:bg-gray-800"
+                  onMouseDown={startDrawing}
+                  onMouseMove={draw}
+                  onMouseUp={stopDrawing}
+                  onMouseLeave={stopDrawing}
+                  onTouchStart={startDrawing}
+                  onTouchMove={draw}
+                  onTouchEnd={stopDrawing}
+                />
+              </div>
+            </div>
+
+            <div className="flex justify-center space-x-4 mb-4">
+              <Button variant="outlined" onClick={clearCanvas}>Clear</Button>
+              <Button variant="outlined" onClick={() => setShowGuide(!showGuide)}>
+                {showGuide ? 'Hide Guide' : 'Show Guide'}
+              </Button>
+              <Button variant="contained" onClick={nextWord}>Next Word</Button>
+            </div>
+
+            {feedback && (
+              <Alert severity="info" sx={{ mt: 2 }}>
+                {feedback}
+              </Alert>
+            )}
+          </div>
+
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+            <Typography variant="h6" gutterBottom>Progress</Typography>
+            <Typography variant="body1">
+              Word {currentWordIndex + 1} of {words.length}
+            </Typography>
+            <Box sx={{ width: '100%', bgcolor: 'background.paper', mt: 2 }}>
+              <Box
+                sx={{
+                  width: `${((currentWordIndex + 1) / words.length) * 100}%`,
+                  height: 8,
+                  bgcolor: 'primary.main',
+                  borderRadius: 1,
+                }}
+              />
+            </Box>
+            <Typography variant="body1" sx={{ mt: 2 }}>
+              Score: {score}
+            </Typography>
+          </div>
+        </CardContent>
+      </Card>
+    </Box>
+  );
+};
+
+export default KanjiWritingPage; 

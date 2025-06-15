@@ -67,8 +67,7 @@ export const Quiz: React.FC = () => {
     }
 
     if (!groupId) {
-      console.log('No groupId provided in URL');
-      setError('No word group selected');
+      // Don't set error for initial state
       return;
     }
 
@@ -179,7 +178,7 @@ export const Quiz: React.FC = () => {
   if (groupId === 'select' || !session && !result) {
     return (
       <Box p={3}>
-        <Card>
+        <Card sx={{ bgcolor: '#f9fafb' }}>
           <CardContent>
             <Typography variant="h4" gutterBottom>
               Vocabulary Quiz
@@ -205,7 +204,36 @@ export const Quiz: React.FC = () => {
                 value={selectedGroupId}
                 onChange={handleGroupChange}
                 label="Select Word Group"
+                sx={{
+                  '& .MuiSelect-select': {
+                    bgcolor: '#f9fafb',
+                    color: '#374151'
+                  },
+                  '& .MuiOutlinedInput-notchedOutline': {
+                    borderColor: '#e5e7eb'
+                  },
+                  '&:hover .MuiOutlinedInput-notchedOutline': {
+                    borderColor: '#374151'
+                  },
+                  '& .MuiSelect-icon': {
+                    color: '#374151'
+                  }
+                }}
+                MenuProps={{
+                  PaperProps: {
+                    sx: {
+                      bgcolor: '#f9fafb',
+                      '& .MuiMenuItem-root': {
+                        color: '#374151',
+                        '&:hover': {
+                          bgcolor: '#e5e7eb'
+                        }
+                      }
+                    }
+                  }
+                }}
               >
+                
                 {wordGroups.map((group) => (
                   <MenuItem key={group.id} value={group.id}>
                     {group.name} ({group.words_count} words)
