@@ -27,7 +27,7 @@ activities = [
         "name": "Sentence Construction",
         "description": "Build Japanese sentences by arranging words in the correct order.",
         "thumbnail": "/thumbnails/sentence-construction.png",
-        "url": "http://localhost:3000/sentence-construction"
+        "url": ""
     },
     {
         "name": "Listening Comprehension",

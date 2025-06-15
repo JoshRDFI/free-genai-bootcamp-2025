@@ -16,13 +16,17 @@ const StudyActivityShowPage: React.FC = () => {
 
   const sessions = studyActivity.sessions || [];
   const isQuiz = studyActivity.name === "Vocabulary Quiz";
+  const isSentenceConstructor = studyActivity.name === "Sentence Construction";
 
   const handleLaunchActivity = () => {
     if (isQuiz) {
       // For quiz, navigate to quiz page with select parameter
       navigate('/quiz/select');
-    } else {
-      // For other activities, use the URL directly
+    } else if (isSentenceConstructor) {
+      // For sentence constructor, navigate to the sentence constructor page
+      navigate('/sentence-constructor');
+    } else if (studyActivity.url) {
+      // Only use window.open for activities with a valid URL
       window.open(studyActivity.url, '_blank');
     }
   };
@@ -55,7 +59,7 @@ const StudyActivityShowPage: React.FC = () => {
             onClick={handleLaunchActivity} 
             className="w-full md:w-auto"
           >
-            {isQuiz ? "Start Quiz" : "Launch Activity"}
+            {isQuiz ? "Start Quiz" : isSentenceConstructor ? "Start Sentence Constructor" : "Launch Activity"}
           </Button>
         </div>
       </div>

@@ -1,0 +1,2249 @@
+{
+    "version": "1.0.0",
+    "schema_version": "1.0.0",
+    "description": "A collection of Japanese language learning sentences with detailed grammar explanations and exercises",
+    "language": {
+      "source": "en",
+      "target": "ja"
+    },
+    "sentences": [
+      {
+        "id": "n5_001",
+        "jlpt_level": "N5",
+        "category": "grammar_point",
+        "source_language": {
+          "text": "I eat rice.",
+          "language": "en",
+          "grammar_points": ["subject marker", "object marker", "present tense verb"],
+          "key_vocabulary": ["I", "eat", "rice"],
+          "notes": "Simple present tense, basic particles."
+        },
+        "target_language": {
+          "text": "わたしはごはんをたべます。",
+          "language": "ja",
+          "grammar_points": ["は (topic marker)", "を (object marker)", "ます-form verb"],
+          "key_vocabulary": ["わたし", "ごはん", "たべます"],
+          "notes": "Standard polite form. 'は' marks the topic, 'を' marks the object."
+        },
+        "sentence_parts": {
+          "components": [
+            {
+              "id": "part1",
+              "text": "わたしは",
+              "type": "subject",
+              "is_required": true,
+              "position_hint": "beginning",
+              "grammar_notes": "'は' is the topic marker."
+            },
+            {
+              "id": "part2",
+              "text": "ごはんを",
+              "type": "object",
+              "is_required": true,
+              "position_hint": "middle",
+              "grammar_notes": "'を' is the object marker."
+            },
+            {
+              "id": "part3",
+              "text": "たべます。",
+              "type": "verb",
+              "is_required": true,
+              "position_hint": "end",
+              "grammar_notes": "Polite present tense verb."
+            }
+          ],
+          "correct_order": ["part1", "part2", "part3"],
+          "alternative_orders": [
+            {
+              "order": ["part2", "part1", "part3"],
+              "is_grammatically_correct": false,
+              "explanation": "The topic must come before the object in standard Japanese sentence order."
+            }
+          ]
+        },
+        "exercises": [
+          {
+            "type": "arrangement",
+            "question": "Arrange the parts to form a correct sentence: わたしは / ごはんを / たべます。",
+            "options": ["わたしは", "ごはんを", "たべます。"],
+            "correct_answer": "わたしは ごはんを たべます。",
+            "hints": ["The topic comes first.", "The verb is at the end."],
+            "difficulty_adjustments": {
+              "easier": "Provide the first part as a hint: 'わたしは ...'",
+              "harder": "Add an extra distractor: 'みずを'"
+            }
+          }
+        ],
+        "metadata": {
+          "created_at": "2025-06-15T00:00:00Z",
+          "last_modified": "2025-06-15T00:00:00Z",
+          "tags": ["N5", "basic", "present tense", "particles"],
+          "usage_count": 0,
+          "success_rate": 0.0
+        }
+      },
+      {
+        "id": "n4_001",
+        "jlpt_level": "N4",
+        "category": "grammar_point",
+        "source_language": {
+          "text": "I studied Japanese yesterday.",
+          "language": "en",
+          "grammar_points": ["past tense", "time expression", "object marker"],
+          "key_vocabulary": ["I", "studied", "Japanese", "yesterday"],
+          "notes": "Past tense, time adverb at the beginning."
+        },
+        "target_language": {
+          "text": "きのう、わたしは日本語をべんきょうしました。",
+          "language": "ja",
+          "grammar_points": ["past tense verb", "time expression", "object marker"],
+          "key_vocabulary": ["きのう", "わたし", "日本語", "べんきょうしました"],
+          "notes": "Time expressions often come at the start."
+        },
+        "sentence_parts": {
+          "components": [
+            {
+              "id": "part1",
+              "text": "きのう、",
+              "type": "adverb",
+              "is_required": true,
+              "position_hint": "beginning",
+              "grammar_notes": "Time adverb, usually at the start."
+            },
+            {
+              "id": "part2",
+              "text": "わたしは",
+              "type": "subject",
+              "is_required": true,
+              "position_hint": "middle",
+              "grammar_notes": "Topic marker."
+            },
+            {
+              "id": "part3",
+              "text": "日本語を",
+              "type": "object",
+              "is_required": true,
+              "position_hint": "middle",
+              "grammar_notes": "Object marker."
+            },
+            {
+              "id": "part4",
+              "text": "べんきょうしました。",
+              "type": "verb",
+              "is_required": true,
+              "position_hint": "end",
+              "grammar_notes": "Past tense polite verb."
+            }
+          ],
+          "correct_order": ["part1", "part2", "part3", "part4"],
+          "alternative_orders": [
+            {
+              "order": ["part2", "part1", "part3", "part4"],
+              "is_grammatically_correct": true,
+              "explanation": "Time adverbs can sometimes follow the subject, but it's less natural."
+            }
+          ]
+        },
+        "exercises": [
+          {
+            "type": "fill_in_blank",
+            "question": "きのう、わたしは日本語を＿＿＿＿。",
+            "options": ["べんきょうしました", "たべました", "のみました"],
+            "correct_answer": "べんきょうしました",
+            "hints": ["The verb means 'studied'.", "Look for the past tense polite form."],
+            "difficulty_adjustments": {
+              "easier": "Provide only two options.",
+              "harder": "Remove the subject and ask for both the object and verb."
+            }
+          }
+        ],
+        "metadata": {
+          "created_at": "2025-06-15T00:00:00Z",
+          "last_modified": "2025-06-15T00:00:00Z",
+          "tags": ["N4", "past tense", "time expression"],
+          "usage_count": 0,
+          "success_rate": 0.0
+        }
+      },
+      {
+        "id": "n3_001",
+        "jlpt_level": "N3",
+        "category": "grammar_point",
+        "source_language": {
+          "text": "If it rains tomorrow, I will stay at home.",
+          "language": "en",
+          "grammar_points": ["conditional ～たら", "future intention", "time expression"],
+          "key_vocabulary": ["rain", "tomorrow", "stay", "home"],
+          "notes": "Conditional sentence using ～たら."
+        },
+        "target_language": {
+          "text": "あした雨がふったら、家にいます。",
+          "language": "ja",
+          "grammar_points": ["～たら conditional", "に (direction)", "います (to stay)"],
+          "key_vocabulary": ["あした", "雨", "ふったら", "家", "います"],
+          "notes": "The conditional clause comes first."
+        },
+        "sentence_parts": {
+          "components": [
+            {
+              "id": "part1",
+              "text": "あした",
+              "type": "adverb",
+              "is_required": true,
+              "position_hint": "beginning",
+              "grammar_notes": "Time adverb."
+            },
+            {
+              "id": "part2",
+              "text": "雨が",
+              "type": "subject",
+              "is_required": true,
+              "position_hint": "middle",
+              "grammar_notes": "Subject with 'が' marker."
+            },
+            {
+              "id": "part3",
+              "text": "ふったら、",
+              "type": "conditional",
+              "is_required": true,
+              "position_hint": "middle",
+              "grammar_notes": "Conditional ～たら form."
+            },
+            {
+              "id": "part4",
+              "text": "家に",
+              "type": "object",
+              "is_required": true,
+              "position_hint": "middle",
+              "grammar_notes": "'に' indicates location."
+            },
+            {
+              "id": "part5",
+              "text": "います。",
+              "type": "verb",
+              "is_required": true,
+              "position_hint": "end",
+              "grammar_notes": "Polite present tense."
+            }
+          ],
+          "correct_order": ["part1", "part2", "part3", "part4", "part5"],
+          "alternative_orders": [
+            {
+              "order": ["part4", "part1", "part2", "part3", "part5"],
+              "is_grammatically_correct": false,
+              "explanation": "The conditional clause must come before the main clause."
+            }
+          ]
+        },
+        "exercises": [
+          {
+            "type": "arrangement",
+            "question": "Arrange the parts: あした / 雨が / ふったら、 / 家に / います。",
+            "options": ["あした", "雨が", "ふったら、", "家に", "います。"],
+            "correct_answer": "あした 雨が ふったら、 家に います。",
+            "hints": ["Conditional comes before the result.", "Time adverb is at the start."],
+            "difficulty_adjustments": {
+              "easier": "Provide the first two parts as a hint.",
+              "harder": "Add a distractor: '学校に'"
+            }
+          }
+        ],
+        "metadata": {
+          "created_at": "2025-06-15T00:00:00Z",
+          "last_modified": "2025-06-15T00:00:00Z",
+          "tags": ["N3", "conditional", "future intention"],
+          "usage_count": 0,
+          "success_rate": 0.0
+        }
+      },
+      {
+        "id": "n2_001",
+        "jlpt_level": "N2",
+        "category": "grammar_point",
+        "source_language": {
+          "text": "He seems to have forgotten the promise.",
+          "language": "en",
+          "grammar_points": ["ようだ (it seems)", "past tense", "object marker"],
+          "key_vocabulary": ["he", "seems", "forgotten", "promise"],
+          "notes": "Expressing conjecture with ようだ."
+        },
+        "target_language": {
+          "text": "彼は約束を忘れたようだ。",
+          "language": "ja",
+          "grammar_points": ["ようだ (conjecture)", "past tense", "object marker"],
+          "key_vocabulary": ["彼", "約束", "忘れた", "ようだ"],
+          "notes": "ようだ is used for conjecture based on evidence."
+        },
+        "sentence_parts": {
+          "components": [
+            {
+              "id": "part1",
+              "text": "彼は",
+              "type": "subject",
+              "is_required": true,
+              "position_hint": "beginning",
+              "grammar_notes": "Topic marker."
+            },
+            {
+              "id": "part2",
+              "text": "約束を",
+              "type": "object",
+              "is_required": true,
+              "position_hint": "middle",
+              "grammar_notes": "Object marker."
+            },
+            {
+              "id": "part3",
+              "text": "忘れた",
+              "type": "verb",
+              "is_required": true,
+              "position_hint": "middle",
+              "grammar_notes": "Past tense verb."
+            },
+            {
+              "id": "part4",
+              "text": "ようだ。",
+              "type": "conjecture",
+              "is_required": true,
+              "position_hint": "end",
+              "grammar_notes": "Expresses conjecture."
+            }
+          ],
+          "correct_order": ["part1", "part2", "part3", "part4"],
+          "alternative_orders": [
+            {
+              "order": ["part1", "part3", "part2", "part4"],
+              "is_grammatically_correct": false,
+              "explanation": "The object must come before the verb."
+            }
+          ]
+        },
+        "exercises": [
+          {
+            "type": "multiple_choice",
+            "question": "What does 'ようだ' express in this sentence?",
+            "options": ["certainty", "conjecture", "request"],
+            "correct_answer": "conjecture",
+            "hints": ["It's used when you guess based on evidence."],
+            "difficulty_adjustments": {
+              "easier": "Provide a definition of 'conjecture'.",
+              "harder": "Ask for another sentence using 'ようだ'."
+            }
+          }
+        ],
+        "metadata": {
+          "created_at": "2025-06-15T00:00:00Z",
+          "last_modified": "2025-06-15T00:00:00Z",
+          "tags": ["N2", "conjecture", "ようだ"],
+          "usage_count": 0,
+          "success_rate": 0.0
+        }
+      },
+      {
+        "id": "n1_001",
+        "jlpt_level": "N1",
+        "category": "idiom",
+        "source_language": {
+          "text": "He is all talk and no action.",
+          "language": "en",
+          "grammar_points": ["idiomatic expression", "contrastive structure"],
+          "key_vocabulary": ["talk", "action", "all", "no"],
+          "notes": "Japanese idiom for someone who only talks but doesn't act."
+        },
+        "target_language": {
+          "text": "彼は口ばかりで、行動が伴わない。",
+          "language": "ja",
+          "grammar_points": ["ばかり (only)", "で (contrast)", "伴わない (does not accompany)"],
+          "key_vocabulary": ["口ばかり", "行動", "伴わない"],
+          "notes": "口ばかり is an idiom meaning 'all talk'."
+        },
+        "sentence_parts": {
+          "components": [
+            {
+              "id": "part1",
+              "text": "彼は",
+              "type": "subject",
+              "is_required": true,
+              "position_hint": "beginning",
+              "grammar_notes": "Topic marker."
+            },
+            {
+              "id": "part2",
+              "text": "口ばかりで、",
+              "type": "idiom",
+              "is_required": true,
+              "position_hint": "middle",
+              "grammar_notes": "Means 'all talk'."
+            },
+            {
+              "id": "part3",
+              "text": "行動が",
+              "type": "subject",
+              "is_required": true,
+              "position_hint": "middle",
+              "grammar_notes": "Subject marker for 'action'."
+            },
+            {
+              "id": "part4",
+              "text": "伴わない。",
+              "type": "verb",
+              "is_required": true,
+              "position_hint": "end",
+              "grammar_notes": "Negative verb, 'does not accompany'."
+            }
+          ],
+          "correct_order": ["part1", "part2", "part3", "part4"],
+          "alternative_orders": [
+            {
+              "order": ["part1", "part3", "part2", "part4"],
+              "is_grammatically_correct": false,
+              "explanation": "The idiom must follow the subject to set up the contrast."
+            }
+          ]
+        },
+        "exercises": [
+          {
+            "type": "arrangement",
+            "question": "Arrange the parts: 彼は / 口ばかりで、 / 行動が / 伴わない。",
+            "options": ["彼は", "口ばかりで、", "行動が", "伴わない。"],
+            "correct_answer": "彼は 口ばかりで、 行動が 伴わない。",
+            "hints": ["The idiom comes after the subject.", "The verb is at the end."],
+            "difficulty_adjustments": {
+              "easier": "Provide the first two parts as a hint.",
+              "harder": "Add a distractor: '話が'"
+            }
+          }
+        ],
+        "metadata": {
+          "created_at": "2025-06-15T00:00:00Z",
+          "last_modified": "2025-06-15T00:00:00Z",
+          "tags": ["N1", "idiom", "contrast"],
+          "usage_count": 0,
+          "success_rate": 0.0
+        }
+      },
+      {
+        "id": "n5_002",
+        "jlpt_level": "N5",
+        "category": "vocabulary",
+        "source_language": {
+          "text": "This is a book.",
+          "language": "en",
+          "grammar_points": ["demonstrative pronoun", "noun", "copula"],
+          "key_vocabulary": ["this", "is", "book"],
+          "notes": "Basic sentence using a demonstrative pronoun."
+        },
+        "target_language": {
+          "text": "これは本です。",
+          "language": "ja",
+          "grammar_points": ["これ (demonstrative)", "は (topic marker)", "です (copula)"],
+          "key_vocabulary": ["これ", "本", "です"],
+          "notes": "'これ' refers to 'this'."
+        },
+        "sentence_parts": {
+          "components": [
+            {
+              "id": "part1",
+              "text": "これは",
+              "type": "subject",
+              "is_required": true,
+              "position_hint": "beginning",
+              "grammar_notes": "Topic marker with demonstrative."
+            },
+            {
+              "id": "part2",
+              "text": "本です。",
+              "type": "noun",
+              "is_required": true,
+              "position_hint": "end",
+              "grammar_notes": "Noun with copula."
+            }
+          ],
+          "correct_order": ["part1", "part2"],
+          "alternative_orders": [
+            {
+              "order": ["part2", "part1"],
+              "is_grammatically_correct": false,
+              "explanation": "The topic usually comes before the description."
+            }
+          ]
+        },
+        "exercises": [
+          {
+            "type": "fill_in_blank",
+            "question": "＿＿＿は本です。",
+            "options": ["これ", "あれ", "それ"],
+            "correct_answer": "これ",
+            "hints": ["'This' is the correct demonstrative.", "Consider the context."],
+            "difficulty_adjustments": {
+              "easier": "Provide a picture of a book nearby.",
+              "harder": "Ask for a sentence using 'あれ'."
+            }
+          }
+        ],
+        "metadata": {
+          "created_at": "2025-06-15T00:00:00Z",
+          "last_modified": "2025-06-15T00:00:00Z",
+          "tags": ["N5", "demonstrative", "noun"],
+          "usage_count": 0,
+          "success_rate": 0.0
+        }
+      },
+      {
+        "id": "n5_003",
+        "jlpt_level": "N5",
+        "category": "grammar_point",
+        "source_language": {
+          "text": "I am a student.",
+          "language": "en",
+          "grammar_points": ["noun", "copula"],
+          "key_vocabulary": ["I", "am", "student"],
+          "notes": "Simple sentence using 'desu'."
+        },
+        "target_language": {
+          "text": "私は学生です。",
+          "language": "ja",
+          "grammar_points": ["は (topic marker)", "です (copula)"],
+          "key_vocabulary": ["私", "学生", "です"],
+          "notes": "'です' is the polite copula."
+        },
+        "sentence_parts": {
+          "components": [
+            {
+              "id": "part1",
+              "text": "私は",
+              "type": "subject",
+              "is_required": true,
+              "position_hint": "beginning",
+              "grammar_notes": "Topic marker."
+            },
+            {
+              "id": "part2",
+              "text": "学生です。",
+              "type": "noun",
+              "is_required": true,
+              "position_hint": "end",
+              "grammar_notes": "Noun with copula."
+            }
+          ],
+          "correct_order": ["part1", "part2"],
+          "alternative_orders": [
+            {
+              "order": ["part2", "part1"],
+              "is_grammatically_correct": false,
+              "explanation": "The topic usually comes before the description."
+            }
+          ]
+        },
+        "exercises": [
+          {
+            "type": "arrangement",
+            "question": "Arrange the parts: 私は / 学生です。",
+            "options": ["私は", "学生です。"],
+            "correct_answer": "私は 学生です。",
+            "hints": ["The topic comes first.", "The copula is at the end."],
+            "difficulty_adjustments": {
+              "easier": "Provide the first part as a hint: '私は ...'",
+              "harder": "Add an extra distractor: '先生です'"
+            }
+          }
+        ],
+        "metadata": {
+          "created_at": "2025-06-15T00:00:00Z",
+          "last_modified": "2025-06-15T00:00:00Z",
+          "tags": ["N5", "noun", "copula"],
+          "usage_count": 0,
+          "success_rate": 0.0
+        }
+      },
+      {
+        "id": "n5_004",
+        "jlpt_level": "N5",
+        "category": "grammar_point",
+        "source_language": {
+          "text": "I drink water.",
+          "language": "en",
+          "grammar_points": ["subject marker", "object marker", "present tense verb"],
+          "key_vocabulary": ["I", "drink", "water"],
+          "notes": "Simple present tense, basic particles."
+        },
+        "target_language": {
+          "text": "私は水を飲みます。",
+          "language": "ja",
+          "grammar_points": ["は (topic marker)", "を (object marker)", "ます-form verb"],
+          "key_vocabulary": ["私", "水", "飲みます"],
+          "notes": "Standard polite form. 'は' marks the topic, 'を' marks the object."
+        },
+        "sentence_parts": {
+          "components": [
+            {
+              "id": "part1",
+              "text": "私は",
+              "type": "subject",
+              "is_required": true,
+              "position_hint": "beginning",
+              "grammar_notes": "'は' is the topic marker."
+            },
+            {
+              "id": "part2",
+              "text": "水を",
+              "type": "object",
+              "is_required": true,
+              "position_hint": "middle",
+              "grammar_notes": "'を' is the object marker."
+            },
+            {
+              "id": "part3",
+              "text": "飲みます。",
+              "type": "verb",
+              "is_required": true,
+              "position_hint": "end",
+              "grammar_notes": "Polite present tense verb."
+            }
+          ],
+          "correct_order": ["part1", "part2", "part3"],
+          "alternative_orders": [
+            {
+              "order": ["part2", "part1", "part3"],
+              "is_grammatically_correct": false,
+              "explanation": "The topic must come before the object in standard Japanese sentence order."
+            }
+          ]
+        },
+        "exercises": [
+          {
+            "type": "arrangement",
+            "question": "Arrange the parts to form a correct sentence: 私は / 水を / 飲みます。",
+            "options": ["私は", "水を", "飲みます。"],
+            "correct_answer": "私は 水を 飲みます。",
+            "hints": ["The topic comes first.", "The verb is at the end."],
+            "difficulty_adjustments": {
+              "easier": "Provide the first part as a hint: '私は ...'",
+              "harder": "Add an extra distractor: 'お茶を'"
+            }
+          }
+        ],
+        "metadata": {
+          "created_at": "2025-06-15T00:00:00Z",
+          "last_modified": "2025-06-15T00:00:00Z",
+          "tags": ["N5", "basic", "present tense", "particles"],
+          "usage_count": 0,
+          "success_rate": 0.0
+        }
+      },
+      {
+        "id": "n5_005",
+        "jlpt_level": "N5",
+        "category": "vocabulary",
+        "source_language": {
+          "text": "That is a mountain.",
+          "language": "en",
+          "grammar_points": ["demonstrative pronoun", "noun", "copula"],
+          "key_vocabulary": ["that", "is", "mountain"],
+          "notes": "Basic sentence using a demonstrative pronoun."
+        },
+        "target_language": {
+          "text": "あれは山です。",
+          "language": "ja",
+          "grammar_points": ["あれ (demonstrative)", "は (topic marker)", "です (copula)"],
+          "key_vocabulary": ["あれ", "山", "です"],
+          "notes": "'あれ' refers to 'that over there'."
+        },
+        "sentence_parts": {
+          "components": [
+            {
+              "id": "part1",
+              "text": "あれは",
+              "type": "subject",
+              "is_required": true,
+              "position_hint": "beginning",
+              "grammar_notes": "Topic marker with demonstrative."
+            },
+            {
+              "id": "part2",
+              "text": "山です。",
+              "type": "noun",
+              "is_required": true,
+              "position_hint": "end",
+              "grammar_notes": "Noun with copula."
+            }
+          ],
+          "correct_order": ["part1", "part2"],
+          "alternative_orders": [
+            {
+              "order": ["part2", "part1"],
+              "is_grammatically_correct": false,
+              "explanation": "The topic usually comes before the description."
+            }
+          ]
+        },
+        "exercises": [
+          {
+            "type": "fill_in_blank",
+            "question": "＿＿＿は山です。",
+            "options": ["あれ", "これ", "それ"],
+            "correct_answer": "あれ",
+            "hints": ["'That over there' is the correct demonstrative.", "Consider the context."],
+            "difficulty_adjustments": {
+              "easier": "Provide a picture of a mountain far away.",
+              "harder": "Ask for a sentence using 'これ'."
+            }
+          }
+        ],
+        "metadata": {
+          "created_at": "2025-06-15T00:00:00Z",
+          "last_modified": "2025-06-15T00:00:00Z",
+          "tags": ["N5", "demonstrative", "noun"],
+          "usage_count": 0,
+          "success_rate": 0.0
+        }
+      },
+      {
+        "id": "n5_006",
+        "jlpt_level": "N5",
+        "category": "grammar_point",
+        "source_language": {
+          "text": "I read a book.",
+          "language": "en",
+          "grammar_points": ["subject marker", "object marker", "present tense verb"],
+          "key_vocabulary": ["I", "read", "book"],
+          "notes": "Simple present tense, basic particles."
+        },
+        "target_language": {
+          "text": "私は本を読みます。",
+          "language": "ja",
+          "grammar_points": ["は (topic marker)", "を (object marker)", "ます-form verb"],
+          "key_vocabulary": ["私", "本", "読みます"],
+          "notes": "Standard polite form. 'は' marks the topic, 'を' marks the object."
+        },
+        "sentence_parts": {
+          "components": [
+            {
+              "id": "part1",
+              "text": "私は",
+              "type": "subject",
+              "is_required": true,
+              "position_hint": "beginning",
+              "grammar_notes": "'は' is the topic marker."
+            },
+            {
+              "id": "part2",
+              "text": "本を",
+              "type": "object",
+              "is_required": true,
+              "position_hint": "middle",
+              "grammar_notes": "'を' is the object marker."
+            },
+            {
+              "id": "part3",
+              "text": "読みます。",
+              "type": "verb",
+              "is_required": true,
+              "position_hint": "end",
+              "grammar_notes": "Polite present tense verb."
+            }
+          ],
+          "correct_order": ["part1", "part2", "part3"],
+          "alternative_orders": [
+            {
+              "order": ["part2", "part1", "part3"],
+              "is_grammatically_correct": false,
+              "explanation": "The topic must come before the object in standard Japanese sentence order."
+            }
+          ]
+        },
+        "exercises": [
+          {
+            "type": "arrangement",
+            "question": "Arrange the parts to form a correct sentence: 私は / 本を / 読みます。",
+            "options": ["私は", "本を", "読みます。"],
+            "correct_answer": "私は 本を 読みます。",
+            "hints": ["The topic comes first.", "The verb is at the end."],
+            "difficulty_adjustments": {
+              "easier": "Provide the first part as a hint: '私は ...'",
+              "harder": "Add an extra distractor: '雑誌を'"
+            }
+          }
+        ],
+        "metadata": {
+          "created_at": "2025-06-15T00:00:00Z",
+          "last_modified": "2025-06-15T00:00:00Z",
+          "tags": ["N5", "basic", "present tense", "particles"],
+          "usage_count": 0,
+          "success_rate": 0.0
+        }
+      },
+      {
+        "id": "n4_002",
+        "jlpt_level": "N4",
+        "category": "grammar_point",
+        "source_language": {
+          "text": "I went to the park yesterday.",
+          "language": "en",
+          "grammar_points": ["past tense", "location marker", "time expression"],
+          "key_vocabulary": ["I", "went", "park", "yesterday"],
+          "notes": "Past tense, location particle 'ni'."
+        },
+        "target_language": {
+          "text": "昨日、私は公園に行きました。",
+          "language": "ja",
+          "grammar_points": ["past tense verb", "に (location)", "昨日 (yesterday)"],
+          "key_vocabulary": ["昨日", "私", "公園", "行きました"],
+          "notes": "Time expression at the beginning."
+        },
+        "sentence_parts": {
+          "components": [
+            {
+              "id": "part1",
+              "text": "昨日、",
+              "type": "adverb",
+              "is_required": true,
+              "position_hint": "beginning",
+              "grammar_notes": "Time adverb."
+            },
+            {
+              "id": "part2",
+              "text": "私は",
+              "type": "subject",
+              "is_required": true,
+              "position_hint": "middle",
+              "grammar_notes": "Topic marker."
+            },
+            {
+              "id": "part3",
+              "text": "公園に",
+              "type": "location",
+              "is_required": true,
+              "position_hint": "middle",
+              "grammar_notes": "'に' indicates location."
+            },
+            {
+              "id": "part4",
+              "text": "行きました。",
+              "type": "verb",
+              "is_required": true,
+              "position_hint": "end",
+              "grammar_notes": "Past tense polite verb."
+            }
+          ],
+          "correct_order": ["part1", "part2", "part3", "part4"],
+          "alternative_orders": [
+            {
+              "order": ["part2", "part1", "公園に", "行きました。"],
+              "is_grammatically_correct": true,
+              "explanation": "Time adverbs can sometimes follow the subject, but it's less natural."
+            }
+          ]
+        },
+        "exercises": [
+          {
+            "type": "fill_in_blank",
+            "question": "昨日、私は＿＿＿に行きました。",
+            "options": ["公園", "学校", "家"],
+            "correct_answer": "公園",
+            "hints": ["The sentence means 'park'.", "Look for the location."],
+            "difficulty_adjustments": {
+              "easier": "Provide only two options.",
+              "harder": "Remove the subject and ask for both the location and verb."
+            }
+          }
+        ],
+        "metadata": {
+          "created_at": "2025-06-15T00:00:00Z",
+          "last_modified": "2025-06-15T00:00:00Z",
+          "tags": ["N4", "past tense", "location"],
+          "usage_count": 0,
+          "success_rate": 0.0
+        }
+      },
+      {
+        "id": "n4_003",
+        "jlpt_level": "N4",
+        "category": "grammar_point",
+        "source_language": {
+          "text": "I will watch a movie tomorrow.",
+          "language": "en",
+          "grammar_points": ["future tense", "time expression", "object marker"],
+          "key_vocabulary": ["I", "will watch", "movie", "tomorrow"],
+          "notes": "Future tense, time adverb at the beginning."
+        },
+        "target_language": {
+          "text": "明日、私は映画を見ます。",
+          "language": "ja",
+          "grammar_points": ["future tense verb", "time expression", "object marker"],
+          "key_vocabulary": ["明日", "私", "映画", "見ます"],
+          "notes": "Time expressions often come at the start."
+        },
+        "sentence_parts": {
+          "components": [
+            {
+              "id": "part1",
+              "text": "明日、",
+              "type": "adverb",
+              "is_required": true,
+              "position_hint": "beginning",
+              "grammar_notes": "Time adverb, usually at the start."
+            },
+            {
+              "id": "part2",
+              "text": "私は",
+              "type": "subject",
+              "is_required": true,
+              "position_hint": "middle",
+              "grammar_notes": "Topic marker."
+            },
+            {
+              "id": "part3",
+              "text": "映画を",
+              "type": "object",
+              "is_required": true,
+              "position_hint": "middle",
+              "grammar_notes": "Object marker."
+            },
+            {
+              "id": "part4",
+              "text": "見ます。",
+              "type": "verb",
+              "is_required": true,
+              "position_hint": "end",
+              "grammar_notes": "Future tense polite verb."
+            }
+          ],
+          "correct_order": ["part1", "part2", "part3", "part4"],
+          "alternative_orders": [
+            {
+              "order": ["part2", "part1", "映画を", "見ます。"],
+              "is_grammatically_correct": true,
+              "explanation": "Time adverbs can sometimes follow the subject, but it's less natural."
+            }
+          ]
+        },
+        "exercises": [
+          {
+            "type": "fill_in_blank",
+            "question": "明日、私は＿＿＿を見ます。",
+            "options": ["映画", "本", "音楽"],
+            "correct_answer": "映画",
+            "hints": ["The sentence means 'movie'.", "Look for the object."],
+            "difficulty_adjustments": {
+              "easier": "Provide only two options.",
+              "harder": "Remove the subject and ask for both the object and verb."
+            }
+          }
+        ],
+        "metadata": {
+          "created_at": "2025-06-15T00:00:00Z",
+          "last_modified": "2025-06-15T00:00:00Z",
+          "tags": ["N4", "future tense", "time expression"],
+          "usage_count": 0,
+          "success_rate": 0.0
+        }
+      },
+      {
+        "id": "n4_004",
+        "jlpt_level": "N4",
+        "category": "grammar_point",
+        "source_language": {
+          "text": "Because it was raining, I stayed home.",
+          "language": "en",
+          "grammar_points": ["reason", "past tense", "location"],
+          "key_vocabulary": ["because", "raining", "stayed", "home"],
+          "notes": "Expressing reason with 'kara'."
+        },
+        "target_language": {
+          "text": "雨だったから、家にいました。",
+          "language": "ja",
+          "grammar_points": ["から (reason)", "past tense", "に (location)"],
+          "key_vocabulary": ["雨", "から", "家", "いました"],
+          "notes": "'から' indicates the reason."
+        },
+        "sentence_parts": {
+          "components": [
+            {
+              "id": "part1",
+              "text": "雨だったから、",
+              "type": "reason",
+              "is_required": true,
+              "position_hint": "beginning",
+              "grammar_notes": "'から' indicates the reason."
+            },
+            {
+              "id": "part2",
+              "text": "家に",
+              "type": "location",
+              "is_required": true,
+              "position_hint": "middle",
+              "grammar_notes": "'に' indicates location."
+            },
+            {
+              "id": "part3",
+              "text": "いました。",
+              "type": "verb",
+              "is_required": true,
+              "position_hint": "end",
+              "grammar_notes": "Past tense polite verb."
+            }
+          ],
+          "correct_order": ["part1", "part2", "part3"],
+          "alternative_orders": [
+            {
+              "order": ["part2", "雨だったから、", "いました。"],
+              "is_grammatically_correct": false,
+              "explanation": "The reason must come before the result."
+            }
+          ]
+        },
+        "exercises": [
+          {
+            "type": "fill_in_blank",
+            "question": "雨だった＿＿＿、家にいました。",
+            "options": ["から", "けど", "でも"],
+            "correct_answer": "から",
+            "hints": ["The sentence expresses a reason.", "Look for the reason particle."],
+            "difficulty_adjustments": {
+              "easier": "Provide a definition of 'reason'.",
+              "harder": "Ask for another sentence using 'から'."
+            }
+          }
+        ],
+        "metadata": {
+          "created_at": "2025-06-15T00:00:00Z",
+          "last_modified": "2025-06-15T00:00:00Z",
+          "tags": ["N4", "reason", "past tense"],
+          "usage_count": 0,
+          "success_rate": 0.0
+        }
+      },
+      {
+        "id": "n4_005",
+        "jlpt_level": "N4",
+        "category": "grammar_point",
+        "source_language": {
+          "text": "If you have time, please come to my house.",
+          "language": "en",
+          "grammar_points": ["conditional", "request", "location"],
+          "key_vocabulary": ["if", "time", "please come", "my house"],
+          "notes": "Conditional sentence using 'tara'."
+        },
+        "target_language": {
+          "text": "時間があったら、私の家に来てください。",
+          "language": "ja",
+          "grammar_points": ["たら (conditional)", "に (location)", "ください (request)"],
+          "key_vocabulary": ["時間", "あったら", "私", "家", "来てください"],
+          "notes": "Conditional clause comes first."
+        },
+        "sentence_parts": {
+          "components": [
+            {
+              "id": "part1",
+              "text": "時間があったら、",
+              "type": "conditional",
+              "is_required": true,
+              "position_hint": "beginning",
+              "grammar_notes": "Conditional 'tara' form."
+            },
+            {
+              "id": "part2",
+              "text": "私の家に",
+              "type": "location",
+              "is_required": true,
+              "position_hint": "middle",
+              "grammar_notes": "'に' indicates location."
+            },
+            {
+              "id": "part3",
+              "text": "来てください。",
+              "type": "request",
+              "is_required": true,
+              "position_hint": "end",
+              "grammar_notes": "'ください' is a polite request."
+            }
+          ],
+          "correct_order": ["part1", "part2", "part3"],
+          "alternative_orders": [
+            {
+              "order": ["私の家に", "時間があったら、", "来てください。"],
+              "is_grammatically_correct": false,
+              "explanation": "The conditional clause must come before the main clause."
+            }
+          ]
+        },
+        "exercises": [
+          {
+            "type": "arrangement",
+            "question": "Arrange the parts: 時間があったら、 / 私の家に / 来てください。",
+            "options": ["時間があったら、", "私の家に", "来てください。"],
+            "correct_answer": "時間があったら、 私の家に 来てください。",
+            "hints": ["Conditional comes before the request.", "Location is in the middle."],
+            "difficulty_adjustments": {
+              "easier": "Provide the first part as a hint.",
+              "harder": "Add a distractor: '学校に'"
+            }
+          }
+        ],
+        "metadata": {
+          "created_at": "2025-06-15T00:00:00Z",
+          "last_modified": "2025-06-15T00:00:00Z",
+          "tags": ["N4", "conditional", "request"],
+          "usage_count": 0,
+          "success_rate": 0.0
+        }
+      },
+      {
+        "id": "n4_006",
+        "jlpt_level": "N4",
+        "category": "grammar_point",
+        "source_language": {
+          "text": "I did not eat breakfast this morning.",
+          "language": "en",
+          "grammar_points": ["past negative", "time expression", "object marker"],
+          "key_vocabulary": ["I", "did not eat", "breakfast", "this morning"],
+          "notes": "Past negative, time adverb at the beginning."
+        },
+        "target_language": {
+          "text": "今朝、私は朝ご飯を食べませんでした。",
+          "language": "ja",
+          "grammar_points": ["past negative verb", "time expression", "object marker"],
+          "key_vocabulary": ["今朝", "私", "朝ご飯", "食べませんでした"],
+          "notes": "Time expressions often come at the start."
+        },
+        "sentence_parts": {
+          "components": [
+            {
+              "id": "part1",
+              "text": "今朝、",
+              "type": "adverb",
+              "is_required": true,
+              "position_hint": "beginning",
+              "grammar_notes": "Time adverb, usually at the start."
+            },
+            {
+              "id": "part2",
+              "text": "私は",
+              "type": "subject",
+              "is_required": true,
+              "position_hint": "middle",
+              "grammar_notes": "Topic marker."
+            },
+            {
+              "id": "part3",
+              "text": "朝ご飯を",
+              "type": "object",
+              "is_required": true,
+              "position_hint": "middle",
+              "grammar_notes": "Object marker."
+            },
+            {
+              "id": "part4",
+              "text": "食べませんでした。",
+              "type": "verb",
+              "is_required": true,
+              "position_hint": "end",
+              "grammar_notes": "Past negative polite verb."
+            }
+          ],
+          "correct_order": ["part1", "part2", "part3", "part4"],
+          "alternative_orders": [
+            {
+              "order": ["part2", "part1", "朝ご飯を", "食べませんでした。"],
+              "is_grammatically_correct": true,
+              "explanation": "Time adverbs can sometimes follow the subject, but it's less natural."
+            }
+          ]
+        },
+        "exercises": [
+          {
+            "type": "fill_in_blank",
+            "question": "今朝、私は朝ご飯を＿＿＿＿。",
+            "options": ["食べませんでした", "食べました", "飲みました"],
+            "correct_answer": "食べませんでした",
+            "hints": ["The verb means 'did not eat'.", "Look for the past negative polite form."],
+            "difficulty_adjustments": {
+              "easier": "Provide only two options.",
+              "harder": "Remove the subject and ask for both the object and verb."
+            }
+          }
+        ],
+        "metadata": {
+          "created_at": "2025-06-15T00:00:00Z",
+          "last_modified": "2025-06-15T00:00:00Z",
+          "tags": ["N4", "past negative", "time expression"],
+          "usage_count": 0,
+          "success_rate": 0.0
+        }
+      },
+          {
+            "id": "n3_002",
+            "jlpt_level": "N3",
+            "category": "grammar_point",
+            "source_language": {
+              "text": "I intend to study Japanese from next month.",
+              "language": "en",
+              "grammar_points": ["intention", "time expression", "starting point"],
+              "key_vocabulary": ["intend", "study", "Japanese", "next month"],
+              "notes": "Expressing intention with 'tsumori'."
+            },
+            "target_language": {
+              "text": "来月から日本語を勉強するつもりです。",
+              "language": "ja",
+              "grammar_points": ["つもり (intention)", "から (from)", "を (object marker)"],
+              "key_vocabulary": ["来月", "日本語", "勉強する", "つもり"],
+              "notes": "'つもり' expresses intention."
+            },
+            "sentence_parts": {
+              "components": [
+                {
+                  "id": "part1",
+                  "text": "来月から",
+                  "type": "time",
+                  "is_required": true,
+                  "position_hint": "beginning",
+                  "grammar_notes": "'から' indicates starting point."
+                },
+                {
+                  "id": "part2",
+                  "text": "日本語を",
+                  "type": "object",
+                  "is_required": true,
+                  "position_hint": "middle",
+                  "grammar_notes": "Object marker."
+                },
+                {
+                  "id": "part3",
+                  "text": "勉強する",
+                  "type": "verb",
+                  "is_required": true,
+                  "position_hint": "middle",
+                  "grammar_notes": "Verb in dictionary form."
+                },
+                {
+                  "id": "part4",
+                  "text": "つもりです。",
+                  "type": "intention",
+                  "is_required": true,
+                  "position_hint": "end",
+                  "grammar_notes": "'つもり' expresses intention."
+                }
+              ],
+              "correct_order": ["part1", "part2", "part3", "part4"],
+              "alternative_orders": [
+                {
+                  "order": ["日本語を", "来月から", "勉強する", "つもりです。"],
+                  "is_grammatically_correct": false,
+                  "explanation": "The time expression usually comes at the beginning."
+                }
+              ]
+            },
+            "exercises": [
+              {
+                "type": "fill_in_blank",
+                "question": "来月から日本語を勉強する＿＿＿です。",
+                "options": ["つもり", "はず", "よう"],
+                "correct_answer": "つもり",
+                "hints": ["The sentence expresses intention.", "Look for the intention marker."],
+                "difficulty_adjustments": {
+                  "easier": "Provide a definition of 'intention'.",
+                  "harder": "Ask for another sentence using 'つもり'."
+                }
+              }
+            ],
+            "metadata": {
+              "created_at": "2025-06-15T00:00:00Z",
+              "last_modified": "2025-06-15T00:00:00Z",
+              "tags": ["N3", "intention", "time expression"],
+              "usage_count": 0,
+              "success_rate": 0.0
+            }
+          },
+          {
+            "id": "n3_003",
+            "jlpt_level": "N3",
+            "category": "grammar_point",
+            "source_language": {
+              "text": "I heard that he is getting married.",
+              "language": "en",
+              "grammar_points": ["hearsay", "present progressive", "subject marker"],
+              "key_vocabulary": ["heard", "getting married", "he"],
+              "notes": "Expressing hearsay with 'sou da'."
+            },
+            "target_language": {
+              "text": "彼は結婚するそうです。",
+              "language": "ja",
+              "grammar_points": ["そうです (hearsay)", "結婚する (to get married)", "は (topic marker)"],
+              "key_vocabulary": ["彼", "結婚する", "そうです"],
+              "notes": "'そうです' expresses hearsay."
+            },
+            "sentence_parts": {
+              "components": [
+                {
+                  "id": "part1",
+                  "text": "彼は",
+                  "type": "subject",
+                  "is_required": true,
+                  "position_hint": "beginning",
+                  "grammar_notes": "Topic marker."
+                },
+                {
+                  "id": "part2",
+                  "text": "結婚する",
+                  "type": "verb",
+                  "is_required": true,
+                  "position_hint": "middle",
+                  "grammar_notes": "Verb in dictionary form."
+                },
+                {
+                  "id": "part3",
+                  "text": "そうです。",
+                  "type": "hearsay",
+                  "is_required": true,
+                  "position_hint": "end",
+                  "grammar_notes": "'そうです' expresses hearsay."
+                }
+              ],
+              "correct_order": ["part1", "part2", "part3"],
+              "alternative_orders": [
+                {
+                  "order": ["結婚する", "彼は", "そうです。"],
+                  "is_grammatically_correct": false,
+                  "explanation": "The subject usually comes before the verb."
+                }
+              ]
+            },
+            "exercises": [
+              {
+                "type": "fill_in_blank",
+                "question": "彼は結婚する＿＿＿。",
+                "options": ["そうです", "でしょう", "はずです"],
+                "correct_answer": "そうです",
+                "hints": ["The sentence expresses hearsay.", "Look for the hearsay marker."],
+                "difficulty_adjustments": {
+                  "easier": "Provide a definition of 'hearsay'.",
+                  "harder": "Ask for another sentence using 'そうです'."
+                }
+              }
+            ],
+            "metadata": {
+              "created_at": "2025-06-15T00:00:00Z",
+              "last_modified": "2025-06-15T00:00:00Z",
+              "tags": ["N3", "hearsay", "present progressive"],
+              "usage_count": 0,
+              "success_rate": 0.0
+            }
+          },
+          {
+            "id": "n3_004",
+            "jlpt_level": "N3",
+            "category": "grammar_point",
+            "source_language": {
+              "text": "I tried to read the book, but it was difficult.",
+              "language": "en",
+              "grammar_points": ["attempt", "conjunction", "difficulty"],
+              "key_vocabulary": ["tried", "read", "book", "difficult"],
+              "notes": "Expressing attempt with 'you to suru' and contrast with 'ga'."
+            },
+            "target_language": {
+              "text": "本を読もうとしたが、難しかった。",
+              "language": "ja",
+              "grammar_points": ["ようとする (attempt)", "が (but)", "難しかった (was difficult)"],
+              "key_vocabulary": ["本", "読もう", "とした", "難しかった"],
+              "notes": "'ようとする' expresses attempt, 'が' expresses contrast."
+            },
+            "sentence_parts": {
+              "components": [
+                {
+                  "id": "part1",
+                  "text": "本を",
+                  "type": "object",
+                  "is_required": true,
+                  "position_hint": "beginning",
+                  "grammar_notes": "Object marker."
+                },
+                {
+                  "id": "part2",
+                  "text": "読もうとしたが、",
+                  "type": "attempt",
+                  "is_required": true,
+                  "position_hint": "middle",
+                  "grammar_notes": "'ようとする' expresses attempt, 'が' expresses contrast."
+                },
+                {
+                  "id": "part3",
+                  "text": "難しかった。",
+                  "type": "adjective",
+                  "is_required": true,
+                  "position_hint": "end",
+                  "grammar_notes": "Past tense adjective."
+                }
+              ],
+              "correct_order": ["part1", "part2", "part3"],
+              "alternative_orders": [
+                {
+                  "order": ["難しかった。", "本を", "読もうとしたが、"],
+                  "is_grammatically_correct": false,
+                  "explanation": "The attempt must come before the result."
+                }
+              ]
+            },
+            "exercises": [
+              {
+                "type": "fill_in_blank",
+                "question": "本を読もうと＿＿＿、難しかった。",
+                "options": ["したが", "したら", "すれば"],
+                "correct_answer": "したが",
+                "hints": ["The sentence expresses contrast.", "Look for the contrast marker."],
+                "difficulty_adjustments": {
+                  "easier": "Provide a definition of 'contrast'.",
+                  "harder": "Ask for another sentence using 'が'."
+                }
+              }
+            ],
+            "metadata": {
+              "created_at": "2025-06-15T00:00:00Z",
+              "last_modified": "2025-06-15T00:00:00Z",
+              "tags": ["N3", "attempt", "conjunction"],
+              "usage_count": 0,
+              "success_rate": 0.0
+            }
+          },
+          {
+            "id": "n3_005",
+            "jlpt_level": "N3",
+            "category": "grammar_point",
+            "source_language": {
+              "text": "Please do not forget to bring your textbook.",
+              "language": "en",
+              "grammar_points": ["prohibition", "request", "object marker"],
+              "key_vocabulary": ["do not forget", "bring", "textbook"],
+              "notes": "Expressing prohibition with 'nai de kudasai'."
+            },
+            "target_language": {
+              "text": "教科書を持って来ないでください。",
+              "language": "ja",
+              "grammar_points": ["ないでください (prohibition)", "持って来る (to bring)", "を (object marker)"],
+              "key_vocabulary": ["教科書", "持って来ないで", "ください"],
+              "notes": "'ないでください' expresses prohibition."
+            },
+            "sentence_parts": {
+              "components": [
+                {
+                  "id": "part1",
+                  "text": "教科書を",
+                  "type": "object",
+                  "is_required": true,
+                  "position_hint": "beginning",
+                  "grammar_notes": "Object marker."
+                },
+                {
+                  "id": "part2",
+                  "text": "持って来ないで",
+                  "type": "prohibition",
+                  "is_required": true,
+                  "position_hint": "middle",
+                  "grammar_notes": "'ないで' expresses prohibition."
+                },
+                {
+                  "id": "part3",
+                  "text": "ください。",
+                  "type": "request",
+                  "is_required": true,
+                  "position_hint": "end",
+                  "grammar_notes": "'ください' is a polite request."
+                }
+              ],
+              "correct_order": ["part1", "part2", "part3"],
+              "alternative_orders": [
+                {
+                  "order": ["持って来ないで", "教科書を", "ください。"],
+                  "is_grammatically_correct": false,
+                  "explanation": "The object usually comes before the verb."
+                }
+              ]
+            },
+            "exercises": [
+              {
+                "type": "fill_in_blank",
+                "question": "教科書を持って来＿＿＿ください。",
+                "options": ["ないで", "なくて", "ずに"],
+                "correct_answer": "ないで",
+                "hints": ["The sentence expresses prohibition.", "Look for the prohibition marker."],
+                "difficulty_adjustments": {
+                  "easier": "Provide a definition of 'prohibition'.",
+                  "harder": "Ask for another sentence using 'ないでください'."
+                }
+              }
+            ],
+            "metadata": {
+              "created_at": "2025-06-15T00:00:00Z",
+              "last_modified": "2025-06-15T00:00:00Z",
+              "tags": ["N3", "prohibition", "request"],
+              "usage_count": 0,
+              "success_rate": 0.0
+            }
+          },
+          {
+            "id": "n3_006",
+            "jlpt_level": "N3",
+            "category": "grammar_point",
+            "source_language": {
+              "text": "I am looking for a part-time job while studying.",
+              "language": "en",
+              "grammar_points": ["while doing", "object marker", "present progressive"],
+              "key_vocabulary": ["looking for", "part-time job", "studying"],
+              "notes": "Expressing simultaneous actions with 'nagara'."
+            },
+            "target_language": {
+              "text": "勉強しながら、アルバイトを探しています。",
+              "language": "ja",
+              "grammar_points": ["ながら (while doing)", "を (object marker)", "探しています (looking for)"],
+              "key_vocabulary": ["勉強", "ながら", "アルバイト", "探しています"],
+              "notes": "'ながら' expresses simultaneous actions."
+            },
+            "sentence_parts": {
+              "components": [
+                {
+                  "id": "part1",
+                  "text": "勉強しながら、",
+                  "type": "simultaneous",
+                  "is_required": true,
+                  "position_hint": "beginning",
+                  "grammar_notes": "'ながら' expresses simultaneous actions."
+                },
+                {
+                  "id": "part2",
+                  "text": "アルバイトを",
+                  "type": "object",
+                  "is_required": true,
+                  "position_hint": "middle",
+                  "grammar_notes": "Object marker."
+                },
+                {
+                  "id": "part3",
+                  "text": "探しています。",
+                  "type": "verb",
+                  "is_required": true,
+                  "position_hint": "end",
+                  "grammar_notes": "Present progressive verb."
+                }
+              ],
+              "correct_order": ["part1", "part2", "part3"],
+              "alternative_orders": [
+                {
+                  "order": ["アルバイトを", "勉強しながら、", "探しています。"],
+                  "is_grammatically_correct": true,
+                  "explanation": "The order is flexible, but 'nagara' usually comes first."
+                }
+              ]
+            },
+            "exercises": [
+              {
+                "type": "fill_in_blank",
+                "question": "勉強＿＿＿、アルバイトを探しています。",
+                "options": ["しながら", "した後で", "する前に"],
+                "correct_answer": "しながら",
+                "hints": ["The sentence expresses simultaneous actions.", "Look for the simultaneous action marker."],
+                "difficulty_adjustments": {
+                  "easier": "Provide a definition of 'simultaneous actions'.",
+                  "harder": "Ask for another sentence using 'ながら'."
+                }
+              }
+            ],
+            "metadata": {
+              "created_at": "2025-06-15T00:00:00Z",
+              "last_modified": "2025-06-15T00:00:00Z",
+              "tags": ["N3", "simultaneous", "present progressive"],
+              "usage_count": 0,
+              "success_rate": 0.0
+            }
+          },
+
+      {
+        "id": "n2_002",
+        "jlpt_level": "N2",
+        "category": "grammar_point",
+        "source_language": {
+          "text": "I have to study, even if I don't want to.",
+          "language": "en",
+          "grammar_points": ["obligation", "concession", "volition"],
+          "key_vocabulary": ["have to", "study", "even if", "don't want"],
+          "notes": "Expressing obligation with 'nakereba naranai' and concession with 'temo'."
+        },
+        "target_language": {
+          "text": "勉強したくなくても、しなければならない。",
+          "language": "ja",
+          "grammar_points": ["なくても (even if)", "なければならない (have to)", "勉強する (to study)"],
+          "key_vocabulary": ["勉強", "したくなくても", "しなければならない"],
+          "notes": "'なくても' expresses concession, 'なければならない' expresses obligation."
+        },
+        "sentence_parts": {
+          "components": [
+            {
+              "id": "part1",
+              "text": "勉強したくなくても、",
+              "type": "concession",
+              "is_required": true,
+              "position_hint": "beginning",
+              "grammar_notes": "'なくても' expresses concession."
+            },
+            {
+              "id": "part2",
+              "text": "しなければならない。",
+              "type": "obligation",
+              "is_required": true,
+              "position_hint": "end",
+              "grammar_notes": "'なければならない' expresses obligation."
+            }
+          ],
+          "correct_order": ["part1", "part2"],
+          "alternative_orders": [
+            {
+              "order": ["しなければならない。", "勉強したくなくても、"],
+              "is_grammatically_correct": false,
+              "explanation": "The concession usually comes before the obligation."
+            }
+          ]
+        },
+        "exercises": [
+          {
+            "type": "fill_in_blank",
+            "question": "勉強したく＿＿＿、しなければならない。",
+            "options": ["なくても", "なくてもいい", "なければ"],
+            "correct_answer": "なくても",
+            "hints": ["The sentence expresses concession.", "Look for the concession marker."],
+            "difficulty_adjustments": {
+              "easier": "Provide a definition of 'concession'.",
+              "harder": "Ask for another sentence using 'ても'."
+            }
+          }
+        ],
+        "metadata": {
+          "created_at": "2025-06-15T00:00:00Z",
+          "last_modified": "2025-06-15T00:00:00Z",
+          "tags": ["N2", "obligation", "concession"],
+          "usage_count": 0,
+          "success_rate": 0.0
+        }
+      },
+      {
+        "id": "n2_003",
+        "jlpt_level": "N2",
+        "category": "grammar_point",
+        "source_language": {
+          "text": "I am not sure if he will come or not.",
+          "language": "en",
+          "grammar_points": ["uncertainty", "question marker", "volition"],
+          "key_vocabulary": ["not sure", "will come", "or not"],
+          "notes": "Expressing uncertainty with 'ka dou ka'."
+        },
+        "target_language": {
+          "text": "彼が来るかどうか分からない。",
+          "language": "ja",
+          "grammar_points": ["かどうか (whether or not)", "分からない (don't know)", "来る (to come)"],
+          "key_vocabulary": ["彼", "来る", "かどうか", "分からない"],
+          "notes": "'かどうか' expresses uncertainty."
+        },
+        "sentence_parts": {
+          "components": [
+            {
+              "id": "part1",
+              "text": "彼が来るかどうか",
+              "type": "uncertainty",
+              "is_required": true,
+              "position_hint": "beginning",
+              "grammar_notes": "'かどうか' expresses uncertainty."
+            },
+            {
+              "id": "part2",
+              "text": "分からない。",
+              "type": "verb",
+              "is_required": true,
+              "position_hint": "end",
+              "grammar_notes": "Expressing 'don't know'."
+            }
+          ],
+          "correct_order": ["part1", "part2"],
+          "alternative_orders": [
+            {
+              "order": ["分からない。", "彼が来るかどうか"],
+              "is_grammatically_correct": false,
+              "explanation": "The uncertain clause usually comes before the verb."
+            }
+          ]
+        },
+        "exercises": [
+          {
+            "type": "fill_in_blank",
+            "question": "彼が来る＿＿＿分からない。",
+            "options": ["かどうか", "か", "ので"],
+            "correct_answer": "かどうか",
+            "hints": ["The sentence expresses uncertainty.", "Look for the uncertainty marker."],
+            "difficulty_adjustments": {
+              "easier": "Provide a definition of 'uncertainty'.",
+              "harder": "Ask for another sentence using 'かどうか'."
+            }
+          }
+        ],
+        "metadata": {
+          "created_at": "2025-06-15T00:00:00Z",
+          "last_modified": "2025-06-15T00:00:00Z",
+          "tags": ["N2", "uncertainty", "question marker"],
+          "usage_count": 0,
+          "success_rate": 0.0
+        }
+      },
+      {
+        "id": "n2_004",
+        "jlpt_level": "N2",
+        "category": "grammar_point",
+        "source_language": {
+          "text": "I decided to go to Japan for the purpose of studying Japanese.",
+          "language": "en",
+          "grammar_points": ["purpose", "destination", "volition"],
+          "key_vocabulary": ["decided", "go", "Japan", "purpose", "studying"],
+          "notes": "Expressing purpose with 'tame ni'."
+        },
+        "target_language": {
+          "text": "日本語を勉強するために、日本へ行くことにしました。",
+          "language": "ja",
+          "grammar_points": ["ために (for the purpose of)", "ことにする (decided)", "へ (direction)"],
+          "key_vocabulary": ["日本語", "勉強する", "ために", "日本", "行く"],
+          "notes": "'ために' expresses purpose."
+        },
+        "sentence_parts": {
+          "components": [
+            {
+              "id": "part1",
+              "text": "日本語を勉強するために、",
+              "type": "purpose",
+              "is_required": true,
+              "position_hint": "beginning",
+              "grammar_notes": "'ために' expresses purpose."
+            },
+            {
+              "id": "part2",
+              "text": "日本へ",
+              "type": "destination",
+              "is_required": true,
+              "position_hint": "middle",
+              "grammar_notes": "'へ' indicates direction."
+            },
+            {
+              "id": "part3",
+              "text": "行くことにしました。",
+              "type": "decision",
+              "is_required": true,
+              "position_hint": "end",
+              "grammar_notes": "Expressing 'decided to go'."
+            }
+          ],
+          "correct_order": ["part1", "part2", "part3"],
+          "alternative_orders": [
+            {
+              "order": ["日本へ", "日本語を勉強するために、", "行くことにしました。"],
+              "is_grammatically_correct": false,
+              "explanation": "The purpose usually comes before the destination."
+            }
+          ]
+        },
+        "exercises": [
+          {
+            "type": "fill_in_blank",
+            "question": "日本語を勉強する＿＿＿、日本へ行くことにしました。",
+            "options": ["ために", "から", "ので"],
+            "correct_answer": "ために",
+            "hints": ["The sentence expresses purpose.", "Look for the purpose marker."],
+            "difficulty_adjustments": {
+              "easier": "Provide a definition of 'purpose'.",
+              "harder": "Ask for another sentence using 'ために'."
+            }
+          }
+        ],
+        "metadata": {
+          "created_at": "2025-06-15T00:00:00Z",
+          "last_modified": "2025-06-15T00:00:00Z",
+          "tags": ["N2", "purpose", "destination"],
+          "usage_count": 0,
+          "success_rate": 0.0
+        }
+      },
+      {
+        "id": "n2_005",
+        "jlpt_level": "N2",
+        "category": "grammar_point",
+        "source_language": {
+          "text": "I am grateful for your help.",
+          "language": "en",
+          "grammar_points": ["gratitude", "politeness", "noun"],
+          "key_vocabulary": ["grateful", "help", "your"],
+          "notes": "Expressing gratitude with 'おかげで'."
+        },
+        "target_language": {
+          "text": "あなたのおかげで、助かりました。",
+          "language": "ja",
+          "grammar_points": ["おかげで (thanks to)", "助かりました (was saved)", "の (possessive)"],
+          "key_vocabulary": ["あなた", "おかげで", "助かりました"],
+          "notes": "'おかげで' expresses gratitude."
+        },
+        "sentence_parts": {
+          "components": [
+            {
+              "id": "part1",
+              "text": "あなたのおかげで、",
+              "type": "gratitude",
+              "is_required": true,
+              "position_hint": "beginning",
+              "grammar_notes": "'おかげで' expresses gratitude."
+            },
+            {
+              "id": "part2",
+              "text": "助かりました。",
+              "type": "verb",
+              "is_required": true,
+              "position_hint": "end",
+              "grammar_notes": "Expressing 'was saved'."
+            }
+          ],
+          "correct_order": ["part1", "part2"],
+          "alternative_orders": [
+            {
+              "order": ["助かりました。", "あなたのおかげで、"],
+              "is_grammatically_correct": false,
+              "explanation": "The gratitude usually comes before the result."
+            }
+          ]
+        },
+        "exercises": [
+          {
+            "type": "fill_in_blank",
+            "question": "あなたの＿＿＿、助かりました。",
+            "options": ["おかげで", "せいで", "ために"],
+            "correct_answer": "おかげで",
+            "hints": ["The sentence expresses gratitude.", "Look for the gratitude marker."],
+            "difficulty_adjustments": {
+              "easier": "Provide a definition of 'gratitude'.",
+              "harder": "Ask for another sentence using 'おかげで'."
+            }
+          }
+        ],
+        "metadata": {
+          "created_at": "2025-06-15T00:00:00Z",
+          "last_modified": "2025-06-15T00:00:00Z",
+          "tags": ["N2", "gratitude", "politeness"],
+          "usage_count": 0,
+          "success_rate": 0.0
+        }
+      },
+      {
+        "id": "n2_006",
+        "jlpt_level": "N2",
+        "category": "grammar_point",
+        "source_language": {
+          "text": "I am looking forward to seeing you again.",
+          "language": "en",
+          "grammar_points": ["anticipation", "politeness", "verb"],
+          "key_vocabulary": ["looking forward", "seeing", "again"],
+          "notes": "Expressing anticipation with 'のを楽しみにしています'."
+        },
+        "target_language": {
+          "text": "また会えるのを楽しみにしています。",
+          "language": "ja",
+          "grammar_points": ["のを楽しみにしています (looking forward to)", "会える (can meet)", "また (again)"],
+          "key_vocabulary": ["また", "会える", "のを楽しみにしています"],
+          "notes": "'のを楽しみにしています' expresses anticipation."
+        },
+        "sentence_parts": {
+          "components": [
+            {
+              "id": "part1",
+              "text": "また会えるのを",
+              "type": "anticipation",
+              "is_required": true,
+              "position_hint": "beginning",
+              "grammar_notes": "Expressing 'can meet again'."
+            },
+            {
+              "id": "part2",
+              "text": "楽しみにしています。",
+              "type": "verb",
+              "is_required": true,
+              "position_hint": "end",
+              "grammar_notes": "Expressing 'looking forward to'."
+            }
+          ],
+          "correct_order": ["part1", "part2"],
+          "alternative_orders": [
+            {
+              "order": ["楽しみにしています。", "また会えるのを"],
+              "is_grammatically_correct": false,
+              "explanation": "The anticipation usually comes before the verb."
+            }
+          ]
+        },
+        "exercises": [
+          {
+            "type": "fill_in_blank",
+            "question": "また会える＿＿＿楽しみにしています。",
+            "options": ["のを", "のをと", "のに"],
+            "correct_answer": "のを",
+            "hints": ["The sentence expresses anticipation.", "Look for the anticipation marker."],
+            "difficulty_adjustments": {
+              "easier": "Provide a definition of 'anticipation'.",
+              "harder": "Ask for another sentence using 'のを楽しみにしています'."
+            }
+          }
+        ],
+        "metadata": {
+          "created_at": "2025-06-15T00:00:00Z",
+          "last_modified": "2025-06-15T00:00:00Z",
+          "tags": ["N2", "anticipation", "politeness"],
+          "usage_count": 0,
+          "success_rate": 0.0
+        }
+      },
+
+      {
+        "id": "n1_002",
+        "jlpt_level": "N1",
+        "category": "idiom",
+        "source_language": {
+          "text": "It's like pouring water on a duck's back.",
+          "language": "en",
+          "grammar_points": ["idiomatic expression", "simile"],
+          "key_vocabulary": ["pouring water", "duck's back"],
+          "notes": "Japanese idiom for something being ineffective."
+        },
+        "target_language": {
+          "text": "糠に釘（ぬかにくぎ）。",
+          "language": "ja",
+          "grammar_points": ["idiomatic expression"],
+          "key_vocabulary": ["糠", "釘"],
+          "notes": "Literal meaning: Nail in rice bran. Meaning: Ineffective."
+        },
+        "sentence_parts": {
+          "components": [
+            {
+              "id": "part1",
+              "text": "糠に釘（ぬかにくぎ）。",
+              "type": "idiom",
+              "is_required": true,
+              "position_hint": "whole sentence",
+              "grammar_notes": "Idiomatic expression."
+            }
+          ],
+          "correct_order": ["part1"],
+          "alternative_orders": []
+        },
+        "exercises": [
+          {
+            "type": "multiple_choice",
+            "question": "What does '糠に釘' mean?",
+            "options": ["Effective", "Ineffective", "Difficult"],
+            "correct_answer": "Ineffective",
+            "hints": ["Think of something that doesn't stick.", "It's a metaphor."],
+            "difficulty_adjustments": {
+              "easier": "Provide a definition of 'ineffective'.",
+              "harder": "Ask for a situation where this idiom could be used."
+            }
+          }
+        ],
+        "metadata": {
+          "created_at": "2025-06-15T00:00:00Z",
+          "last_modified": "2025-06-15T00:00:00Z",
+          "tags": ["N1", "idiom", "simile"],
+          "usage_count": 0,
+          "success_rate": 0.0
+        }
+      },
+      {
+        "id": "n1_003",
+        "jlpt_level": "N1",
+        "category": "grammar_point",
+        "source_language": {
+          "text": "There is no other way but to do it.",
+          "language": "en",
+          "grammar_points": ["compulsion", "negation", "verb"],
+          "key_vocabulary": ["no other way", "but to do it"],
+          "notes": "Expressing compulsion with 'shika nai'."
+        },
+        "target_language": {
+          "text": "やるしかない。",
+          "language": "ja",
+          "grammar_points": ["しかない (no choice but to)", "やる (to do)"],
+          "key_vocabulary": ["やる", "しかない"],
+          "notes": "'しかない' expresses compulsion."
+        },
+        "sentence_parts": {
+          "components": [
+            {
+              "id": "part1",
+              "text": "やる",
+              "type": "verb",
+              "is_required": true,
+              "position_hint": "beginning",
+              "grammar_notes": "Verb in dictionary form."
+            },
+            {
+              "id": "part2",
+              "text": "しかない。",
+              "type": "compulsion",
+              "is_required": true,
+              "position_hint": "end",
+              "grammar_notes": "'しかない' expresses compulsion."
+            }
+          ],
+          "correct_order": ["part1", "part2"],
+          "alternative_orders": [
+            {
+              "order": ["しかない。", "やる"],
+              "is_grammatically_correct": false,
+              "explanation": "The verb usually comes before 'shika nai'."
+            }
+          ]
+        },
+        "exercises": [
+          {
+            "type": "fill_in_blank",
+            "question": "やる＿＿＿。",
+            "options": ["しかない", "べきだ", "はずだ"],
+            "correct_answer": "しかない",
+            "hints": ["The sentence expresses compulsion.", "Look for the compulsion marker."],
+            "difficulty_adjustments": {
+              "easier": "Provide a definition of 'compulsion'.",
+              "harder": "Ask for another sentence using 'shika nai'."
+            }
+          }
+        ],
+        "metadata": {
+          "created_at": "2025-06-15T00:00:00Z",
+          "last_modified": "2025-06-15T00:00:00Z",
+          "tags": ["N1", "compulsion", "negation"],
+          "usage_count": 0,
+          "success_rate": 0.0
+        }
+      },
+      {
+        "id": "n1_004",
+        "jlpt_level": "N1",
+        "category": "grammar_point",
+        "source_language": {
+          "text": "It goes without saying that honesty is important.",
+          "language": "en",
+          "grammar_points": ["obviousness", "noun", "importance"],
+          "key_vocabulary": ["goes without saying", "honesty", "important"],
+          "notes": "Expressing obviousness with 'iu made mo naku'."
+        },
+        "target_language": {
+          "text": "正直は言うまでもなく大切だ。",
+          "language": "ja",
+          "grammar_points": ["言うまでもなく (it goes without saying)", "正直 (honesty)", "大切だ (important)"],
+          "key_vocabulary": ["正直", "言うまでもなく", "大切だ"],
+          "notes": "'言うまでもなく' expresses obviousness."
+        },
+        "sentence_parts": {
+          "components": [
+            {
+              "id": "part1",
+              "text": "正直は",
+              "type": "subject",
+              "is_required": true,
+              "position_hint": "beginning",
+              "grammar_notes": "Topic marker."
+            },
+            {
+              "id": "part2",
+              "text": "言うまでもなく",
+              "type": "obviousness",
+              "is_required": true,
+              "position_hint": "middle",
+              "grammar_notes": "'言うまでもなく' expresses obviousness."
+            },
+            {
+              "id": "part3",
+              "text": "大切だ。",
+              "type": "adjective",
+              "is_required": true,
+              "position_hint": "end",
+              "grammar_notes": "Expressing 'important'."
+            }
+          ],
+          "correct_order": ["part1", "part2", "part3"],
+          "alternative_orders": [
+            {
+              "order": ["言うまでもなく", "正直は", "大切だ。"],
+              "is_grammatically_correct": true,
+              "explanation": "The order is flexible, but 'iu made mo naku' usually comes after the topic."
+            }
+          ]
+        },
+        "exercises": [
+          {
+            "type": "fill_in_blank",
+            "question": "正直は＿＿＿大切だ。",
+            "options": ["言うまでもなく", "言うまでもなくなく", "言うまでもなくに"],
+            "correct_answer": "言うまでもなく",
+            "hints": ["The sentence expresses obviousness.", "Look for the obviousness marker."],
+            "difficulty_adjustments": {
+              "easier": "Provide a definition of 'obviousness'.",
+              "harder": "Ask for another sentence using 'iu made mo naku'."
+            }
+          }
+        ],
+        "metadata": {
+          "created_at": "2025-06-15T00:00:00Z",
+          "last_modified": "2025-06-15T00:00:00Z",
+          "tags": ["N1", "obviousness", "noun"],
+          "usage_count": 0,
+          "success_rate": 0.0
+        }
+      },
+      {
+        "id": "n1_005",
+        "jlpt_level": "N1",
+        "category": "grammar_point",
+        "source_language": {
+          "text": "He is, so to speak, a walking dictionary.",
+          "language": "en",
+          "grammar_points": ["metaphor", "simile", "noun"],
+          "key_vocabulary": ["so to speak", "walking dictionary"],
+          "notes": "Expressing metaphor with 'iwaba'."
+        },
+        "target_language": {
+          "text": "彼は言わば歩く辞書だ。",
+          "language": "ja",
+          "grammar_points": ["言わば (so to speak)", "歩く (walking)", "辞書 (dictionary)"],
+          "key_vocabulary": ["彼", "言わば", "歩く", "辞書"],
+          "notes": "'言わば' expresses metaphor."
+        },
+        "sentence_parts": {
+          "components": [
+            {
+              "id": "part1",
+              "text": "彼は",
+              "type": "subject",
+              "is_required": true,
+              "position_hint": "beginning",
+              "grammar_notes": "Topic marker."
+            },
+            {
+              "id": "part2",
+              "text": "言わば",
+              "type": "metaphor",
+              "is_required": true,
+              "position_hint": "middle",
+              "grammar_notes": "'言わば' expresses metaphor."
+            },
+            {
+              "id": "part3",
+              "text": "歩く辞書だ。",
+              "type": "noun",
+              "is_required": true,
+              "position_hint": "end",
+              "grammar_notes": "Expressing 'walking dictionary'."
+            }
+          ],
+          "correct_order": ["part1", "part2", "part3"],
+          "alternative_orders": [
+            {
+              "order": ["言わば", "彼は", "歩く辞書だ。"],
+              "is_grammatically_correct": true,
+              "explanation": "The order is flexible, but 'iwaba' usually comes after the topic."
+            }
+          ]
+        },
+        "exercises": [
+          {
+            "type": "fill_in_blank",
+            "question": "彼は＿＿＿歩く辞書だ。",
+            "options": ["言わば", "例えば", "または"],
+            "correct_answer": "言わば",
+            "hints": ["The sentence expresses metaphor.", "Look for the metaphor marker."],
+            "difficulty_adjustments": {
+              "easier": "Provide a definition of 'metaphor'.",
+              "harder": "Ask for another sentence using 'iwaba'."
+            }
+          }
+        ],
+        "metadata": {
+          "created_at": "2025-06-15T00:00:00Z",
+          "last_modified": "2025-06-15T00:00:00Z",
+          "tags": ["N1", "metaphor", "simile"],
+          "usage_count": 0,
+          "success_rate": 0.0
+        }
+      },
+      {
+        "id": "n1_006",
+        "jlpt_level": "N1",
+        "category": "grammar_point",
+        "source_language": {
+          "text": "I cannot help but think that it is strange.",
+          "language": "en",
+          "grammar_points": ["inevitability", "thought", "adjective"],
+          "key_vocabulary": ["cannot help but think", "strange"],
+          "notes": "Expressing inevitability with 'zaru o enai'."
+        },
+        "target_language": {
+          "text": "それはおかしいと思わざるを得ない。",
+          "language": "ja",
+          "grammar_points": ["ざるを得ない (cannot help but)", "思う (to think)", "おかしい (strange)"],
+          "key_vocabulary": ["おかしい", "思わざるを得ない"],
+          "notes": "'ざるを得ない' expresses inevitability."
+        },
+        "sentence_parts": {
+          "components": [
+            {
+              "id": "part1",
+              "text": "それは",
+              "type": "subject",
+              "is_required": true,
+              "position_hint": "beginning",
+              "grammar_notes": "Topic marker."
+            },
+            {
+              "id": "part2",
+              "text": "おかしいと",
+              "type": "thought",
+              "is_required": true,
+              "position_hint": "middle",
+              "grammar_notes": "Expressing 'think that it is strange'."
+            },
+            {
+              "id": "part3",
+              "text": "思わざるを得ない。",
+              "type": "inevitability",
+              "is_required": true,
+              "position_hint": "end",
+              "grammar_notes": "'ざるを得ない' expresses inevitability."
+            }
+          ],
+          "correct_order": ["part1", "part2", "part3"],
+          "alternative_orders": [
+            {
+              "order": ["おかしいと", "それは", "思わざるを得ない。"],
+              "is_grammatically_correct": false,
+              "explanation": "The topic usually comes before the thought."
+            }
+          ]
+        },
+        "exercises": [
+          {
+            "type": "fill_in_blank",
+            "question": "それはおかしいと＿＿＿。",
+            "options": ["思わざるを得ない", "思うべきだ", "思うかもしれない"],
+            "correct_answer": "思わざるを得ない",
+            "hints": ["The sentence expresses inevitability.", "Look for the inevitability marker."],
+            "difficulty_adjustments": {
+              "easier": "Provide a definition of 'inevitability'.",
+              "harder": "Ask for another sentence using 'zaru o enai'."
+            }
+          }
+        ],
+        "metadata": {
+          "created_at": "2025-06-15T00:00:00Z",
+          "last_modified": "2025-06-15T00:00:00Z",
+          "tags": ["N1", "inevitability", "thought"],
+          "usage_count": 0,
+          "success_rate": 0.0
+        }
+      }
+    ]
+  }

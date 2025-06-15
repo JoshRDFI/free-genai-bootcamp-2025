@@ -12,6 +12,7 @@ const Navigation: React.FC = () => {
           <Link to="/words" className="text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white">Words</Link>
           <Link to="/word-groups" className="text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white">Word Groups</Link>
           <Link to="/sessions" className="text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white">Sessions</Link>
+          <Link to="/sentence-constructor" className="text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white">Sentence Constructor</Link>
           <Link to="/settings" className="text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white">Settings</Link>
         </div>
       </div>

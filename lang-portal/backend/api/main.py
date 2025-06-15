@@ -6,7 +6,7 @@ from fastapi.staticfiles import StaticFiles
 from sqlalchemy.orm import Session
 from typing import List, Optional, Generic, TypeVar
 from pydantic import BaseModel, Field
-from backend.db.models import Base, Word, Group, StudySession, WordReviewItem, StudyActivity, UserProgress
+from backend.db.models import Base, Word, Group, StudySession, WordReviewItem, StudyActivity, UserProgress, SentenceProgress as SentenceProgressModel
 from sqlalchemy import create_engine, and_
 from sqlalchemy.orm import sessionmaker
 import os
@@ -162,6 +162,38 @@ class UserProgressResponse(BaseModel):
         json_encoders = {
             datetime: lambda v: v.isoformat()
         }
+
+# Sentence Constructor Pydantic models
+class SentencePart(BaseModel):
+    id: str
+    text: str
+    type: str
+    is_required: bool
+    position_hint: str
+    grammar_notes: str
+
+class Sentence(BaseModel):
+    id: str
+    jlpt_level: str
+    category: str
+    source_language: dict
+    target_language: dict
+    sentence_parts: dict
+    exercises: List[dict]
+    metadata: dict
+
+class SentenceAttempt(BaseModel):
+    sentence_id: str
+    constructed_sentence: str
+    is_correct: bool
+    time_taken: float
+
+class SentenceProgress(BaseModel):
+    sentence_id: str
+    attempts: int
+    correct_attempts: int
+    last_attempted: datetime
+    success_rate: float
 
 # Routes
 @api_router.get("/study-activities", response_model=List[StudyActivityResponse])
@@ -468,6 +500,75 @@ def submit_quiz_answer(
         total_questions=len(questions),
         review_items=formatted_review_items
     )
+
+@api_router.get("/sentences", response_model=List[Sentence])
+def get_sentences(
+    db: Session = Depends(get_db)
+):
+    # Get user's current level
+    progress = db.query(UserProgress).first()
+    if not progress:
+        progress = UserProgress(current_level='N5')
+        db.add(progress)
+        db.commit()
+    
+    # Load sentences from JSON file
+    import json
+    json_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'sentence-constructor.json')
+    with open(json_path, 'r', encoding='utf-8') as f:
+        data = json.load(f)
+    
+    # Filter sentences by user's level
+    user_level = progress.current_level
+    filtered_sentences = [
+        sentence for sentence in data['sentences']
+        if sentence['jlpt_level'] == user_level
+    ]
+    
+    return filtered_sentences
+
+@api_router.post("/sentences/attempt", response_model=SentenceProgress)
+def submit_sentence_attempt(
+    attempt: SentenceAttempt,
+    db: Session = Depends(get_db)
+):
+    # Get the sentence from the JSON file
+    import json
+    json_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'sentence-constructor.json')
+    with open(json_path, 'r', encoding='utf-8') as f:
+        data = json.load(f)
+    
+    # Find the sentence
+    sentence = next((s for s in data['sentences'] if s['id'] == attempt.sentence_id), None)
+    if not sentence:
+        raise HTTPException(status_code=404, detail="Sentence not found")
+    
+    # Check if the attempt is correct
+    correct_sentence = sentence['target_language']['text']
+    is_correct = attempt.constructed_sentence.strip() == correct_sentence.strip()
+    
+    # Update or create progress record
+    progress = db.query(SentenceProgressModel).filter_by(sentence_id=attempt.sentence_id).first()
+    if not progress:
+        progress = SentenceProgressModel(
+            sentence_id=attempt.sentence_id,
+            attempts=0,
+            correct_attempts=0,
+            last_attempted=datetime.now(),
+            success_rate=0.0
+        )
+        db.add(progress)
+    
+    # Update progress
+    progress.attempts += 1
+    if is_correct:
+        progress.correct_attempts += 1
+    progress.last_attempted = datetime.now()
+    progress.success_rate = progress.correct_attempts / progress.attempts
+    
+    db.commit()
+    db.refresh(progress)
+    return progress
 
 # Include the API router
 app.include_router(api_router)

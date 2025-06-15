@@ -1,8 +1,9 @@
 # backend/db/models.py
 
-from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, JSON, Boolean, Table, create_engine
+from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, JSON, Boolean, Table, create_engine, Float
 from sqlalchemy.orm import declarative_base, relationship
 from sqlalchemy.sql import func
+from datetime import datetime
 
 Base = declarative_base()
 
@@ -128,3 +129,13 @@ class WordReviewItem(Base):
             'created_at': self.created_at.isoformat(),
             'word': self.word.to_dict() if self.word else None
         }
+
+class SentenceProgress(Base):
+    __tablename__ = "sentence_progress"
+
+    id = Column(Integer, primary_key=True, index=True)
+    sentence_id = Column(String, index=True)
+    attempts = Column(Integer, default=0)
+    correct_attempts = Column(Integer, default=0)
+    last_attempted = Column(DateTime, default=datetime.now)
+    success_rate = Column(Float, default=0.0)

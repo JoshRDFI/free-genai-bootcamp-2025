@@ -22,8 +22,11 @@ export const StudyActivityCard: React.FC<StudyActivityCardProps> = ({
     if (name === "Vocabulary Quiz") {
       // For quiz, navigate to quiz page with select parameter
       navigate('/quiz/select');
-    } else {
-      // For other activities, use the URL directly
+    } else if (name === "Sentence Construction") {
+      // For sentence constructor, navigate to the sentence constructor page
+      navigate('/sentence-constructor');
+    } else if (url) {
+      // Only use window.open for activities with a valid URL
       window.open(url, '_blank');
     }
   };

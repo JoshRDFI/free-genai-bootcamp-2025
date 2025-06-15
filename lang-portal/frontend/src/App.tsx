@@ -7,6 +7,7 @@ import StudyActivityShowPage from './pages/StudyActivityShowPage';
 import WordGroupsPage from './pages/WordGroupsPage';
 import WordGroupDetailPage from './pages/WordGroupDetailPage';
 import { Quiz } from './components/Quiz';
+import { SentenceConstructorPage } from './pages/SentenceConstructorPage';
 
 const darkTheme = createTheme({
   palette: {
@@ -29,6 +30,7 @@ function App() {
               <Route path="/word-groups/:groupId" element={<WordGroupDetailPage />} />
               <Route path="/quiz/select" element={<Quiz />} />
               <Route path="/quiz/:groupId" element={<Quiz />} />
+              <Route path="/sentence-constructor" element={<SentenceConstructorPage />} />
             </Routes>
           </main>
         </div>

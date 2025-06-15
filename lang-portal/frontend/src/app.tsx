@@ -9,6 +9,7 @@ import WordGroupDetailPage from './pages/WordGroupDetailPage';
 import SessionsPage from './pages/SessionsPage';
 import SettingsPage from './pages/SettingsPage';
 import { Quiz } from './components/Quiz';
+import { SentenceConstructorPage } from './pages/SentenceConstructorPage';
 
 const App = () => {
   return (
@@ -23,6 +24,7 @@ const App = () => {
               <Link to="/words" className="text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white px-3 py-2">Words</Link>
               <Link to="/word-groups" className="text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white px-3 py-2">Word Groups</Link>
               <Link to="/sessions" className="text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white px-3 py-2">Sessions</Link>
+              <Link to="/sentence-constructor" className="text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white px-3 py-2">Sentence Constructor</Link>
               <Link to="/settings" className="text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white px-3 py-2">Settings</Link>
             </div>
           </div>
@@ -38,6 +40,7 @@ const App = () => {
             <Route path="/sessions" element={<SessionsPage />} />
             <Route path="/settings" element={<SettingsPage />} />
             <Route path="/quiz/:groupId" element={<Quiz />} />
+            <Route path="/sentence-constructor" element={<SentenceConstructorPage />} />
           </Routes>
         </main>
       </div>
