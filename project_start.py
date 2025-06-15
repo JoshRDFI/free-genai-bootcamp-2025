@@ -553,16 +553,17 @@ def run_project(project_name):
 def set_background():
     """Set a background image for the Streamlit app."""
     try:
-        # Try to use a background image if it exists
-        bg_image = "assets/background.jpg"
+        # Use the specified background image
+        bg_image = "images/1240417.png"
         if os.path.exists(bg_image):
             st.markdown(
                 f"""
                 <style>
                 .stApp {{
-                    background-image: url("data:image/jpeg;base64,{base64.b64encode(open(bg_image, "rb").read()).decode()}");
+                    background-image: url("data:image/png;base64,{base64.b64encode(open(bg_image, "rb").read()).decode()}");
                     background-attachment: fixed;
                     background-size: cover;
+                    background-position: center;
                 }}
                 </style>
                 """,
@@ -585,17 +586,78 @@ def main():
         st.markdown("""
             <style>
             .main {
-                background-color: rgba(255, 255, 255, 0.9);
+                background-color: rgba(255, 255, 255, 0.85);
+                padding: 2rem;
+                border-radius: 15px;
+                box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
             }
             .stButton>button {
                 width: 100%;
-                margin: 5px 0;
+                margin: 10px 0;
+                padding: 12px 24px;
+                background-color: #4CAF50;
+                color: white;
+                border: none;
+                border-radius: 8px;
+                font-weight: 600;
+                transition: all 0.3s ease;
+            }
+            .stButton>button:hover {
+                background-color: #45a049;
+                transform: translateY(-2px);
+                box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
             }
             .project-card {
-                padding: 20px;
-                border-radius: 10px;
-                background-color: rgba(255, 255, 255, 0.8);
-                margin: 10px 0;
+                padding: 25px;
+                border-radius: 12px;
+                background-color: rgba(255, 255, 255, 0.9);
+                margin: 15px 0;
+                box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+                transition: all 0.3s ease;
+            }
+            .project-card:hover {
+                transform: translateY(-5px);
+                box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+            }
+            .project-card h3 {
+                color: #2c3e50;
+                margin-bottom: 15px;
+                font-size: 1.5rem;
+            }
+            .project-card p {
+                color: #34495e;
+                font-size: 1.1rem;
+                line-height: 1.6;
+            }
+            h1 {
+                color: #2c3e50;
+                font-size: 2.5rem !important;
+                margin-bottom: 1.5rem !important;
+                text-align: center;
+            }
+            .stMarkdown p {
+                color: #34495e;
+                font-size: 1.2rem;
+                text-align: center;
+                margin-bottom: 2rem;
+            }
+            /* Style for Streamlit alerts - more specific selectors */
+            div[data-testid="stAlertContainer"] {
+                background-color: rgba(0, 0, 0, 0.85) !important;
+                border: 1px solid rgba(255, 255, 255, 0.2) !important;
+            }
+            div[data-testid="stAlertContainer"] > div {
+                background-color: rgba(0, 0, 0, 0.85) !important;
+            }
+            div[data-testid="stAlertContentSuccess"],
+            div[data-testid="stAlertContentInfo"] {
+                background-color: rgba(0, 0, 0, 0.85) !important;
+            }
+            div[data-testid="stAlertContainer"] div[data-testid="stMarkdownContainer"] p {
+                color: white !important;
+                font-size: 1.2rem !important;
+                font-weight: 600 !important;
+                text-shadow: 0 1px 4px rgba(0,0,0,0.7);
             }
             </style>
             """, unsafe_allow_html=True)
@@ -612,20 +674,21 @@ def main():
         
         # Display project cards
         for i, (project_id, project) in enumerate(PROJECTS.items()):
-            # For the Language Portal, create a centered column
+            # For the Language Portal, use the same column layout
             if project_id == "lang-portal":
                 st.markdown("<br>", unsafe_allow_html=True)  # Add some spacing
-                with st.container():
-                    st.markdown(f"""
-                    <div class="project-card" style="max-width: 50%; margin: 0 auto;">
-                        <h3>{project['name']}</h3>
-                        <p>{project['description']}</p>
-                    </div>
-                    """, unsafe_allow_html=True)
-                    
-                    # Add start button
-                    if st.button(f"Start {project['name']}", key=project_id):
-                        run_project(project_id)
+                with col1:  # Use col1 for Language Portal
+                    with st.container():
+                        st.markdown(f"""
+                        <div class="project-card">
+                            <h3>{project['name']}</h3>
+                            <p>{project['description']}</p>
+                        </div>
+                        """, unsafe_allow_html=True)
+                        
+                        # Add start button
+                        if st.button(f"Start {project['name']}", key=project_id):
+                            run_project(project_id)
             else:
                 # Regular projects in two columns
                 with col1 if i % 2 == 0 else col2:

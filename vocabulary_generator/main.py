@@ -8,6 +8,7 @@ import logging
 import random # Added for MUD ingredient selection
 import streamlit as st
 import aiosqlite
+import base64
 
 from src.generator import VocabularyGenerator
 from src.validator import JLPTValidator
@@ -431,7 +432,7 @@ async def main():
 
     # Import vocabulary
     imported = await manager.import_from_json(
-        os.path.join(os.path.dirname(__file__), 'data', 'data_verbs.json'),
+        os.path.join(PROJECT_ROOT, 'data', 'vocabulary_generator', 'data_verbs.json'),
         'Core Verbs'
     )
     print(f"Imported {len(imported)} verbs")
@@ -473,11 +474,164 @@ def get_manager_instance():
 
 manager = get_manager_instance()
 
+# Configure Streamlit page
+st.set_page_config(
+    page_title="Vocabulary Generator",
+    page_icon="📚",
+    layout="wide"
+)
+
+def format_activity_type(activity_type: str) -> str:
+    return {
+        'typing_tutor': 'Typing Tutor',
+        'flashcards': 'Flashcards',
+        'adventure_mud': 'Adventure Game'
+    }.get(activity_type, activity_type)
+
+def set_background():
+    image_path = os.path.join(PROJECT_ROOT, "images", "1371443.png")
+    with open(image_path, "rb") as image_file:
+        encoded_string = base64.b64encode(image_file.read()).decode()
+
+    st.markdown(f"""
+    <style>
+        /* Main container styling */
+        .stApp {{
+            background-image: url("data:image/png;base64,{encoded_string}");
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            background-attachment: fixed;
+        }}
+        
+        /* Content container */
+        div[data-testid="stAppViewContainer"] {{
+            max-width: 75%;
+            margin: 0 auto;
+            padding: 2rem 1rem;
+        }}
+
+        /* Center all content */
+        div[data-testid="stVerticalBlock"] {{
+            max-width: 75%;
+            margin: 0 auto;
+        }}
+
+        /* Fix button containers */
+        div[data-testid="stButton"] {{
+            max-width: 75%;
+            margin: 0 auto;
+        }}
+        
+        /* Overlay for readability */
+        .stApp::before {{
+            content: "";
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(255, 255, 255, 0.4);
+            z-index: -1;
+        }}
+        
+        /* Ensure content is above overlay */
+        .stApp > * {{
+            position: relative;
+            z-index: 1;
+        }}
+
+        /* Fix main content area */
+        div[data-testid="stAppViewContainer"] {{
+            overflow-y: auto;
+            height: 100vh;
+        }}
+
+        /* Fix column layouts */
+        div[data-testid="column"] {{
+            max-width: 75%;
+            margin: 0 auto;
+        }}
+
+        /* Fix file uploader */
+        div[data-testid="stFileUploader"] {{
+            max-width: 75%;
+            margin: 0 auto;
+        }}
+
+        /* Style for project cards */
+        .project-card {{
+            background-color: white;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 10px 0;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }}
+
+        /* Style for buttons */
+        .stButton button {{
+            width: 100%;
+            margin: 5px 0;
+            padding: 10px;
+            border-radius: 5px;
+            background-color: #1f77b4;
+            color: white;
+            border: none;
+            transition: background-color 0.3s;
+        }}
+
+        .stButton button:hover {{
+            background-color: #155a8f;
+        }}
+
+        /* Style for success and info messages */
+        .stAlertContainer, 
+        .st-emotion-cache-17z2rne,
+        .st-emotion-cache-1ii4qqd {{
+            background-color: rgba(0, 0, 0, 0.85) !important;
+            border: 1px solid white !important;
+        }}
+
+        .stAlertContainer p,
+        .st-emotion-cache-17z2rne p,
+        .st-emotion-cache-1ii4qqd p {{
+            color: white !important;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5) !important;
+        }}
+    </style>
+    """, unsafe_allow_html=True)
+
+# Set background image
+set_background()
+
+# Initialize the manager
+manager = VocabularyManager()
+st.session_state.manager = manager
+st.session_state.user_id = 1  # For now, hardcode user ID 1
+
+# Add custom CSS for styling
+st.markdown("""
+    <style>
+        h1 {
+            text-align: center;
+        }
+        .st-emotion-cache-seewz2 h3 {
+            color: black !important;
+        }
+        .stForm {
+            background-color: rgba(173, 216, 230, 0.9);
+            padding: 20px;
+            border-radius: 10px;
+        }
+    </style>
+""", unsafe_allow_html=True)
+
+# Main interface
 st.title("Vocabulary Generator App")
 
-if manager and 'user_id' in st.session_state:
-    st.success(f"Vocabulary Manager initialized. User ID: {st.session_state.user_id}")
+# File uploader for vocabulary import
 
+if manager and 'user_id' in st.session_state:
     col1, col2 = st.columns([3, 7])
 
     with col1:
@@ -501,21 +655,6 @@ if manager and 'user_id' in st.session_state:
             else:
                 st.write("No progression history found or error loading.")
 
-        st.subheader("Vocabulary Import")
-        # Get the configured absolute path for data_verbs.json
-        data_verbs_path = manager.config['storage'].get('data_verbs_file') 
-        if st.button("Import Core Verbs"):
-            if data_verbs_path and os.path.exists(data_verbs_path):
-                with st.spinner("Importing Core Verbs..."):
-                    try:
-                        imported_verbs = asyncio.run(manager.import_from_json(data_verbs_path, 'Core Verbs'))
-                        st.success(f"Imported {len(imported_verbs)} verbs from Core Verbs.")
-                    except Exception as e:
-                        st.error(f"Error importing Core Verbs: {e}")
-                        logger.error(f"Error importing Core Verbs: {e}")
-            else:
-                st.error(f"Core Verbs file not found at: {data_verbs_path}")
-
     with col2:
         # --- Study Session Management ---
         if 'active_session_id' not in st.session_state:
@@ -529,17 +668,25 @@ if manager and 'user_id' in st.session_state:
         if st.session_state.active_session_id is None:
             st.subheader("Start New Study Session")
             
-            # Fetch word groups
-            word_groups_raw = asyncio.run(manager.db.get_all_word_groups()) 
+            # Get user's current level
+            stats = asyncio.run(manager.get_user_stats())
+            current_level = stats['current_level'] if stats else 'N5'
+            current_level_num = int(current_level[1:])  # Convert N5 to 5, N4 to 4, etc.
+            
+            # Fetch word groups and filter by level
+            word_groups_raw = asyncio.run(manager.db.get_all_word_groups(current_level))
             group_options = {}
             if word_groups_raw:
                 for group in word_groups_raw:
-                    group_options[f"{group['name']} ({group.get('words_count', 0)} words)"] = group['id']
+                    group_options[group['name']] = group['id']
             
             activity_types = ['typing_tutor', 'flashcards', 'adventure_mud'] # Example types
             
             with st.form("start_session_form"):
-                selected_activity = st.radio("Select Activity Type:", options=activity_types, horizontal=True)
+                selected_activity = st.radio("Select Activity Type:", 
+                    options=activity_types,
+                    format_func=format_activity_type,
+                    horizontal=True)
                 selected_group_name = st.selectbox("Select Word Group:", options=list(group_options.keys()))
                 submitted = st.form_submit_button("Start Session")
 
@@ -551,9 +698,9 @@ if manager and 'user_id' in st.session_state:
                             if session_info and 'session_id' in session_info:
                                 st.session_state.active_session_id = session_info['session_id']
                                 st.session_state.current_session_details = session_info
-                                # Fetch words for the session
-                                # Assuming get_words_by_group returns a list of word dicts
-                                st.session_state.session_words = asyncio.run(manager.db.get_words_by_group(selected_group_id))
+                                # Fetch words for the session and filter by user's level
+                                all_words = asyncio.run(manager.db.get_words_by_group(selected_group_id, current_level))
+                                st.session_state.session_words = all_words  # No need for additional filtering since it's done in the database
                                 st.session_state.current_word_index = 0
                                 st.session_state.feedback_message = None # Clear feedback from any previous session
                                 st.session_state.feedback_type = None
@@ -577,7 +724,7 @@ if manager and 'user_id' in st.session_state:
                             logger.error(f"Error starting session: {e}", exc_info=True)
         else:
             # --- UI for Active Study Session ---
-            st.subheader(f"Active Study Session: {st.session_state.current_session_details.get('activity_type')}")
+            st.subheader(f"Active Study Session: {format_activity_type(st.session_state.current_session_details.get('activity_type'))}")
             st.write(f"Session ID: {st.session_state.active_session_id}")
             st.write(f"Studying Group ID: {st.session_state.current_session_details.get('group_id')}")
             st.write(f"Words in session: {len(st.session_state.session_words)}")

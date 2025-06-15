@@ -245,9 +245,27 @@ class DatabaseManager:
                     }
                 return None
 
-    async def get_words_by_group(self, group_id: int) -> List[Dict]:
-        """Retrieve all words associated with a group via the join table"""
+    async def get_words_by_group(self, group_id: int, user_level: str = None) -> List[Dict]:
+        """Retrieve all words associated with a group via the join table, optionally filtered by user level"""
         async with self.get_connection() as db:
+            # First get the group's level
+            async with db.execute(
+                "SELECT level FROM word_groups WHERE id = ?",
+                (group_id,)
+            ) as cursor:
+                group_row = await cursor.fetchone()
+                if not group_row:
+                    return []
+                group_level = group_row[0]
+
+            # If user level is provided, check if group level is appropriate
+            if user_level:
+                user_level_num = int(user_level[1:])
+                group_level_num = int(group_level[1:])
+                if group_level_num > user_level_num:
+                    return []  # Return empty list if group level is too high
+
+            # Then get words for this group
             async with db.execute(
                 """
                 SELECT w.id, w.kanji, w.romaji, w.english, w.parts,
@@ -267,7 +285,8 @@ class DatabaseManager:
                         'english': row[3],
                         'parts': row[4],
                         'correct_count': row[5],
-                        'wrong_count': row[6]
+                        'wrong_count': row[6],
+                        'level': group_level  # Add the group's level to each word
                     }
                     for row in rows
                 ]
@@ -535,25 +554,50 @@ class DatabaseManager:
             else:
                 logger.info(f"User {user_id} current_level updated to {new_level}.")
 
-    async def get_all_word_groups(self) -> List[Dict]:
-        """Retrieve all word groups."""
+    async def get_all_word_groups(self, user_level: str = None) -> List[Dict]:
+        """Retrieve all word groups, optionally filtered by user level."""
         async with self.get_connection() as db:
-            async with db.execute(
-                """
-                SELECT id, name, level, words_count FROM word_groups
-                ORDER BY name ASC
-                """
-            ) as cursor:
-                rows = await cursor.fetchall()
-                return [
-                    {
-                        'id': row[0],
-                        'name': row[1],
-                        'level': row[2],
-                        'words_count': row[3]
-                    }
-                    for row in rows
-                ]
+            if user_level:
+                # Convert level to number for comparison (e.g., 'N5' -> 5)
+                level_num = int(user_level[1:])
+                async with db.execute(
+                    """
+                    SELECT id, name, level, words_count 
+                    FROM word_groups 
+                    WHERE level IS NOT NULL 
+                    AND CAST(SUBSTR(level, 2) AS INTEGER) <= ?
+                    ORDER BY name ASC
+                    """,
+                    (level_num,)
+                ) as cursor:
+                    rows = await cursor.fetchall()
+                    return [
+                        {
+                            'id': row[0],
+                            'name': row[1],
+                            'level': row[2],
+                            'words_count': row[3]
+                        }
+                        for row in rows
+                    ]
+            else:
+                # If no user level provided, return all groups
+                async with db.execute(
+                    """
+                    SELECT id, name, level, words_count FROM word_groups
+                    ORDER BY name ASC
+                    """
+                ) as cursor:
+                    rows = await cursor.fetchall()
+                    return [
+                        {
+                            'id': row[0],
+                            'name': row[1],
+                            'level': row[2],
+                            'words_count': row[3]
+                        }
+                        for row in rows
+                    ]
 
     async def get_user_sessions(self, user_id: int) -> List[Dict]:
         """Retrieves all study sessions for a specific user."""

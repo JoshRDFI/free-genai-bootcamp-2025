@@ -16,10 +16,10 @@ const StudyActivitiesPage: React.FC = () => {
           <StudyActivityCard
             key={activity.id}
             id={activity.id}
-            title={activity.title}
+            name={activity.name}
             thumbnail={activity.thumbnail}
             description={activity.description}
-            launchUrl={activity.launchUrl}
+            url={activity.url}
           />
         ))}
       </div>

@@ -1,6 +1,6 @@
 import React from 'react';
-import { StudyActivityCard } from '@/components/StudyActivityCard';
-import { useStudyActivities } from '@/services/api';
+import { StudyActivityCard } from '../components/StudyActivityCard';
+import { useStudyActivities } from '../services/api';
 
 const DashboardPage: React.FC = () => {
   const { studyActivities, loading, error } = useStudyActivities();

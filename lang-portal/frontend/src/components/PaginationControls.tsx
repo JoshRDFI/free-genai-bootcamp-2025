@@ -1,30 +1,34 @@
 import React from 'react';
-import { Button } from '@/components/ui/button';
+import { Button } from './ui/button';
 
 interface PaginationControlsProps {
-  page: number;
-  setPage: (page: number) => void;
+  currentPage: number;
   totalPages: number;
+  onPageChange: (page: number) => void;
 }
 
-const PaginationControls: React.FC<PaginationControlsProps> = ({ page, setPage, totalPages }) => {
-  const handlePageChange = (newPage: number) => {
-    if (newPage >= 1 && newPage <= totalPages) {
-      setPage(newPage);
-    }
-  };
-
+export const PaginationControls: React.FC<PaginationControlsProps> = ({
+  currentPage,
+  totalPages,
+  onPageChange,
+}) => {
   return (
-    <div className="flex items-center justify-center space-x-2 mt-4">
-      <Button onClick={() => handlePageChange(page - 1)} disabled={page === 1}>
+    <div className="flex justify-center space-x-2 mt-4">
+      <Button
+        onClick={() => onPageChange(currentPage - 1)}
+        disabled={currentPage === 1}
+      >
         Previous
       </Button>
-      <span className="text-gray-600 dark:text-gray-300">{page}</span>
-      <Button onClick={() => handlePageChange(page + 1)} disabled={page === totalPages}>
+      <span className="px-4 py-2">
+        Page {currentPage} of {totalPages}
+      </span>
+      <Button
+        onClick={() => onPageChange(currentPage + 1)}
+        disabled={currentPage === totalPages}
+      >
         Next
       </Button>
     </div>
   );
 };
-
-export { PaginationControls };

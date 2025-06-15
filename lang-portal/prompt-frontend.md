@@ -74,7 +74,7 @@ This page provides a summary of the student's progression.
 
 The route for this page /study-activties
 
-This is a grade of cards which reresent and activity.
+This is a grade of cards which represent and activity.
 
 A card has a:
 - thumbnail

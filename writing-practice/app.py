@@ -16,6 +16,14 @@ import subprocess
 import sys
 import atexit
 import re
+import base64
+
+# Set page config
+st.set_page_config(
+    page_title="Writing Practice",
+    page_icon="✍️",
+    layout="wide"
+)
 
 def start_api_server():
     api_dir = Path(__file__).parent / "api"
@@ -338,8 +346,8 @@ def grade_response(target_sentence, submission, translation, prompts):
     try:
         system_prompt = prompts['grading']['system']
         user_prompt = prompts['grading']['user'].format(
-            target_sentence=target_sentence,
-            submission=submission,
+            target_sentence=target_sentence,  # This is the original Japanese sentence
+            submission=submission,  # This is what the user wrote
             translation=translation
         )
 
@@ -507,28 +515,109 @@ if 'vocabulary_groups' not in st.session_state:
 # Load prompts
 prompts = load_prompts()
 
-# Initialize the app
-initialize_app()
-
 # Main app
 st.title("Japanese Writing Practice")
 
-# Add reload button in sidebar
-if st.sidebar.button("🔄 Reload Vocabulary Groups"):
-    if 'vocabulary_groups' in st.session_state:
-        del st.session_state.vocabulary_groups
-    st.rerun()
+# Add background image
+image_path = "images/1371442.png"
+with open(image_path, "rb") as image_file:
+    encoded_string = base64.b64encode(image_file.read()).decode()
 
-# Check service health and display status
-health_status = st.session_state.service_health
+st.markdown(f"""
+<style>
+    /* Main container styling */
+    .stApp {{
+        background-image: url("data:image/png;base64,{encoded_string}");
+        background-size: cover;
+        background-position: center;
+        background-repeat: no-repeat;
+        background-attachment: fixed;
+    }}
+    
+    /* Content container */
+    div[data-testid="stAppViewContainer"] {{
+        max-width: 75%;
+        margin: 0 auto;
+        padding: 2rem 1rem;
+    }}
 
-# Display service status
-st.sidebar.title("Service Status")
-for service, is_healthy in health_status.items():
-    if is_healthy:
-        st.sidebar.success(f"✅ {service}")
-    else:
-        st.sidebar.error(f"❌ {service}")
+    /* Center all content */
+    div[data-testid="stVerticalBlock"] {{
+        max-width: 75%;
+        margin: 0 auto;
+    }}
+
+    /* Fix button containers */
+    div[data-testid="stButton"] {{
+        max-width: 75%;
+        margin: 0 auto;
+    }}
+    
+    /* Overlay for readability */
+    .stApp::before {{
+        content: "";
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: rgba(255, 255, 255, 0.4);
+        z-index: -1;
+    }}
+    
+    /* Ensure content is above overlay */
+    .stApp > * {{
+        position: relative;
+        z-index: 1;
+    }}
+
+    /* Fix canvas container */
+    .stCanvas {{
+        margin: 0 auto;
+        display: block;
+    }}
+    
+    /* Make tabs with canvas full width */
+    div[data-testid="stTabs"]:has(.stCanvas) {{
+        max-width: 100% !important;
+        width: 100% !important;
+        margin: 0 auto;
+    }}
+
+    /* Adjust canvas container size */
+    div[data-testid="stVerticalBlock"]:has(.stCanvas) {{
+        max-width: 1800px !important;
+        width: 100% !important;
+        margin: 0 auto;
+    }}
+
+    /* Ensure scrolling works */
+    section[data-testid="stSidebar"] {{
+        overflow-y: auto;
+    }}
+
+    /* Fix main content area */
+    div[data-testid="stAppViewContainer"] {{
+        overflow-y: auto;
+        height: 100vh;
+    }}
+
+    /* Fix column layouts */
+    div[data-testid="column"] {{
+        max-width: 75%;
+        margin: 0 auto;
+    }}
+
+    /* Fix file uploader */
+    div[data-testid="stFileUploader"] {{
+        max-width: 75%;
+        margin: 0 auto;
+    }}
+</style>
+""", unsafe_allow_html=True)
+
+# Initialize the app
+initialize_app()
 
 # SETUP STATE
 if st.session_state.app_state == "setup":
@@ -650,7 +739,7 @@ elif st.session_state.app_state == "practice":
                 stroke_color="#000000",
                 background_color="#ffffff",
                 height=300,
-                width=600,
+                width=1800,
                 drawing_mode="freedraw",
                 key="canvas",
             )
@@ -673,7 +762,7 @@ elif st.session_state.app_state == "practice":
 
                             # Grade the response
                             feedback = grade_response(
-                                st.session_state.current_sentence['english'],
+                                st.session_state.current_sentence['japanese'],  # Pass the original Japanese sentence
                                 recognized_text,
                                 translation,
                                 prompts
@@ -716,7 +805,7 @@ elif st.session_state.app_state == "practice":
 
                         # Grade the response
                         feedback = grade_response(
-                            st.session_state.current_sentence['english'],
+                            st.session_state.current_sentence['japanese'],  # Pass the original Japanese sentence
                             recognized_text,
                             translation,
                             prompts
@@ -756,7 +845,7 @@ elif st.session_state.app_state == "practice":
 
                         # Grade the response
                         feedback = grade_response(
-                            st.session_state.current_sentence['english'],
+                            st.session_state.current_sentence['japanese'],  # Pass the original Japanese sentence
                             recognized_text,
                             translation,
                             prompts
@@ -843,16 +932,15 @@ elif st.session_state.app_state == "review":
         # Display feedback
         st.subheader("Feedback")
 
-        # Extract feedback text without the grade
-        if "Feedback:" in feedback_text:
-            feedback_parts = feedback_text.split("Feedback:")
-            if len(feedback_parts) > 1:
-                feedback_only = feedback_parts[1].strip()
-                st.info(feedback_only)
-            else:
-                st.info(feedback_text)
-        else:
-            st.info(feedback_text)
+        # Display score
+        st.markdown(f"**Score: {review_data['feedback']['score']}**")
+
+        # Display feedback text
+        feedback_text = review_data['feedback']['feedback']
+        # Split into bullet points and clean up
+        feedback_points = [point.strip() for point in feedback_text.split('\n') if point.strip()]
+        for point in feedback_points:
+            st.markdown(f"• {point}")
 
         # Navigation buttons
         col1, col2 = st.columns(2)
