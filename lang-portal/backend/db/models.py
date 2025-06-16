@@ -139,3 +139,46 @@ class SentenceProgress(Base):
     correct_attempts = Column(Integer, default=0)
     last_attempted = Column(DateTime, default=datetime.now)
     success_rate = Column(Float, default=0.0)
+
+class ListeningQuestion(Base):
+    __tablename__ = 'listening_questions'
+    id = Column(Integer, primary_key=True)
+    exercise_id = Column(Integer, ForeignKey('listening_exercises.id'), nullable=False)
+    question_type = Column(String, nullable=False)  # multiple_choice, fill_blank, true_false
+    question_text = Column(String, nullable=False)
+    correct_answer = Column(String, nullable=False)
+    options = Column(JSON, nullable=False)  # List of possible answers
+    points = Column(Integer, default=1)
+    exercise = relationship('ListeningExercise', back_populates='questions')
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'exercise_id': self.exercise_id,
+            'question_type': self.question_type,
+            'question_text': self.question_text,
+            'correct_answer': self.correct_answer,
+            'options': self.options,
+            'points': self.points
+        }
+
+class ListeningExercise(Base):
+    __tablename__ = 'listening_exercises'
+    id = Column(Integer, primary_key=True)
+    title = Column(String, nullable=False)
+    audio_file = Column(String, nullable=False)  # Path to the audio file
+    difficulty = Column(String, nullable=False)  # Beginner, Intermediate, Advanced
+    description = Column(String, nullable=False)
+    created_at = Column(DateTime, default=func.now())
+    questions = relationship('ListeningQuestion', back_populates='exercise', cascade='all, delete-orphan')
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'title': self.title,
+            'audio_file': self.audio_file,
+            'difficulty': self.difficulty,
+            'description': self.description,
+            'created_at': self.created_at.isoformat(),
+            'questions': [question.to_dict() for question in self.questions]
+        }

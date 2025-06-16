@@ -12,6 +12,7 @@ from sqlalchemy.orm import sessionmaker
 import os
 import random
 from datetime import datetime
+from .routes.listening import router as listening_router
 
 T = TypeVar('T')
 
@@ -40,6 +41,10 @@ app.add_middleware(
 # Mount static files
 thumbnails_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'thumbnails')
 app.mount("/thumbnails", StaticFiles(directory=thumbnails_path), name="thumbnails")
+
+# Mount audio files
+audio_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'frontend', 'public', 'audio')
+app.mount("/audio", StaticFiles(directory=audio_path), name="audio")
 
 # Dependency to get database session
 def get_db():
@@ -590,8 +595,9 @@ def submit_sentence_attempt(
     db.refresh(progress)
     return progress
 
-# Include the API router
+# Include routers
 app.include_router(api_router)
+app.include_router(listening_router, prefix="/api/listening", tags=["listening"])
 
 if __name__ == '__main__':
     import uvicorn

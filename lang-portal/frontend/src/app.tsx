@@ -12,6 +12,8 @@ import { Quiz } from './components/Quiz';
 import { SentenceConstructorPage } from './pages/SentenceConstructorPage';
 import KanjiWritingPage from './pages/KanjiWritingPage';
 import { Navigation } from './components/Navigation';
+import ListeningExercisesList from './components/listening/ListeningExercisesList';
+import ListeningExercise from './components/listening/ListeningExercise';
 
 const App = () => {
   return (
@@ -33,6 +35,8 @@ const App = () => {
             <Route path="/sentence-constructor" element={<SentenceConstructorPage />} />
             <Route path="/kanji-writing/select" element={<KanjiWritingPage />} />
             <Route path="/kanji-writing/:groupId" element={<KanjiWritingPage />} />
+            <Route path="/listening" element={<ListeningExercisesList />} />
+            <Route path="/listening/:id" element={<ListeningExercise />} />
           </Routes>
         </main>
       </div>

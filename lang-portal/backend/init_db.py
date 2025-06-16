@@ -67,6 +67,34 @@ class SentenceProgress(Base):
     last_attempted = Column(DateTime, default=datetime.now)
     success_rate = Column(Float, default=0.0)
 
+class ListeningExercise(Base):
+    __tablename__ = "listening_exercises"
+    id = Column(Integer, primary_key=True, index=True)
+    title = Column(String, index=True)
+    audio_file = Column(String)  # Path to audio file
+    difficulty = Column(String)  # N5, N4, etc.
+    description = Column(String)
+    created_at = Column(DateTime, default=datetime.now)
+
+class ListeningQuestion(Base):
+    __tablename__ = "listening_questions"
+    id = Column(Integer, primary_key=True, index=True)
+    exercise_id = Column(Integer, index=True)
+    question_type = Column(String)  # multiple_choice, fill_blank, true_false
+    question_text = Column(String)
+    correct_answer = Column(String)
+    options = Column(JSON)  # For multiple choice questions
+    points = Column(Integer, default=1)
+
+class ListeningAttempt(Base):
+    __tablename__ = "listening_attempts"
+    id = Column(Integer, primary_key=True, index=True)
+    exercise_id = Column(Integer, index=True)
+    user_id = Column(Integer, index=True)
+    score = Column(Float)
+    completed_at = Column(DateTime, default=datetime.now)
+    answers = Column(JSON)  # Store user's answers
+
 # Sample stroke data for some common kanji
 STROKE_DATA = {
     "一": {
@@ -131,13 +159,13 @@ def create_study_activities():
                 "name": "Vocabulary Quiz",
                 "description": "Test your knowledge of Japanese vocabulary with multiple choice questions.",
                 "thumbnail": "/thumbnails/vocab-quiz.png",
-                "url": "http://localhost:5173/vocab-quiz"
+                "url": "http://localhost:5173/quiz"
             },
             {
                 "name": "Sentence Construction",
                 "description": "Build Japanese sentences by arranging words in the correct order.",
                 "thumbnail": "/thumbnails/sentence-construction.png",
-                "url": "http://localhost:5173/sentence-construction"
+                "url": "http://localhost:5173/sentence-constructor"
             },
             {
                 "name": "Listening Comprehension",
@@ -273,6 +301,70 @@ def create_sample_study_session():
     finally:
         db.close()
 
+def create_sample_listening_exercises():
+    db = SessionLocal()
+    try:
+        # Sample exercises data
+        exercises = [
+            {
+                "title": "Basic Greetings",
+                "audio_file": "greetings.mp3",
+                "difficulty": "N5",
+                "description": "Practice understanding basic Japanese greetings"
+            },
+            {
+                "title": "Daily Activities",
+                "audio_file": "daily_activities.mp3",
+                "difficulty": "N5",
+                "description": "Learn to understand descriptions of daily activities"
+            }
+        ]
+
+        # Delete existing exercises
+        db.query(ListeningExercise).delete()
+        db.query(ListeningQuestion).delete()
+
+        # Add exercises and their questions
+        for exercise_data in exercises:
+            exercise = ListeningExercise(**exercise_data)
+            db.add(exercise)
+            db.flush()  # Get the exercise ID
+
+            # Add sample questions for each exercise
+            questions = [
+                {
+                    "exercise_id": exercise.id,
+                    "question_type": "multiple_choice",
+                    "question_text": "What greeting did you hear?",
+                    "correct_answer": "こんにちは",
+                    "options": ["こんにちは", "さようなら", "おはよう", "こんばんは"],
+                    "points": 1
+                },
+                {
+                    "exercise_id": exercise.id,
+                    "question_type": "fill_blank",
+                    "question_text": "Complete the sentence you heard: 私は___をします。",
+                    "correct_answer": "勉強",
+                    "points": 2
+                },
+                {
+                    "exercise_id": exercise.id,
+                    "question_type": "true_false",
+                    "question_text": "The person said they go to school every day.",
+                    "correct_answer": "false",
+                    "points": 1
+                }
+            ]
+
+            for question_data in questions:
+                question = ListeningQuestion(**question_data)
+                db.add(question)
+
+        db.commit()
+        print("Created sample listening exercises and questions")
+    finally:
+        db.close()
+
 def main():
     print("Starting database initialization...")
     
@@ -293,6 +385,9 @@ def main():
     
     # Create sample study session
     create_sample_study_session()
+    
+    # Create sample listening exercises
+    create_sample_listening_exercises()
     
     print("Database initialization completed successfully!")
 

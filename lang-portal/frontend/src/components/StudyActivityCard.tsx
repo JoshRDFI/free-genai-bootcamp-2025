@@ -28,9 +28,9 @@ export const StudyActivityCard: React.FC<StudyActivityCardProps> = ({
     } else if (name === "Kanji Writing Practice") {
       // For kanji writing, navigate to selection page
       navigate('/kanji-writing/select');
-    } else if (url) {
-      // Only use window.open for activities with a valid URL
-      window.open(url, '_blank');
+    } else if (name === "Listening Comprehension") {
+      // For listening comprehension, navigate to the listening page
+      navigate('/listening');
     }
   };
 

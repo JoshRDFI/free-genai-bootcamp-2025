@@ -18,6 +18,7 @@ const StudyActivityShowPage: React.FC = () => {
   const isQuiz = studyActivity.name === "Vocabulary Quiz";
   const isSentenceConstructor = studyActivity.name === "Sentence Construction";
   const isKanjiWriting = studyActivity.name === "Kanji Writing Practice";
+  const isListening = studyActivity.name === "Listening Comprehension";
 
   const handleLaunchActivity = () => {
     if (isQuiz) {
@@ -29,9 +30,9 @@ const StudyActivityShowPage: React.FC = () => {
     } else if (isKanjiWriting) {
       // For kanji writing, navigate to selection page
       navigate('/kanji-writing/select');
-    } else if (studyActivity.url) {
-      // Only use window.open for activities with a valid URL
-      window.open(studyActivity.url, '_blank');
+    } else if (isListening) {
+      // For listening comprehension, navigate to the listening page
+      navigate('/listening');
     }
   };
 
@@ -63,7 +64,11 @@ const StudyActivityShowPage: React.FC = () => {
             onClick={handleLaunchActivity} 
             className="w-full md:w-auto"
           >
-            {isQuiz ? "Start Quiz" : isSentenceConstructor ? "Start Sentence Constructor" : isKanjiWriting ? "Start Kanji Writing" : "Launch Activity"}
+            {isQuiz ? "Start Quiz" : 
+             isSentenceConstructor ? "Start Sentence Constructor" : 
+             isKanjiWriting ? "Start Kanji Writing" : 
+             isListening ? "Start Listening Exercise" :
+             "Launch Activity"}
           </Button>
         </div>
       </div>
