@@ -27,6 +27,9 @@ RUN pip install -v --no-cache-dir -r main.txt
 # Copy and install container-specific requirements
 COPY extra-requirements.txt .
 RUN pip install -v --no-cache-dir -r extra-requirements.txt
+RUN apt-get install -y mecab libmecab-dev mecab-ipadic-utf8
+RUN pip install unidic-lite
+RUN python3 -m unidic download
 
 # Copy the rest of the application
 COPY . .

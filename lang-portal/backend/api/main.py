@@ -29,6 +29,9 @@ Base.metadata.create_all(bind=engine)
 app = FastAPI()
 api_router = APIRouter(prefix="/api")
 
+# Include the listening router
+api_router.include_router(listening_router, prefix="/listening", tags=["listening"])
+
 # Configure CORS
 app.add_middleware(
     CORSMiddleware,
@@ -597,7 +600,6 @@ def submit_sentence_attempt(
 
 # Include routers
 app.include_router(api_router)
-app.include_router(listening_router, prefix="/api/listening", tags=["listening"])
 
 if __name__ == '__main__':
     import uvicorn

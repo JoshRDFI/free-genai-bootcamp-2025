@@ -55,10 +55,10 @@ def create_listening_exercises():
                         points=1
                     ),
                     ListeningQuestion(
-                        question_type="fill_blank",
-                        question_text="The speaker goes to work by _____.",
-                        correct_answer="train",
-                        options=["train", "bus", "car", "bicycle"],
+                        question_type="multiple_choice",
+                        question_text="The speaker goes to work by _____. (Please select the correct answer in romaji)",
+                        correct_answer="densha",
+                        options=["densha", "basu", "kuruma", "jitensha"],
                         points=1
                     )
                 ]
@@ -116,6 +116,8 @@ def init_db():
     else:
         print(f"Database already exists at {db_path}")
 
+    # Create listening exercises
+    create_listening_exercises()
+
 if __name__ == '__main__':
-    init_db()
-    create_listening_exercises() 
+    init_db() 

@@ -4,6 +4,14 @@ import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from '@
 import { PaginationControls } from './PaginationControls';
 import { useWords } from '@/services/api';
 import wordsData from '@/data/words.json';
+import {
+  Box,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  SelectChangeEvent,
+} from '@mui/material';
 
 interface Word {
   kanji: string;
@@ -77,8 +85,8 @@ export const WordsTable: React.FC<WordsTableProps> = ({ groupId }) => {
     }
   };
 
-  const handleFilterLevel = (level: string) => {
-    setFilterLevel(level);
+  const handleFilterLevel = (event: SelectChangeEvent) => {
+    setFilterLevel(event.target.value);
     setCurrentPage(1);
   };
 
@@ -88,21 +96,49 @@ export const WordsTable: React.FC<WordsTableProps> = ({ groupId }) => {
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
-        <div className="space-x-2">
-          <label className="text-sm font-medium">Filter by Level:</label>
-          <select
+        <FormControl sx={{ minWidth: 200 }}>
+          <InputLabel>Filter by Level</InputLabel>
+          <Select
             value={filterLevel}
-            onChange={(e) => handleFilterLevel(e.target.value)}
-            className="border rounded px-2 py-1"
+            onChange={handleFilterLevel}
+            label="Filter by Level"
+            sx={{
+              '& .MuiSelect-select': {
+                bgcolor: '#f9fafb',
+                color: '#374151'
+              },
+              '& .MuiOutlinedInput-notchedOutline': {
+                borderColor: '#e5e7eb'
+              },
+              '&:hover .MuiOutlinedInput-notchedOutline': {
+                borderColor: '#374151'
+              },
+              '& .MuiSelect-icon': {
+                color: '#374151'
+              }
+            }}
+            MenuProps={{
+              PaperProps: {
+                sx: {
+                  bgcolor: '#f9fafb',
+                  '& .MuiMenuItem-root': {
+                    color: '#374151',
+                    '&:hover': {
+                      bgcolor: '#e5e7eb'
+                    }
+                  }
+                }
+              }
+            }}
           >
-            <option value="">All Levels</option>
-            <option value="N5">N5</option>
-            <option value="N4">N4</option>
-            <option value="N3">N3</option>
-            <option value="N2">N2</option>
-            <option value="N1">N1</option>
-          </select>
-        </div>
+            <MenuItem value="">All Levels</MenuItem>
+            <MenuItem value="N5">N5</MenuItem>
+            <MenuItem value="N4">N4</MenuItem>
+            <MenuItem value="N3">N3</MenuItem>
+            <MenuItem value="N2">N2</MenuItem>
+            <MenuItem value="N1">N1</MenuItem>
+          </Select>
+        </FormControl>
       </div>
 
       <Table>

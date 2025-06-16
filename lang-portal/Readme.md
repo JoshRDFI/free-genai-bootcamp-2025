@@ -42,3 +42,54 @@ The application will be available at:
 - Backend: FastAPI + SQLAlchemy
 - Authentication: JWT-based
 - Database: SQLite with async support
+
+## Audio Generation and Lesson Creation
+
+The portal includes tools for generating Japanese audio lessons using Text-to-Speech (TTS) technology.
+
+### Prerequisites
+
+- TTS Docker container running on port 9200
+- ffmpeg (optional, for MP3 conversion)
+
+### Available Scripts
+
+#### 1. Direct TTS Generation
+
+Use `generate_japanese_tts.py` to generate individual audio files:
+
+```bash
+python generate_japanese_tts.py --text "こんにちは" --filename "greeting" --voice female
+```
+
+Parameters:
+- `--text`: Japanese text to convert to speech
+- `--filename`: Output filename (without extension)
+- `--voice`: Voice selection (male/female)
+
+#### 2. Interactive Lesson Creation
+
+Use `create_lesson.py` for an interactive lesson creation process:
+
+```bash
+python create_lesson.py
+```
+
+This script will:
+- Prompt for lesson title and description
+- Allow multi-line Japanese text input
+- Let you choose the voice (male/female)
+- Generate audio files
+- Store lesson metadata
+
+### File Structure
+
+Generated files are stored in:
+- Audio files: `frontend/public/audio/`
+- Lesson metadata: `frontend/public/lessons/metadata.json`
+
+### Usage Notes
+
+- Audio files are generated in MP3 format (or WAV if ffmpeg is not available)
+- Lesson metadata includes title, description, text content, and voice selection
+- All generated content is immediately available to the frontend application

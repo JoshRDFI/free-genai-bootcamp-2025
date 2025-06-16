@@ -11,4 +11,5 @@ bcrypt==4.1.2
 python-jose[cryptography]>=3.3.0
 fastapi>=0.109.0
 uvicorn>=0.27.0
-pydantic>=2.6.0 
+pydantic>=2.6.0
+cutlet>=0.5.0 

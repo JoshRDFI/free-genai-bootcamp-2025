@@ -21,16 +21,8 @@ export interface ListeningExercise {
 }
 
 export interface ListeningAttempt {
-    id: number;
-    exercise_id: number;
-    user_id: number;
     score: number;
-    completed_at: string;
-    answers: {
-        question_id: number;
-        answer: string;
-        is_correct: boolean;
-    }[];
+    total_questions: number;
 }
 
 export interface UserAnswer {

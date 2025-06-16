@@ -15,7 +15,8 @@ import {
   SelectChangeEvent,
   Chip,
 } from '@mui/material';
-import { useWords, useWordGroups, useUserProgress } from '../services/api';
+import { useUserProgress } from '../services/api';
+import wordsData from '@/data/words.json';
 
 interface Point {
   x: number;
@@ -27,24 +28,70 @@ interface Stroke {
   isCorrect: boolean;
 }
 
+interface StrokeData {
+  strokes: number;
+  strokeOrder: Array<{
+    points: Array<[number, number]>;
+  }>;
+}
+
 interface Word {
-  id: number;
   kanji: string;
   romaji: string;
   english: string;
-  parts: {
-    level: string;
-    strokes: number;
-    strokeOrder: Array<{
-      points: Array<[number, number]>;
-    }>;
-  };
+  level: string;
+  group_id: number;
+  category: string;
+  parts?: StrokeData;
 }
+
+// Sample stroke data for some common kanji
+const STROKE_DATA: Record<string, StrokeData> = {
+  "一": {
+    "strokes": 1,
+    "strokeOrder": [
+      {"points": [[0.2, 0.5], [0.8, 0.5]]}
+    ]
+  },
+  "二": {
+    "strokes": 2,
+    "strokeOrder": [
+      {"points": [[0.2, 0.3], [0.8, 0.3]]},
+      {"points": [[0.2, 0.7], [0.8, 0.7]]}
+    ]
+  },
+  "三": {
+    "strokes": 3,
+    "strokeOrder": [
+      {"points": [[0.2, 0.2], [0.8, 0.2]]},
+      {"points": [[0.2, 0.5], [0.8, 0.5]]},
+      {"points": [[0.2, 0.8], [0.8, 0.8]]}
+    ]
+  },
+  "四": {
+    "strokes": 5,
+    "strokeOrder": [
+      {"points": [[0.2, 0.2], [0.8, 0.2]]},
+      {"points": [[0.2, 0.2], [0.2, 0.8]]},
+      {"points": [[0.2, 0.8], [0.8, 0.8]]},
+      {"points": [[0.8, 0.2], [0.8, 0.8]]},
+      {"points": [[0.3, 0.5], [0.7, 0.5]]}
+    ]
+  },
+  "五": {
+    "strokes": 4,
+    "strokeOrder": [
+      {"points": [[0.2, 0.2], [0.8, 0.2]]},
+      {"points": [[0.2, 0.2], [0.2, 0.8]]},
+      {"points": [[0.2, 0.8], [0.8, 0.8]]},
+      {"points": [[0.3, 0.5], [0.7, 0.5]]}
+    ]
+  }
+};
 
 const KanjiWritingPage: React.FC = () => {
   const navigate = useNavigate();
-  const { groupId } = useParams();
-  const { wordGroups, loading: groupsLoading, error: groupsError } = useWordGroups();
+  const { groupId } = useParams<{ groupId: string }>();
   const { userProgress, loading: progressLoading, error: progressError } = useUserProgress();
   const [selectedGroupId, setSelectedGroupId] = useState<string>(groupId || '');
   const [loading, setLoading] = useState(false);
@@ -61,57 +108,66 @@ const KanjiWritingPage: React.FC = () => {
   const [showGuide, setShowGuide] = useState(true);
   const [animationFrame, setAnimationFrame] = useState(0);
 
-  useEffect(() => {
-    if (groupId === 'select') {
-      // If we're in select mode, don't try to start practice
-      return;
-    }
-
-    if (!groupId) {
-      // Don't set error for initial state
-      return;
-    }
-
-    if (groupId && !selectedGroupId) {
-      setSelectedGroupId(groupId);
-    }
-  }, [groupId]);
-
-  const handleGroupChange = (event: SelectChangeEvent<string>) => {
-    const newGroupId = event.target.value;
-    setSelectedGroupId(newGroupId);
-    if (newGroupId) {
-      navigate(`/kanji-writing/${newGroupId}`);
-    }
-  };
-
-  useEffect(() => {
-    const fetchWords = async () => {
-      if (!groupId || groupId === 'select') return; // Don't fetch if no groupId or in select mode
+  // Get unique word groups for the dropdown
+  const wordGroups = React.useMemo(() => {
+    const groups = new Map<number, { id: number; category: string }>();
+    const userLevel = userProgress?.current_level || 'N5';
+    
+    // Convert level to number for comparison (N5 = 5, N4 = 4, etc.)
+    const userLevelNum = parseInt(userLevel.replace('N', ''));
+    
+    wordsData.forEach(word => {
+      // Convert word level to number for comparison
+      const wordLevelNum = parseInt(word.level.replace('N', ''));
       
-      try {
-        setLoading(true);
-        const response = await fetch(`http://localhost:5000/api/groups/${groupId}/words`);
-        if (!response.ok) {
-          throw new Error('Failed to fetch words');
-        }
-        const data = await response.json();
-        setWords(data);
-        if (data.length > 0) {
-          setCurrentWord(data[0]);
-          setStrokes([]);
-          setCurrentWordIndex(0);
-          setScore(0);
-        }
-      } catch (error) {
-        console.error('Failed to fetch words:', error);
-        setError('Failed to load words. Please try again.');
-      } finally {
-        setLoading(false);
+      // Only include groups up to user's current level
+      if (wordLevelNum >= userLevelNum && !groups.has(word.group_id)) {
+        groups.set(word.group_id, {
+          id: word.group_id,
+          category: word.category
+        });
       }
-    };
+    });
+    return Array.from(groups.values()).sort((a, b) => a.id - b.id);
+  }, [userProgress?.current_level]);
 
-    fetchWords();
+  useEffect(() => {
+    if (!groupId || groupId === 'select') return;
+    
+    try {
+      setLoading(true);
+      const numericGroupId = parseInt(groupId, 10);
+      if (isNaN(numericGroupId)) {
+        throw new Error('Invalid group ID');
+      }
+
+      // Get words for this group from the local data
+      const groupWords = wordsData.filter(word => word.group_id === numericGroupId);
+      if (groupWords.length === 0) {
+        throw new Error('No words found in this group');
+      }
+
+      // Add stroke data to words
+      const wordsWithStrokeData = groupWords.map(word => ({
+        ...word,
+        parts: STROKE_DATA[word.kanji] || {
+          strokes: 0,
+          strokeOrder: []
+        }
+      }));
+
+      setWords(wordsWithStrokeData);
+      setCurrentWord(wordsWithStrokeData[0]);
+      setStrokes([]);
+      setCurrentStroke(0);
+      setCurrentWordIndex(0);
+      setScore(0);
+    } catch (error) {
+      console.error('Failed to load words:', error);
+      setError(error instanceof Error ? error.message : 'Failed to load words. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   }, [groupId]);
 
   useEffect(() => {
@@ -161,7 +217,7 @@ const KanjiWritingPage: React.FC = () => {
     });
 
     // Draw current stroke guide if enabled
-    if (showGuide && currentWord.parts.strokeOrder && currentWord.parts.strokeOrder[currentStroke]) {
+    if (showGuide && currentWord.parts?.strokeOrder && currentWord.parts.strokeOrder[currentStroke]) {
       const guideStroke = currentWord.parts.strokeOrder[currentStroke];
       const startPoint = guideStroke.points[0];
       const endPoint = guideStroke.points[1];
@@ -232,7 +288,7 @@ const KanjiWritingPage: React.FC = () => {
   };
 
   const validateStroke = () => {
-    if (!currentWord) return;
+    if (!currentWord || !currentWord.parts?.strokeOrder) return;
 
     const currentStrokeData = currentWord.parts.strokeOrder[currentStroke];
     if (!currentStrokeData) return;
@@ -278,7 +334,7 @@ const KanjiWritingPage: React.FC = () => {
     }
 
     // Check if all strokes are complete
-    if (currentStroke + 1 === currentWord.parts.strokeOrder.length) {
+    if (currentWord.parts.strokeOrder && currentStroke + 1 === currentWord.parts.strokeOrder.length) {
       setFeedback('Great job! Move to next kanji.');
     }
   };
@@ -302,17 +358,17 @@ const KanjiWritingPage: React.FC = () => {
     setStrokes([]);
   };
 
-  if (groupsError || progressError) {
+  if (progressError) {
     return (
       <Box p={3}>
         <Alert severity="error">
-          {groupsError?.message || progressError?.message}
+          {progressError?.message}
         </Alert>
       </Box>
     );
   }
 
-  if (groupsLoading || progressLoading || loading) {
+  if (progressLoading || loading) {
     return (
       <Box display="flex" justifyContent="center" alignItems="center" minHeight="60vh">
         <CircularProgress />
@@ -330,6 +386,7 @@ const KanjiWritingPage: React.FC = () => {
             </Typography>
             <Typography variant="body1" paragraph>
               Practice writing Japanese kanji characters with stroke order guidance.
+              Select a word group to begin practicing.
             </Typography>
             
             <Box mb={2}>
@@ -344,10 +401,16 @@ const KanjiWritingPage: React.FC = () => {
             </Box>
             
             <FormControl fullWidth sx={{ mt: 2 }}>
-            <InputLabel>Select Word Group</InputLabel>
+              <InputLabel>Select Word Group</InputLabel>
               <Select
                 value={selectedGroupId}
-                onChange={handleGroupChange}
+                onChange={(event) => {
+                  const newGroupId = event.target.value;
+                  setSelectedGroupId(newGroupId);
+                  if (newGroupId) {
+                    navigate(`/kanji-writing/${newGroupId}`);
+                  }
+                }}
                 label="Select Word Group"
                 sx={{
                   '& .MuiSelect-select': {
@@ -378,9 +441,9 @@ const KanjiWritingPage: React.FC = () => {
                   }
                 }}
               >
-                {wordGroups?.map((group) => (
-                  <MenuItem key={group.id} value={group.id}>
-                    {group.name} ({group.words_count} words)
+                {wordGroups.map((group) => (
+                  <MenuItem key={group.id} value={group.id.toString()}>
+                    {group.category}
                   </MenuItem>
                 ))}
               </Select>
@@ -401,7 +464,7 @@ const KanjiWritingPage: React.FC = () => {
     return (
       <Box p={3}>
         <Alert severity="info">
-          No words available in this group. Please select another group.
+          {error || 'No words available in this group. Please select another group.'}
         </Alert>
       </Box>
     );
@@ -416,6 +479,7 @@ const KanjiWritingPage: React.FC = () => {
           </Typography>
           <Typography variant="body1" paragraph>
             Practice writing Japanese kanji characters with stroke order guidance.
+            Note: Stroke order data is not available yet. This feature will be added in a future update.
           </Typography>
           
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 mb-8">
@@ -460,9 +524,6 @@ const KanjiWritingPage: React.FC = () => {
 
             <div className="flex justify-center space-x-4 mb-4">
               <Button variant="outlined" onClick={clearCanvas}>Clear</Button>
-              <Button variant="outlined" onClick={() => setShowGuide(!showGuide)}>
-                {showGuide ? 'Hide Guide' : 'Show Guide'}
-              </Button>
               <Button variant="contained" onClick={nextWord}>Next Word</Button>
             </div>
 

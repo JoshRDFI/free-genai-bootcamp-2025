@@ -5,3 +5,5 @@ soundfile>=0.12.1
 librosa==0.10.0
 scipy>=1.8.0
 numpy==1.22.0
+cutlet>=0.5.0
+fugashi[unidic]>=1.5.1

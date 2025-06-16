@@ -11,43 +11,96 @@ const ListeningExercise: React.FC = () => {
     const [exercise, setExercise] = useState<Exercise | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
-    const [answers, setAnswers] = useState<UserAnswer[]>([]);
+    const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
+    const [answers, setAnswers] = useState<Record<number, string>>({});
     const [submitted, setSubmitted] = useState(false);
     const [score, setScore] = useState<number | null>(null);
 
     useEffect(() => {
         const fetchExercise = async () => {
             try {
-                if (!id) return;
-                const data = await listeningService.getExercise(parseInt(id));
+                const data = await listeningService.getExercise(parseInt(id!));
+                console.log('Fetched exercise:', data);
                 setExercise(data);
-                setAnswers(data.questions.map(q => ({ question_id: q.id, answer: '' })));
+                // Initialize answers state with empty strings for each question
+                const initialAnswers: { [key: number]: string } = {};
+                data.questions.forEach(q => {
+                    initialAnswers[q.id] = '';
+                });
+                setAnswers(initialAnswers);
             } catch (err) {
+                console.error('Error fetching exercise:', err);
                 setError('Failed to load exercise');
-                console.error(err);
             } finally {
                 setLoading(false);
             }
         };
 
-        fetchExercise();
+        if (id) {
+            fetchExercise();
+        }
     }, [id]);
 
     const handleAnswerChange = (questionId: number, answer: string) => {
-        setAnswers(prev => prev.map(a => 
-            a.question_id === questionId ? { ...a, answer } : a
-        ));
+        console.log('Setting answer for question', questionId, 'to', answer);
+        setAnswers(prev => {
+            const newAnswers = { ...prev };
+            newAnswers[questionId] = answer;
+            console.log('New answers state:', newAnswers);
+            return newAnswers;
+        });
     };
 
-    const handleSubmit = async () => {
-        try {
-            if (!id) return;
-            const result = await listeningService.submitAnswers(parseInt(id), answers);
-            setScore(result.score);
-            setSubmitted(true);
-        } catch (err) {
-            setError('Failed to submit answers');
-            console.error(err);
+    const handleNext = async () => {
+        if (!exercise) return;
+
+        const currentQuestion = exercise.questions[currentQuestionIndex];
+        console.log('Current question:', currentQuestion);
+        
+        // If this is the last question, submit all answers
+        if (currentQuestionIndex === exercise.questions.length - 1) {
+            try {
+                // Ensure we have answers for all questions
+                const allQuestionsAnswered = exercise.questions.every(q => {
+                    const hasAnswer = answers[q.id] && answers[q.id].trim() !== '';
+                    console.log(`Question ${q.id} has answer:`, hasAnswer, answers[q.id]);
+                    return hasAnswer;
+                });
+
+                if (!allQuestionsAnswered) {
+                    setError('Please answer all questions before submitting');
+                    return;
+                }
+
+                // Create answers array in the exact format expected by the API
+                const answersArray: UserAnswer[] = exercise.questions.map(q => {
+                    const answer = {
+                        question_id: q.id,
+                        answer: answers[q.id].trim()
+                    };
+                    console.log('Creating answer object:', answer);
+                    return answer;
+                });
+
+                console.log('Exercise questions:', exercise.questions);
+                console.log('Current answers state:', answers);
+                console.log('Submitting answers array:', answersArray);
+
+                const result = await listeningService.submitAnswers(parseInt(id!), answersArray);
+                setScore(result.score);
+                setSubmitted(true);
+            } catch (err: any) {
+                console.error('Submission error:', err);
+                if (err.response) {
+                    console.error('Error response:', err.response.data);
+                    setError(`Failed to submit answers: ${err.response.data.detail || 'Unknown error'}`);
+                } else {
+                    setError('Failed to submit answers');
+                }
+            }
+        } else {
+            // Move to next question
+            setCurrentQuestionIndex(prev => prev + 1);
         }
     };
 
@@ -75,6 +128,9 @@ const ListeningExercise: React.FC = () => {
         );
     }
 
+    const currentQuestion = exercise.questions[currentQuestionIndex];
+    console.log('Rendering question:', currentQuestion);
+
     return (
         <Box p={3}>
             <Card sx={{ bgcolor: '#f9fafb', mb: 4 }}>
@@ -91,122 +147,127 @@ const ListeningExercise: React.FC = () => {
             <Card sx={{ bgcolor: '#f9fafb', mb: 4 }}>
                 <CardContent>
                     <AudioPlayer
-                        src={`/audio/${exercise.audio_file}`}
+                        src={exercise.audio_file}
                         showJumpControls={false}
                         layout="stacked"
+                        autoPlay={false}
+                        preload="auto"
+                        style={{
+                            borderRadius: '8px',
+                            backgroundColor: '#f9fafb',
+                            boxShadow: 'none'
+                        }}
                     />
                 </CardContent>
             </Card>
 
             {!submitted ? (
                 <Box>
-                    {exercise.questions.map((question, index) => (
-                        <Card key={question.id} sx={{ bgcolor: '#f9fafb', mb: 3 }}>
-                            <CardContent>
-                                <Typography variant="h6" gutterBottom color="#374151">
-                                    Question {index + 1}
-                                </Typography>
-                                <Typography variant="body1" color="#6b7280" gutterBottom>
-                                    {question.question_text}
-                                </Typography>
+                    <Card sx={{ bgcolor: '#f9fafb', mb: 3 }}>
+                        <CardContent>
+                            <Typography variant="h6" gutterBottom color="#374151">
+                                Question {currentQuestionIndex + 1} of {exercise.questions.length}
+                            </Typography>
+                            <Typography variant="body1" color="#6b7280" gutterBottom>
+                                {currentQuestion.question_text}
+                            </Typography>
 
-                                {question.question_type === 'multiple_choice' && question.options && (
-                                    <Box sx={{ mt: 2 }}>
-                                        {question.options.map((option, i) => (
-                                            <Button
-                                                key={i}
-                                                variant={answers.find(a => a.question_id === question.id)?.answer === option ? "contained" : "outlined"}
-                                                onClick={() => handleAnswerChange(question.id, option)}
-                                                sx={{ 
-                                                    mr: 1, 
-                                                    mb: 1,
-                                                    bgcolor: answers.find(a => a.question_id === question.id)?.answer === option ? '#3b82f6' : 'transparent',
-                                                    color: answers.find(a => a.question_id === question.id)?.answer === option ? 'white' : '#374151',
-                                                    borderColor: '#e5e7eb',
-                                                    '&:hover': {
-                                                        bgcolor: answers.find(a => a.question_id === question.id)?.answer === option ? '#2563eb' : '#f3f4f6',
-                                                        borderColor: '#374151'
-                                                    }
-                                                }}
-                                            >
-                                                {option}
-                                            </Button>
-                                        ))}
-                                    </Box>
-                                )}
-
-                                {question.question_type === 'fill_blank' && (
-                                    <Box sx={{ mt: 2 }}>
-                                        <input
-                                            type="text"
-                                            value={answers.find(a => a.question_id === question.id)?.answer || ''}
-                                            onChange={(e) => handleAnswerChange(question.id, e.target.value)}
-                                            style={{ 
-                                                width: '100%', 
-                                                padding: '8px',
-                                                border: '1px solid #e5e7eb',
-                                                borderRadius: '4px',
-                                                backgroundColor: '#f9fafb',
-                                                color: '#374151'
-                                            }}
-                                        />
-                                    </Box>
-                                )}
-
-                                {question.question_type === 'true_false' && (
-                                    <Box sx={{ mt: 2 }}>
+                            {currentQuestion.question_type === 'multiple_choice' && currentQuestion.options && (
+                                <Box sx={{ mt: 2 }}>
+                                    {currentQuestion.options.map((option, i) => (
                                         <Button
-                                            variant={answers.find(a => a.question_id === question.id)?.answer === 'true' ? "contained" : "outlined"}
-                                            onClick={() => handleAnswerChange(question.id, 'true')}
+                                            key={i}
+                                            variant={answers[currentQuestion.id] === option ? "contained" : "outlined"}
+                                            onClick={() => handleAnswerChange(currentQuestion.id, option)}
                                             sx={{ 
-                                                mr: 1,
-                                                bgcolor: answers.find(a => a.question_id === question.id)?.answer === 'true' ? '#3b82f6' : 'transparent',
-                                                color: answers.find(a => a.question_id === question.id)?.answer === 'true' ? 'white' : '#374151',
+                                                mr: 1, 
+                                                mb: 1,
+                                                bgcolor: answers[currentQuestion.id] === option ? '#3b82f6' : 'transparent',
+                                                color: answers[currentQuestion.id] === option ? 'white' : '#374151',
                                                 borderColor: '#e5e7eb',
                                                 '&:hover': {
-                                                    bgcolor: answers.find(a => a.question_id === question.id)?.answer === 'true' ? '#2563eb' : '#f3f4f6',
+                                                    bgcolor: answers[currentQuestion.id] === option ? '#2563eb' : '#f3f4f6',
                                                     borderColor: '#374151'
                                                 }
                                             }}
                                         >
-                                            True
+                                            {option}
                                         </Button>
-                                        <Button
-                                            variant={answers.find(a => a.question_id === question.id)?.answer === 'false' ? "contained" : "outlined"}
-                                            onClick={() => handleAnswerChange(question.id, 'false')}
-                                            sx={{ 
-                                                bgcolor: answers.find(a => a.question_id === question.id)?.answer === 'false' ? '#3b82f6' : 'transparent',
-                                                color: answers.find(a => a.question_id === question.id)?.answer === 'false' ? 'white' : '#374151',
-                                                borderColor: '#e5e7eb',
-                                                '&:hover': {
-                                                    bgcolor: answers.find(a => a.question_id === question.id)?.answer === 'false' ? '#2563eb' : '#f3f4f6',
-                                                    borderColor: '#374151'
-                                                }
-                                            }}
-                                        >
-                                            False
-                                        </Button>
-                                    </Box>
-                                )}
-                            </CardContent>
-                        </Card>
-                    ))}
+                                    ))}
+                                </Box>
+                            )}
 
-                    <Button
-                        variant="contained"
-                        color="primary"
-                        onClick={handleSubmit}
-                        disabled={answers.some(a => !a.answer)}
-                        sx={{ 
-                            mt: 2,
-                            bgcolor: '#3b82f6',
-                            '&:hover': {
-                                bgcolor: '#2563eb'
-                            }
-                        }}
-                    >
-                        Submit Answers
-                    </Button>
+                            {currentQuestion.question_type === 'fill_blank' && (
+                                <Box sx={{ mt: 2 }}>
+                                    <input
+                                        type="text"
+                                        value={answers[currentQuestion.id] || ''}
+                                        onChange={(e) => handleAnswerChange(currentQuestion.id, e.target.value)}
+                                        style={{ 
+                                            width: '100%', 
+                                            padding: '8px',
+                                            border: '1px solid #e5e7eb',
+                                            borderRadius: '4px',
+                                            backgroundColor: '#f9fafb',
+                                            color: '#374151'
+                                        }}
+                                    />
+                                </Box>
+                            )}
+
+                            {currentQuestion.question_type === 'true_false' && (
+                                <Box sx={{ mt: 2 }}>
+                                    <Button
+                                        variant={answers[currentQuestion.id] === 'true' ? "contained" : "outlined"}
+                                        onClick={() => handleAnswerChange(currentQuestion.id, 'true')}
+                                        sx={{ 
+                                            mr: 1,
+                                            bgcolor: answers[currentQuestion.id] === 'true' ? '#3b82f6' : 'transparent',
+                                            color: answers[currentQuestion.id] === 'true' ? 'white' : '#374151',
+                                            borderColor: '#e5e7eb',
+                                            '&:hover': {
+                                                bgcolor: answers[currentQuestion.id] === 'true' ? '#2563eb' : '#f3f4f6',
+                                                borderColor: '#374151'
+                                            }
+                                        }}
+                                    >
+                                        True
+                                    </Button>
+                                    <Button
+                                        variant={answers[currentQuestion.id] === 'false' ? "contained" : "outlined"}
+                                        onClick={() => handleAnswerChange(currentQuestion.id, 'false')}
+                                        sx={{ 
+                                            bgcolor: answers[currentQuestion.id] === 'false' ? '#3b82f6' : 'transparent',
+                                            color: answers[currentQuestion.id] === 'false' ? 'white' : '#374151',
+                                            borderColor: '#e5e7eb',
+                                            '&:hover': {
+                                                bgcolor: answers[currentQuestion.id] === 'false' ? '#2563eb' : '#f3f4f6',
+                                                borderColor: '#374151'
+                                            }
+                                        }}
+                                    >
+                                        False
+                                    </Button>
+                                </Box>
+                            )}
+
+                            <Button
+                                variant="contained"
+                                color="primary"
+                                onClick={handleNext}
+                                disabled={!answers[currentQuestion.id]}
+                                sx={{ 
+                                    mt: 2,
+                                    bgcolor: '#3b82f6',
+                                    '&:hover': {
+                                        bgcolor: '#2563eb'
+                                    }
+                                }}
+                            >
+                                {currentQuestionIndex === exercise.questions.length - 1 ? 'Submit' : 'Next Question'}
+                            </Button>
+                        </CardContent>
+                    </Card>
                 </Box>
             ) : (
                 <Card sx={{ bgcolor: '#f9fafb', textAlign: 'center' }}>

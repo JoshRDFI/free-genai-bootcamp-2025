@@ -18,9 +18,7 @@ export const listeningService = {
 
     // Submit answers for an exercise
     submitAnswers: async (exerciseId: number, answers: UserAnswer[]): Promise<ListeningAttempt> => {
-        const response = await axios.post(`${API_URL}/listening/exercises/${exerciseId}/submit`, {
-            answers
-        });
+        const response = await axios.post(`${API_URL}/listening/exercises/${exerciseId}/submit`, answers);
         return response.data;
     },
 
