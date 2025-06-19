@@ -19,43 +19,74 @@ Before you begin, ensure you have the following installed on your system:
 
 ## Installation Steps
 
-### 1. Clone the Repository
+### Step 1: Initial Setup (Run Once)
 
+The visual novel requires two sets of services:
+1. **opea-docker services** (LLM, TTS, ASR, image generation, etc.)
+2. **visual novel services** (game server, web server)
+
+**Option A: Use the main launcher (Recommended)**
 ```bash
-git clone https://github.com/yourusername/japanese-learning-visual-novel.git
-cd japanese-learning-visual-novel
+# From the project root directory
+python first_start.py  # Creates virtual environments and starts opea-docker services
+python project_start.py  # Launches the visual novel with all required services
 ```
 
-### 2. Configure Environment Variables
-
-Create a `.env` file in the root directory with the following variables:
-
-```
-# Database path (optional, defaults to ./opea-docker/data/shared_db)
-SHARED_DB_PATH=/path/to/your/database
-
-# API configuration (optional, defaults to http://opea-api-gateway:8000)
-OPEA_API_BASE_URL=http://opea-api-gateway:8000
-```
-
-### 3. Start the Docker Services
-
+**Option B: Manual setup**
 ```bash
-cd visual-novel/docker
-docker-compose up -d
+# 1. Create virtual environments and start opea-docker services
+python first_start.py
+
+# 2. Start visual novel services
+cd visual-novel
+chmod +x setup.sh
+./setup.sh
 ```
 
-This will start the following services:
-- Game server / API Gateway (port 8080)
-- Web server for Ren'Py web export (port 8000)
-- Waifu Diffusion service (port 5000)
+### Step 2: Configure Environment Variables
 
-### 4. Verify Services
+The `.env` file in the visual-novel directory is automatically configured with the correct service endpoints. The file includes:
+
+```
+# Flask settings
+SECRET_KEY=your-secret-key
+FLASK_DEBUG=true
+
+# Database
+DATABASE_URL=sqlite:///db/visual_novel.db
+
+# Service endpoints for opea-docker containers
+OLLAMA_SERVER_URL=http://ollama-server:8008
+LLM_TEXT_URL=http://ollama-server:11434
+GUARDRAILS_URL=http://guardrails:9400
+CHROMADB_URL=http://chromadb:8000
+TTS_URL=http://tts:9200
+ASR_URL=http://asr:9300
+LLM_VISION_URL=http://llm-vision:9101
+WAIFU_DIFFUSION_URL=http://waifu-diffusion:9500
+EMBEDDINGS_URL=http://embeddings:6000
+
+# Ollama configuration
+OLLAMA_URL=http://ollama-server:11434
+OLLAMA_MODEL=llama3.2
+
+# Application settings
+PORT=8080
+USE_REMOTE_DB=true
+```
+
+### Step 3: Verify Services
 
 Check that all services are running correctly:
 
 ```bash
-docker-compose ps
+# Check opea-docker services
+cd opea-docker
+docker compose ps
+
+# Check visual novel services
+cd ../visual-novel
+docker compose -f docker/docker-compose.yml ps
 ```
 
 You should see all services in the "Up" state.
@@ -68,7 +99,7 @@ curl http://localhost:8080/api/health
 
 You should receive a response like: `{"status":"ok"}`
 
-### 5. Running the Visual Novel
+### Step 4: Running the Visual Novel
 
 #### Web Version
 
@@ -87,6 +118,34 @@ To run the desktop version using the Ren'Py SDK:
 3. Navigate to the `visual-novel/renpy` directory and select it
 4. Select the project from the list and click "Launch Project"
 
+#### Local Development Server
+
+To run the server locally for development:
+
+```bash
+cd visual-novel/server
+source .venv-vn/bin/activate
+python app.py
+```
+
+## Service Architecture
+
+The visual novel uses a microservices architecture:
+
+### opea-docker Services (Required)
+- **ollama-server**: LLM for text generation and conversations
+- **tts**: Text-to-speech for Japanese audio
+- **asr**: Speech recognition for voice input
+- **llm-vision**: Image understanding and description
+- **waifu-diffusion**: Anime-style image generation
+- **guardrails**: Content filtering and safety
+- **embeddings**: Vector embeddings for semantic search
+- **chromadb**: Vector database for embeddings
+
+### Visual Novel Services
+- **vn-game-server**: Game server and API gateway (port 8080)
+- **vn-web-server**: Web server for Ren'Py web export (port 8000)
+
 ## Configuration Options
 
 ### Database Configuration
@@ -97,11 +156,11 @@ By default, the application uses SQLite for data storage. The database file is l
 /app/db/visual_novel.db
 ```
 
-inside the Docker container, which is mapped to the path specified in the `SHARED_DB_PATH` environment variable.
+inside the Docker container, which is mapped to the shared database path.
 
 ### API Services Configuration
 
-The application communicates with various AI services through the opea-docker API Gateway. The base URL for these services is configured using the `OPEA_API_BASE_URL` environment variable.
+The application communicates with various AI services through the opea-docker containers. All service endpoints are configured in the `.env` file and automatically passed to the Docker containers.
 
 ## Troubleshooting
 
@@ -110,7 +169,13 @@ The application communicates with various AI services through the opea-docker AP
 If any of the Docker services fail to start, check the logs:
 
 ```bash
-docker-compose logs vn-game-server
+# Check opea-docker services
+cd opea-docker
+docker compose logs
+
+# Check visual novel services
+cd ../visual-novel
+docker compose -f docker/docker-compose.yml logs
 ```
 
 Common issues include:
@@ -122,17 +187,25 @@ Common issues include:
 
 If the web version doesn't load correctly:
 
-1. Check that the web server is running: `docker-compose ps vn-web-server`
+1. Check that the web server is running: `docker compose -f docker/docker-compose.yml ps vn-web-server`
 2. Verify that the Ren'Py web export files exist in `visual-novel/renpy/web`
-3. Check the web server logs: `docker-compose logs vn-web-server`
+3. Check the web server logs: `docker compose -f docker/docker-compose.yml logs vn-web-server`
 
 ### API Communication Issues
 
 If the visual novel can't communicate with the API services:
 
-1. Ensure the game server is running: `docker-compose ps vn-game-server`
-2. Check the game server logs: `docker-compose logs vn-game-server`
-3. Verify that the opea-docker API Gateway is accessible from the game server container
+1. Ensure the game server is running: `docker compose -f docker/docker-compose.yml ps vn-game-server`
+2. Check the game server logs: `docker compose -f docker/docker-compose.yml logs vn-game-server`
+3. Verify that the opea-docker services are accessible from the game server container
+
+### Virtual Environment Issues
+
+If you encounter virtual environment issues:
+
+1. Ensure the virtual environment exists: `ls -la visual-novel/server/.venv-vn`
+2. Recreate the virtual environment: `python first_start.py`
+3. Check Python dependencies: `cd visual-novel/server && source .venv-vn/bin/activate && pip list`
 
 ## Next Steps
 

@@ -217,7 +217,7 @@ def get_venv_python(project_name):
         "listening-speaking": (".venv-ls", "listening-speaking"),
         "vocabulary_generator": (".venv-vocab", "vocabulary_generator"),
         "writing-practice": (".venv-wp", "writing-practice"),
-        "visual-novel": (".venv-vn", "visual-novel"),
+        "visual-novel": (".venv-vn", "visual-novel/server"),
         "lang-portal": (".venv-portal", "lang-portal")
     }
     
