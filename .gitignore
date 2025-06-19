@@ -6,7 +6,7 @@ listening-speaking/backend/youtube/__pycache__/get_transcript.cpython-310.pyc
 *.pyc
 
 # Environment files
-.env
+
 !.env.example
 # Python cache files
 __pycache__/
@@ -34,6 +34,7 @@ Thumbs.db
 
 # Data directories
 data/
+!listening-speaking/backend/data/
 logs/
 *.db
 *.sqlite3

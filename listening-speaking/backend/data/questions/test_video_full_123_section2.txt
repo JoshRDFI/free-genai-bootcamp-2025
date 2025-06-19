@@ -1,0 +1,13 @@
+<question>
+Category: Food/Cooking
+
+Question: 雪ひらちンは、俺に何でかつつもり?
+
+Options:
+1. 人間は経った一人
+2. レシピもまだあったよね
+3. この強烈な絡みとうまさだけが必要
+4. これは本物の絡みだよ!
+
+Correct Answer: 2
+</question>

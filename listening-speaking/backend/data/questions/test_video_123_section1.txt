@@ -1,0 +1,13 @@
+<question>
+Category: Food/Cooking
+
+Question: クラテルの利金はどのように見られている?
+
+Options:
+1. 暑いうちに食べるべきだ
+2. 辛いので食べないで
+3. お腹が減っている
+4. 焼けそうに辛い
+
+Correct Answer: 2
+</question>

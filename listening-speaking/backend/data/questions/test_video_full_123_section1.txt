@@ -1,0 +1,13 @@
+<question>
+Category: Food/Cooking
+
+Question: このコンビネーションが、レシピには入るべきか?
+
+Options:
+1. これは本物の絡みだよ!
+2. これであなたの味は絶対に必要ない。
+3. これはオバケイイベントの必須
+4. この強烈な絡みとうまさだけが必要
+
+Correct Answer: 1
+</question>
