@@ -26,16 +26,16 @@ migrate = Migrate()
 
 # Configuration
 # Direct access to opea-docker services
-OLLAMA_SERVER_URL = os.environ.get('OLLAMA_SERVER_URL', 'http://localhost:8008')
+OLLAMA_SERVER_URL = os.environ.get('OLLAMA_SERVER_URL', 'http://localhost:11434')
 LLM_TEXT_URL = os.environ.get('LLM_TEXT_URL', 'http://localhost:11434')
 GUARDRAILS_URL = os.environ.get('GUARDRAILS_URL', 'http://localhost:9400')
-CHROMADB_URL = os.environ.get('CHROMADB_URL', 'http://localhost:8050')
+CHROMADB_URL = os.environ.get('CHROMADB_URL', 'http://localhost:8000')
 TTS_URL = os.environ.get('TTS_URL', 'http://localhost:9200')
 ASR_URL = os.environ.get('ASR_URL', 'http://localhost:9300')
 LLM_VISION_URL = os.environ.get('LLM_VISION_URL', 'http://localhost:9101')
 IMAGE_GEN_URL = os.environ.get('WAIFU_DIFFUSION_URL', 'http://localhost:9500')
 EMBEDDINGS_URL = os.environ.get('EMBEDDINGS_URL', 'http://localhost:6000')
-DB_PATH = os.environ.get('DB_PATH', '../opea-docker/data/shared_db/visual_novel.db')
+DB_PATH = os.environ.get('DB_PATH', '../data/shared_db/visual_novel.db')
 
 # LLM Service Configuration
 OLLAMA_URL = os.environ.get('OLLAMA_URL', 'http://localhost:11434')
@@ -225,15 +225,27 @@ def create_app(config_object=None):
         
         try:
             response = requests.post(
-                f"{LLM_TEXT_URL}/generate",
+                f"{LLM_TEXT_URL}/api/chat",
                 json={
-                    'prompt': f"Translate the following {source_lang} text to {target_lang}: {text}",
-                    'max_tokens': 1000
+                    "model": "llama3.2",
+                    "messages": [
+                        {
+                            "role": "system",
+                            "content": f"You are a professional translator. Translate the following text from {source_lang} to {target_lang}. Provide only the translation, no explanations."
+                        },
+                        {
+                            "role": "user",
+                            "content": text
+                        }
+                    ],
+                    "stream": False
                 }
             )
             
             if response.status_code == 200:
-                return jsonify(response.json())
+                result = response.json()
+                translated_text = result.get("message", {}).get("content", "")
+                return jsonify({"translated_text": translated_text})
             else:
                 return jsonify({'error': 'Translation service error', 'details': response.text}), 500
         except requests.RequestException as e:
@@ -295,37 +307,46 @@ def create_app(config_object=None):
         
         try:
             response = requests.post(
-                f"{LLM_TEXT_URL}/generate",
+                f"{LLM_TEXT_URL}/api/chat",
                 json={
-                    'prompt': prompt,
-                    'max_tokens': 2000,
-                    'temperature': 0.7
+                    "model": "llama3.2",
+                    "messages": [
+                        {
+                            "role": "system",
+                            "content": "You are a Japanese language teacher. Generate natural conversations that help students learn Japanese."
+                        },
+                        {
+                            "role": "user",
+                            "content": prompt
+                        }
+                    ],
+                    "stream": False
                 }
             )
             
             if response.status_code == 200:
                 result = response.json()
+                content = result.get("message", {}).get("content", "")
                 
                 # Try to extract and parse the JSON from the response
                 try:
                     # The LLM might include markdown code blocks or extra text
-                    text = result.get('text', '')
                     
                     # Try to extract JSON if it's wrapped in code blocks
-                    json_match = re.search(r'```(?:json)?\s*({.*?})\s*```', text, re.DOTALL)
+                    json_match = re.search(r'```(?:json)?\s*({.*?})\s*```', content, re.DOTALL)
                     
                     if json_match:
                         conversation_json = json.loads(json_match.group(1))
                     else:
                         # Try parsing the whole response as JSON
-                        conversation_json = json.loads(text)
+                        conversation_json = json.loads(content)
                     
                     return jsonify(conversation_json)
                 except (json.JSONDecodeError, ValueError) as e:
                     # If JSON parsing fails, return the raw text
                     return jsonify({
                         'error': 'Failed to parse LLM response as JSON',
-                        'raw_response': text
+                        'raw_response': content
                     }), 422
             else:
                 return jsonify({'error': 'Conversation generation error', 'details': response.text}), 500
@@ -346,46 +367,55 @@ def create_app(config_object=None):
         
         try:
             response = requests.post(
-                f"{LLM_TEXT_URL}/generate",
+                f"{LLM_TEXT_URL}/api/chat",
                 json={
-                    'prompt': f"Generate a complete JLPT N5 Japanese lesson on the topic: {topic}\n\n"
-                             f"Grammar points to include: {', '.join(grammar_points)}\n\n"
-                             f"Vocabulary focus: {', '.join(vocabulary_focus)}\n\n"
-                             f"Lesson number: {lesson_number}\n\n"
-                             f"Scene setting: {scene_setting}\n\n"
-                             f"Format the response as a JSON object with the following structure:\n"
-                             f"{{"
-                             f"  'metadata': {{"
-                             f"    'title': 'Lesson title',"
-                             f"    'objectives': ['objective1', 'objective2', ...]"
-                             f"  }},"
-                             f"  'vocabulary': ["
-                             f"    {{'japanese': '日本語', 'reading': 'にほんご', 'english': 'Japanese language'}},"
-                             f"    ...\n"
-                             f"  ],"
-                             f"  'grammar_points': ["
-                             f"    {{'pattern': 'Pattern', 'explanation': 'Explanation', 'examples': ['Example1', 'Example2']}},"
-                             f"    ...\n"
-                             f"  ],"
-                             f"  'dialogue_script': ["
-                             f"    {{'speaker': 'Character name', 'japanese': 'Japanese text', 'english': 'English translation'}},"
-                             f"    ...\n"
-                             f"  ],"
-                             f"  'exercises': ["
-                             f"    {{'question': 'Question', 'options': ['Option1', 'Option2', ...], 'correct_answer': 'Correct option'}},"
-                             f"    ...\n"
-                             f"  ],"
-                             f"  'cultural_note': 'Cultural information related to the lesson'"
-                             f"}}",
-                    'max_tokens': 4000,
-                    'temperature': 0.7
+                    "model": "llama3.2",
+                    "messages": [
+                        {
+                            "role": "system",
+                            "content": "You are a Japanese language teacher. Generate comprehensive lessons that help students learn Japanese effectively."
+                        },
+                        {
+                            "role": "user",
+                            "content": f"Generate a complete JLPT N5 Japanese lesson on the topic: {topic}\n\n"
+                                     f"Grammar points to include: {', '.join(grammar_points)}\n\n"
+                                     f"Vocabulary focus: {', '.join(vocabulary_focus)}\n\n"
+                                     f"Lesson number: {lesson_number}\n\n"
+                                     f"Scene setting: {scene_setting}\n\n"
+                                     f"Format the response as a JSON object with the following structure:\n"
+                                     f"{{"
+                                     f"  'metadata': {{"
+                                     f"    'title': 'Lesson title',"
+                                     f"    'objectives': ['objective1', 'objective2', ...]"
+                                     f"  }},"
+                                     f"  'vocabulary': ["
+                                     f"    {{'japanese': '日本語', 'reading': 'にほんご', 'english': 'Japanese language'}},"
+                                     f"    ...\n"
+                                     f"  ],"
+                                     f"  'grammar_points': ["
+                                     f"    {{'pattern': 'Pattern', 'explanation': 'Explanation', 'examples': ['Example1', 'Example2']}},"
+                                     f"    ...\n"
+                                     f"  ],"
+                                     f"  'dialogue_script': ["
+                                     f"    {{'speaker': 'Character name', 'japanese': 'Japanese text', 'english': 'English translation'}},"
+                                     f"    ...\n"
+                                     f"  ],"
+                                     f"  'exercises': ["
+                                     f"    {{'question': 'Question', 'options': ['Option1', 'Option2', ...], 'correct_answer': 'Correct option'}},"
+                                     f"    ...\n"
+                                     f"  ],"
+                                     f"  'cultural_note': 'Cultural information related to the lesson'"
+                                     f"}}"
+                        }
+                    ],
+                    "stream": False
                 }
             )
             
             if response.status_code == 200:
                 result = response.json()
                 # Process the LLM response to ensure it's in the correct format
-                lesson_text = result.get('text', '')
+                lesson_text = result.get("message", {}).get("content", "")
                 try:
                     # Try to parse the response as JSON
                     lesson_data = json.loads(lesson_text)

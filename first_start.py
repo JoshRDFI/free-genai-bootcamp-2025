@@ -623,13 +623,27 @@ def main():
             logger.error("Failed to verify services")
             return False
             
-        logger.info("Setup completed successfully!")
-        
         # Run launch.sh after successful setup
+        logger.info("Setup completed successfully!")
         logger.info("Launching the project...")
-        if not run_command("bash ./launch.sh"):
-            logger.error("Failed to launch the project")
-            return False
+        
+        # Run launch.sh asynchronously so it doesn't hang waiting for streamlit
+        try:
+            import subprocess
+            import threading
+            
+            def run_launch_async():
+                subprocess.run("bash ./launch.sh", shell=True)
+            
+            # Start launch.sh in a separate thread
+            launch_thread = threading.Thread(target=run_launch_async, daemon=True)
+            launch_thread.start()
+            
+            logger.info("Project launched successfully! The Streamlit interface should open in your browser shortly.")
+            
+        except Exception as e:
+            logger.error(f"Failed to launch the project: {e}")
+            logger.info("You can manually run: bash ./launch.sh")
             
         return True
             

@@ -15,14 +15,14 @@ from io import BytesIO
 GAME_API_BASE_URL = os.environ.get('GAME_API_BASE_URL', 'http://localhost:8080/api')
 
 # Direct service endpoints
-OLLAMA_SERVER_URL = os.environ.get('OLLAMA_SERVER_URL', 'http://localhost:8008')
+OLLAMA_SERVER_URL = os.environ.get('OLLAMA_SERVER_URL', 'http://localhost:11434')
 OLLAMA_URL = os.environ.get('OLLAMA_URL', 'http://localhost:11434')
 OLLAMA_MODEL = os.environ.get('OLLAMA_MODEL', 'llama3.2')
-LLM_TEXT_ENDPOINT = os.environ.get('LLM_TEXT_URL', 'http://localhost:11434/api/chat')
+LLM_TEXT_ENDPOINT = os.environ.get('LLM_TEXT_URL', 'http://localhost:11434')
 GUARDRAILS_URL = os.environ.get('GUARDRAILS_URL', 'http://localhost:9400/v1/guardrails')
-CHROMADB_URL = os.environ.get('CHROMADB_URL', 'http://localhost:8050')
-TTS_ENDPOINT = os.environ.get('TTS_URL', 'http://localhost:9200/tts')
-ASR_ENDPOINT = os.environ.get('ASR_URL', 'http://localhost:9300/asr')
+CHROMADB_URL = os.environ.get('CHROMADB_URL', 'http://localhost:8000')
+TTS_ENDPOINT = os.environ.get('TTS_URL', 'http://localhost:9200')
+ASR_ENDPOINT = os.environ.get('ASR_URL', 'http://localhost:9300')
 LLM_VISION_ENDPOINT = os.environ.get('LLM_VISION_URL', 'http://localhost:9101/v1/vision')
 IMAGE_GEN_ENDPOINT = os.environ.get('WAIFU_DIFFUSION_URL', 'http://localhost:9500')
 EMBEDDINGS_ENDPOINT = os.environ.get('EMBEDDINGS_URL', 'http://localhost:6000/embed')
@@ -54,15 +54,24 @@ class APIService:
         """Get translation for text using LLM service"""
         try:
             response = requests.post(
-                LLM_TEXT_ENDPOINT,
+                f"{LLM_TEXT_ENDPOINT}/api/chat",
                 json={
-                    "text": text,
-                    "source_lang": source_lang,
-                    "target_lang": target_lang
+                    "model": "llama3.2",
+                    "messages": [
+                        {
+                            "role": "system", 
+                            "content": f"You are a professional translator. Translate the following text from {source_lang} to {target_lang}. Provide only the translation, no explanations."
+                        },
+                        {
+                            "role": "user", 
+                            "content": text
+                        }
+                    ],
+                    "stream": False
                 }
             )
             result = response.json()
-            return result.get("text", "Translation failed")
+            return result.get("message", {}).get("content", "Translation failed")
         except Exception as e:
             print(f"Translation failed: {str(e)}")
             return "Translation failed"
@@ -72,10 +81,11 @@ class APIService:
         """Get audio for text using TTS service"""
         try:
             response = requests.post(
-                TTS_ENDPOINT,
+                f"{TTS_ENDPOINT}/generate",
                 json={
                     "text": text,
-                    "voice": voice
+                    "voice": voice,
+                    "language": "ja"
                 }
             )
             result = response.json()
@@ -203,15 +213,39 @@ class APIService:
             if vocabulary is None:
                 vocabulary = []
                 
+            # Create a prompt for conversation generation
+            prompt = f"""
+            Generate a natural Japanese conversation with the following context:
+            Context: {context}
+            Characters: {', '.join(characters)}
+            Grammar points to include: {', '.join(grammar_points)}
+            Vocabulary to include: {', '.join(vocabulary)}
+            Number of exchanges: {num_exchanges}
+            
+            Please provide the conversation in JSON format with the following structure:
+            {{
+                "conversation": [
+                    {{"speaker": "Character1", "japanese": "こんにちは", "english": "Hello"}},
+                    {{"speaker": "Character2", "japanese": "こんにちは", "english": "Hello"}}
+                ]
+            }}
+            """
+                
             response = requests.post(
-                f"{LLM_TEXT_ENDPOINT}/generate-conversation",
+                f"{LLM_TEXT_ENDPOINT}/api/chat",
                 json={
-                    "context": context,
-                    "characters": characters,
-                    "grammar_points": grammar_points,
-                    "vocabulary": vocabulary,
-                    "num_exchanges": num_exchanges,
-                    "include_translations": True
+                    "model": "llama3.2",
+                    "messages": [
+                        {
+                            "role": "system", 
+                            "content": "You are a Japanese language teacher. Generate natural conversations that help students learn Japanese."
+                        },
+                        {
+                            "role": "user", 
+                            "content": prompt
+                        }
+                    ],
+                    "stream": False
                 }
             )
             
@@ -220,15 +254,19 @@ class APIService:
                 return None
                 
             result = response.json()
+            content = result.get("message", {}).get("content", "")
             
-            # Check if we got a valid conversation structure
-            if "conversation" in result:
-                return result["conversation"]
-            elif "error" in result:
-                print(f"Conversation generation error: {result['error']}")
-                return None
-            else:
-                print("Unexpected response format from conversation generator")
+            # Try to parse the JSON response
+            try:
+                import json
+                conversation_data = json.loads(content)
+                if "conversation" in conversation_data:
+                    return conversation_data["conversation"]
+                else:
+                    print("Unexpected response format from conversation generator")
+                    return None
+            except json.JSONDecodeError:
+                print("Failed to parse conversation response as JSON")
                 return None
         except Exception as e:
             print(f"Failed to generate conversation: {str(e)}")
@@ -243,14 +281,47 @@ class APIService:
             if vocabulary_focus is None:
                 vocabulary_focus = []
                 
+            # Create a prompt for lesson generation
+            prompt = f"""
+            Generate a complete Japanese lesson with the following details:
+            Topic: {topic}
+            Lesson Number: {lesson_number}
+            Scene Setting: {scene_setting}
+            Grammar points to cover: {', '.join(grammar_points)}
+            Vocabulary focus: {', '.join(vocabulary_focus)}
+            
+            Please provide the lesson in JSON format with the following structure:
+            {{
+                "lesson": {{
+                    "title": "Lesson Title",
+                    "topic": "{topic}",
+                    "grammar_points": ["grammar1", "grammar2"],
+                    "vocabulary": [
+                        {{"japanese": "こんにちは", "reading": "konnichiwa", "english": "hello"}}
+                    ],
+                    "dialogue": [
+                        {{"speaker": "Teacher", "japanese": "こんにちは", "english": "Hello"}},
+                        {{"speaker": "Student", "japanese": "こんにちは", "english": "Hello"}}
+                    ]
+                }}
+            }}
+            """
+                
             response = requests.post(
-                f"{LLM_TEXT_ENDPOINT}/generate-lesson",
+                f"{LLM_TEXT_ENDPOINT}/api/chat",
                 json={
-                    "topic": topic,
-                    "grammar_points": grammar_points,
-                    "vocabulary_focus": vocabulary_focus,
-                    "lesson_number": lesson_number,
-                    "scene_setting": scene_setting
+                    "model": "llama3.2",
+                    "messages": [
+                        {
+                            "role": "system", 
+                            "content": "You are a Japanese language teacher. Generate comprehensive lessons that help students learn Japanese effectively."
+                        },
+                        {
+                            "role": "user", 
+                            "content": prompt
+                        }
+                    ],
+                    "stream": False
                 }
             )
             
@@ -259,17 +330,19 @@ class APIService:
                 return None
                 
             result = response.json()
+            content = result.get("message", {}).get("content", "")
             
-            # Check if we got a valid lesson structure
-            if "lesson" in result:
-                return result["lesson"]
-            elif "metadata" in result and "dialogue_script" in result:
-                return result
-            elif "error" in result:
-                print(f"Lesson generation error: {result['error']}")
-                return None
-            else:
-                print("Unexpected response format from lesson generator")
+            # Try to parse the JSON response
+            try:
+                import json
+                lesson_data = json.loads(content)
+                if "lesson" in lesson_data:
+                    return lesson_data["lesson"]
+                else:
+                    print("Unexpected response format from lesson generator")
+                    return None
+            except json.JSONDecodeError:
+                print("Failed to parse lesson response as JSON")
                 return None
         except Exception as e:
             print(f"Lesson generation failed: {str(e)}")

@@ -38,8 +38,8 @@ MODELS = [
         )
     },
     {
-        'name': 'Whisper (large-v3)',
-        'repo': 'openai/whisper-large-v3',
+        'name': 'Whisper (base)',
+        'repo': 'openai/whisper-base',
         'path': Path('data/asr_data'),
         'download_fn': lambda repo, path: (
             WhisperProcessor.from_pretrained(repo, cache_dir=path),

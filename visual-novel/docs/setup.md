@@ -53,10 +53,10 @@ SECRET_KEY=your-secret-key
 FLASK_DEBUG=true
 
 # Database
-DATABASE_URL=sqlite:///db/visual_novel.db
+DATABASE_URL=sqlite:///../data/shared_db/visual_novel.db
 
 # Service endpoints for opea-docker containers
-OLLAMA_SERVER_URL=http://ollama-server:8008
+OLLAMA_SERVER_URL=http://ollama-server:11434
 LLM_TEXT_URL=http://ollama-server:11434
 GUARDRAILS_URL=http://guardrails:9400
 CHROMADB_URL=http://chromadb:8000
@@ -153,10 +153,10 @@ The visual novel uses a microservices architecture:
 By default, the application uses SQLite for data storage. The database file is located at:
 
 ```
-/app/db/visual_novel.db
+data/shared_db/visual_novel.db
 ```
 
-inside the Docker container, which is mapped to the shared database path.
+in the project root directory, which is shared between all services and mapped to `/app/db/visual_novel.db` inside the Docker container.
 
 ### API Services Configuration
 

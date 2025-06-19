@@ -8,12 +8,12 @@ services:
       - "8080:8080"
     volumes:
       - ../server:/app
-      - ${SHARED_DB_PATH:-../../opea-docker/data/shared_db}:/app/db
+      - ${SHARED_DB_PATH:-../../data/shared_db}:/app/db
     environment:
-      - OLLAMA_SERVER_URL=http://ollama-server:8008
+      - OLLAMA_SERVER_URL=http://ollama-server:11434
       - LLM_TEXT_URL=http://ollama-server:11434
       - GUARDRAILS_URL=http://guardrails:9400
-      - CHROMADB_URL=http://chromadb:8050
+      - CHROMADB_URL=http://chromadb:8000
       - TTS_URL=http://tts:9200
       - ASR_URL=http://asr:9300
       - LLM_VISION_URL=http://llm-vision:9101
@@ -27,7 +27,7 @@ services:
       - opea-network
     restart: unless-stopped
 
-  # Web server for Ren'Py web exportrver for Ren'Py web export
+  # Web server for Ren'Py web export
   vn-web-server:
     image: nginx:alpine
     container_name: vn-web-server
