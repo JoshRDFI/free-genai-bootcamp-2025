@@ -172,12 +172,13 @@ class DatabaseManager:
             else:
                 logger.warning(f"No association found for Word ID {word_id} and Group ID {group_id} to remove.")
 
-    async def add_word_group(self, name: str) -> int:
+    async def add_word_group(self, name: str, level: str = None) -> int:
         """
         Add a new word group and return its ID, or return existing group's ID if it exists.
 
         Args:
             name (str): The name of the word group to add
+            level (str): The JLPT level for this group (N5, N4, N3, N2, N1)
 
         Returns:
             int: The ID of the word group (either existing or newly created)
@@ -189,7 +190,10 @@ class DatabaseManager:
         if not name or not isinstance(name, str):
             raise ValueError("Word group name must be a non-empty string")
 
-        name = name.strip()  # Remove leading/trailing whitespace
+        if level and level not in ['N5', 'N4', 'N3', 'N2', 'N1']:
+            raise ValueError("Level must be one of: N5, N4, N3, N2, N1")
+
+        name = name.strip()
 
         try:
             async with self.get_connection() as db:
@@ -205,12 +209,12 @@ class DatabaseManager:
 
                 # If we get here, the group doesn't exist, so create it
                 cursor = await db.execute(
-                    "INSERT INTO word_groups (name) VALUES (?)",
-                    (name,)
+                    "INSERT INTO word_groups (name, level) VALUES (?, ?)",
+                    (name, level)
                 )
                 await db.commit()
                 new_id = cursor.lastrowid
-                logger.info(f"Created new word group '{name}' with ID {new_id}")
+                logger.info(f"Created new word group '{name}' with ID {new_id} and level {level}")
                 return new_id
 
         except sqlite3.Error as e:
@@ -259,9 +263,15 @@ class DatabaseManager:
                 group_level = group_row[0]
 
             # If user level is provided, check if group level is appropriate
-            if user_level:
+            if user_level and group_level:
+                # Convert user_level to proper format if it's just a number
+                if user_level.isdigit():
+                    user_level = f"N{user_level}"
+                
+                # Get numeric parts for comparison
                 user_level_num = int(user_level[1:])
                 group_level_num = int(group_level[1:])
+                
                 if group_level_num > user_level_num:
                     return []  # Return empty list if group level is too high
 
@@ -558,17 +568,37 @@ class DatabaseManager:
         """Retrieve all word groups, optionally filtered by user level."""
         async with self.get_connection() as db:
             if user_level:
-                # Convert level to number for comparison (e.g., 'N5' -> 5)
-                level_num = int(user_level[1:])
+                # Convert user_level to proper format if it's just a number
+                if user_level.isdigit():
+                    user_level = f"N{user_level}"
+                
+                # Get the numeric part of the level for comparison
+                user_level_num = int(user_level[1:])
+                
                 async with db.execute(
                     """
-                    SELECT id, name, level, words_count 
-                    FROM word_groups 
-                    WHERE level IS NOT NULL 
-                    AND CAST(SUBSTR(level, 2) AS INTEGER) <= ?
+                    WITH level_values AS (
+                        SELECT 
+                            id,
+                            name,
+                            level,
+                            words_count,
+                            CASE level
+                                WHEN 'N5' THEN 5
+                                WHEN 'N4' THEN 4
+                                WHEN 'N3' THEN 3
+                                WHEN 'N2' THEN 2
+                                WHEN 'N1' THEN 1
+                            END as level_num
+                        FROM word_groups
+                        WHERE level IS NOT NULL
+                    )
+                    SELECT id, name, level, words_count
+                    FROM level_values
+                    WHERE level_num >= ?
                     ORDER BY name ASC
                     """,
-                    (level_num,)
+                    (user_level_num,)
                 ) as cursor:
                     rows = await cursor.fetchall()
                     return [
@@ -652,3 +682,55 @@ class DatabaseManager:
                     }
                     for row in rows
                 ]
+
+    async def update_word_group_levels(self) -> None:
+        """
+        Update existing word groups with their appropriate JLPT levels based on their names or content.
+        This is a one-time migration function to fix existing data.
+        """
+        async with self.get_connection() as db:
+            # First, get all word groups that don't have a level set
+            async with db.execute(
+                "SELECT id, name FROM word_groups WHERE level IS NULL"
+            ) as cursor:
+                groups = await cursor.fetchall()
+                
+            for group_id, group_name in groups:
+                # Try to determine level from group name
+                level = None
+                if 'N5' in group_name:
+                    level = 'N5'
+                elif 'N4' in group_name:
+                    level = 'N4'
+                elif 'N3' in group_name:
+                    level = 'N3'
+                elif 'N2' in group_name:
+                    level = 'N2'
+                elif 'N1' in group_name:
+                    level = 'N1'
+                
+                # If level not found in name, try to determine from words in the group
+                if not level:
+                    async with db.execute(
+                        """
+                        SELECT w.kanji, w.romaji, w.english
+                        FROM words w
+                        JOIN word_to_group_join wtg ON w.id = wtg.word_id
+                        WHERE wtg.group_id = ?
+                        LIMIT 5
+                        """,
+                        (group_id,)
+                    ) as word_cursor:
+                        words = await word_cursor.fetchall()
+                        if words:
+                            # For now, default to N5 if we can't determine from words
+                            level = 'N5'
+                
+                if level:
+                    await db.execute(
+                        "UPDATE word_groups SET level = ? WHERE id = ?",
+                        (level, group_id)
+                    )
+                    logger.info(f"Updated word group '{group_name}' (ID: {group_id}) with level {level}")
+            
+            await db.commit()

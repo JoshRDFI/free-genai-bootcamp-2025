@@ -51,6 +51,8 @@ class YouTubeTranscriptDownloader:
     def download_audio(self, video_id: str) -> Optional[str]:
         """Download audio from YouTube video"""
         try:
+            logger.info(f"Starting audio download for video {video_id}")
+            
             # Configure yt-dlp options
             ydl_opts = {
                 'format': 'bestaudio/best',
@@ -59,24 +61,36 @@ class YouTubeTranscriptDownloader:
                     'preferredcodec': 'wav',
                 }],
                 'outtmpl': f'temp_{video_id}.%(ext)s',
-                'quiet': True,
-                'no_warnings': True
+                'quiet': False,  # Enable logging to see what's happening
+                'no_warnings': False
             }
 
             # Download audio
             with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                logger.info(f"Downloading audio with yt-dlp...")
                 ydl.download([f'https://www.youtube.com/watch?v={video_id}'])
-                return f'temp_{video_id}.wav'
+                
+                # Check if the file was created
+                expected_file = f'temp_{video_id}.wav'
+                if os.path.exists(expected_file):
+                    logger.info(f"Audio file downloaded successfully: {expected_file}")
+                    return expected_file
+                else:
+                    logger.error(f"Audio file not found after download: {expected_file}")
+                    return None
+                    
         except Exception as e:
             logger.error(f"Error downloading audio: {str(e)}")
             return None
 
-    def get_transcript(self, video_id: str) -> Optional[List[Dict]]:
+    def get_transcript(self, video_id_or_url: str) -> Optional[List[Dict]]:
         """Download transcript from YouTube or generate using ASR"""
         try:
             # Extract video ID if full URL is provided
-            if "youtube.com" in video_id or "youtu.be" in video_id:
-                video_id = self.extract_video_id(video_id)
+            if "youtube.com" in video_id_or_url or "youtu.be" in video_id_or_url:
+                video_id = self.extract_video_id(video_id_or_url)
+            else:
+                video_id = video_id_or_url
 
             if not video_id:
                 raise ValueError("Invalid video ID or URL")
@@ -103,24 +117,40 @@ class YouTubeTranscriptDownloader:
                         logger.error("Failed to download audio")
                         return None
 
+                    logger.info(f"Starting ASR transcription for file: {audio_file}")
+                    
+                    # Check file size and format
+                    if os.path.exists(audio_file):
+                        file_size = os.path.getsize(audio_file)
+                        logger.info(f"Audio file size: {file_size} bytes")
+                        if file_size == 0:
+                            logger.error("Audio file is empty")
+                            return None
+                    else:
+                        logger.error(f"Audio file does not exist: {audio_file}")
+                        return None
+
                     # Transcribe using ASR
                     result = self.asr.transcribe_file(audio_file, language="ja")
+                    
+                    logger.info(f"ASR result: {result}")
                     
                     # Clean up temporary audio file
                     try:
                         os.remove(audio_file)
-                    except:
-                        pass
+                        logger.info(f"Cleaned up temporary audio file: {audio_file}")
+                    except Exception as cleanup_error:
+                        logger.warning(f"Failed to clean up audio file: {cleanup_error}")
 
-                    if result and "transcript" in result:
+                    if result and "text" in result:
                         # Convert ASR result to YouTube transcript format
+                        # ASR returns a single text block, so we'll create one segment
                         transcript = [
                             {
-                                "text": segment["text"],
-                                "start": segment.get("start", 0),
-                                "duration": segment.get("duration", 0)
+                                "text": result["text"],
+                                "start": 0,
+                                "duration": 0
                             }
-                            for segment in result["transcript"]
                         ]
                         logger.info(f"Successfully generated Japanese transcript using ASR for video {video_id}")
                         return transcript

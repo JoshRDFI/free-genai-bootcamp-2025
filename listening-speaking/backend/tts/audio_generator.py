@@ -6,8 +6,8 @@ from typing import List, Optional
 import tempfile
 import re
 import requests
-import torch
 from backend.config import ServiceConfig
+import base64
 
 class AudioGenerator:
     def __init__(self, tts_engine: str = "coqui", language: str = "ja"):
@@ -56,12 +56,13 @@ class AudioGenerator:
             # Prepare request payload
             payload = {
                 "text": sanitized_text,
-                "language": self.language
+                "language": self.language,
+                "voice_id": "female"
             }
 
             # Add voice reference if provided
             if speaker_wav and os.path.exists(speaker_wav):
-                payload["voice"] = speaker_wav
+                payload["voice_id"] = speaker_wav
 
             # Call TTS service
             response = requests.post(
@@ -73,9 +74,16 @@ class AudioGenerator:
             if response.status_code != 200:
                 raise Exception(f"TTS service returned status code {response.status_code}")
 
+            # Parse the JSON response and decode base64 audio data
+            response_data = response.json()
+            if "audio" not in response_data:
+                raise Exception("TTS service response missing audio data")
+            
+            audio_data = base64.b64decode(response_data["audio"])
+
             # Save the audio file
             with open(output_file, 'wb') as f:
-                f.write(response.content)
+                f.write(audio_data)
 
             # Verify the file was created
             if not os.path.exists(output_file):

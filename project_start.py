@@ -218,7 +218,7 @@ def get_venv_python(project_name):
         "vocabulary_generator": (".venv-vocab", "vocabulary_generator"),
         "writing-practice": (".venv-wp", "writing-practice"),
         "visual-novel": (".venv-vn", "visual-novel"),
-        "lang-portal": (".venv-portal", "lang-portal/backend")
+        "lang-portal": (".venv-portal", "lang-portal")
     }
     
     if project_name in venv_mapping:

@@ -38,21 +38,29 @@ class ASREngine:
                 logger.error("ASR transcribe endpoint not configured")
                 return None
 
+            logger.info(f"Sending audio data to ASR service at {endpoint}")
+            logger.info(f"Audio data size: {len(audio_data)} bytes")
+
             files = {
-                'audio': ('audio.wav', audio_data, 'audio/wav')
-            }
-            data = {
-                'language': language
+                'file': ('audio.wav', audio_data, 'audio/wav')
             }
 
             response = self.session.post(
                 endpoint,
                 files=files,
-                data=data,
                 timeout=ServiceConfig.get_timeout("asr")
             )
+            
+            logger.info(f"ASR service response status: {response.status_code}")
+            
+            if response.status_code == 422:
+                logger.error(f"ASR service returned 422 error: {response.text}")
+                return None
+                
             response.raise_for_status()
-            return response.json()
+            result = response.json()
+            logger.info(f"ASR service response: {result}")
+            return result
 
         except requests.exceptions.RequestException as e:
             logger.error(f"Error transcribing audio: {str(e)}")

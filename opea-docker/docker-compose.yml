@@ -63,9 +63,10 @@ services:
       - ${SHARED_DB_PATH:-../data/shared_db}:/app/db
     environment:
       - ASR_SERVICE_PORT=${ASR_SERVICE_PORT:-9300}
-      - ASR_MODEL=${ASR_MODEL:-large-v3}
+      - ASR_MODEL=${ASR_MODEL:-base}
       - FORCE_CPU=true
       - CUDA_VISIBLE_DEVICES=""
+      - WHISPER_COMPUTE_TYPE=int8
     depends_on:
       - tts
     restart: unless-stopped

@@ -111,6 +111,7 @@ class KnowledgeBase:
                     question TEXT NOT NULL,
                     options TEXT,
                     correct_answer INTEGER,
+                    images TEXT,  -- JSON string containing image paths for each option
                     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
                 )
             """)
@@ -202,11 +203,18 @@ class KnowledgeBase:
                 else:
                     options_json = options
 
+                # Ensure images is a JSON string
+                images = question_data.get("images", {})
+                if isinstance(images, dict):
+                    images_json = json.dumps(images, ensure_ascii=False)
+                else:
+                    images_json = images
+
                 cursor.execute(
                     """
                     INSERT INTO questions
-                    (video_id, section_num, introduction, conversation, question, options, correct_answer)
-                    VALUES (?, ?, ?, ?, ?, ?, ?)
+                    (video_id, section_num, introduction, conversation, question, options, correct_answer, images)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
                     """,
                     (
                         question_data["video_id"],
@@ -215,7 +223,8 @@ class KnowledgeBase:
                         question_data.get("conversation", ""),
                         question_data["question"],
                         options_json,
-                        question_data.get("correct_answer", 1)
+                        question_data.get("correct_answer", 1),
+                        images_json
                     )
                 )
                 conn.commit()
@@ -262,7 +271,8 @@ class KnowledgeBase:
                         "question": row[5],
                         "options": json.loads(row[6]) if row[6] else [],
                         "correct_answer": row[7],
-                        "created_at": row[8],
+                        "images": json.loads(row[8]) if row[8] else {},
+                        "created_at": row[9],
                     }
                 return None
         except Exception as e:
@@ -304,7 +314,8 @@ class KnowledgeBase:
                         "question": row[5],
                         "options": json.loads(row[6]) if row[6] else [],
                         "correct_answer": row[7],
-                        "created_at": row[8]
+                        "images": json.loads(row[8]) if row[8] else {},
+                        "created_at": row[9]
                     })
                 return questions
         except Exception as e:

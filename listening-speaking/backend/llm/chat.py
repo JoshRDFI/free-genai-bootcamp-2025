@@ -10,6 +10,7 @@ from requests.adapters import HTTPAdapter
 from urllib3.util import Retry
 import time
 import httpx
+import re
 
 # Configure logging
 log_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "logs")
@@ -28,7 +29,7 @@ logger = logging.getLogger(__name__)
 class ChatInterface:
     def __init__(self):
         """Initialize chat interface with retry mechanism"""
-        self.endpoint = f"{ServiceConfig.OLLAMA_URL}/api/generate"
+        self.endpoint = f"{ServiceConfig.OLLAMA_URL}/api/chat"
         self.headers = {
             "Content-Type": "application/json"
         }
@@ -52,31 +53,32 @@ class ChatInterface:
         try:
             logger.info(f"Starting question generation for {num_questions} questions")
             
-            # Prepare the prompt
+            # Prepare the prompt with category identification
             prompt = f"""Generate {num_questions} multiple-choice questions in Japanese based on this transcript:
             {transcript_text}
             
-            Each question should have:
-            1. A clear question in Japanese
-            2. 4 options in Japanese
-            3. The correct answer (1-4)
+            For each question, you should:
+            1. Identify the category/topic (e.g., "Food/Cooking", "Daily Conversation", "Shopping", "Travel", "School/Work", "Weather", "News", "Entertainment")
+            2. Create a clear question in Japanese
+            3. Provide 4 options in Japanese
+            4. Specify the correct answer (1-4)
             
             Format each question as a JSON object with these fields:
+            - Category: The identified category/topic
             - Question: The question text
             - Options: Array of 4 options
             - CorrectAnswer: Number (1-4) of the correct option
             
-            Return an array of these JSON objects."""
+            Return an array of these JSON objects. Make sure the response is valid JSON."""
 
             # Prepare the request payload
             payload = {
                 "model": self.model,
                 "messages": [
-                    {"role": "system", "content": "You are a Japanese language teacher creating listening comprehension questions."},
+                    {"role": "system", "content": "You are a Japanese language teacher creating listening comprehension questions. Always respond with valid JSON format."},
                     {"role": "user", "content": prompt}
                 ],
-                "temperature": 0.7,
-                "max_tokens": 1000
+                "stream": False
             }
 
             # Try the request with retries
@@ -220,13 +222,27 @@ Conversation:
     def _parse_llm_response(self, result: Dict) -> List[Dict]:
         """Parse the LLM response into a list of questions."""
         try:
-            if "choices" not in result or not result["choices"]:
-                logger.error("No choices in LLM response")
+            # Handle Ollama chat API response format
+            if "message" in result:
+                content = result["message"]["content"]
+            elif "choices" in result and result["choices"]:
+                content = result["choices"][0]["message"]["content"]
+            else:
+                logger.error("No message content in LLM response")
                 return []
-                
-            content = result["choices"][0]["message"]["content"]
+            
+            logger.info(f"Raw LLM response content: {content}")
+            
             try:
-                questions = json.loads(content)
+                # Try to extract JSON from the response
+                # Sometimes the LLM wraps the JSON in markdown or other text
+                json_match = re.search(r'\[.*\]', content, re.DOTALL)
+                if json_match:
+                    json_str = json_match.group(0)
+                else:
+                    json_str = content
+                
+                questions = json.loads(json_str)
                 if not isinstance(questions, list):
                     logger.error("Response is not a list of questions")
                     return []
@@ -234,9 +250,14 @@ Conversation:
                 # Validate each question
                 valid_questions = []
                 for q in questions:
-                    if all(key in q for key in ["Question", "Options", "CorrectAnswer"]):
+                    # Check for required fields (Category is optional for backward compatibility)
+                    required_fields = ["Question", "Options", "CorrectAnswer"]
+                    if all(key in q for key in required_fields):
                         if isinstance(q["Options"], list) and len(q["Options"]) == 4:
                             if isinstance(q["CorrectAnswer"], int) and 1 <= q["CorrectAnswer"] <= 4:
+                                # Add default category if not present
+                                if "Category" not in q:
+                                    q["Category"] = "General"
                                 valid_questions.append(q)
                             else:
                                 logger.warning("Invalid CorrectAnswer format")
@@ -245,10 +266,12 @@ Conversation:
                     else:
                         logger.warning("Question missing required fields")
                         
+                logger.info(f"Successfully parsed {len(valid_questions)} valid questions")
                 return valid_questions
                 
             except json.JSONDecodeError as e:
                 logger.error(f"Failed to parse questions JSON: {str(e)}")
+                logger.error(f"Attempted to parse: {json_str}")
                 return []
                 
         except Exception as e:

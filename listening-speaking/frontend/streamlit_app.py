@@ -29,10 +29,217 @@ os.makedirs(os.path.join(project_root, "backend", "logs"), exist_ok=True)
 
 # Page config
 st.set_page_config(
-    page_title="JLPT Listening Practice",
+    page_title="Listening - Speaking Practice",
     page_icon="🎧",
     layout="wide"
 )
+
+# Add custom CSS for background image
+def add_background_image():
+    background_image_path = os.path.join(project_root, "..", "images", "spring_shrine.png")
+    st.markdown(
+        f"""
+        <style>
+        /* Apply background to the entire app including sidebar */
+        .stApp {{
+            background-image: url("data:image/png;base64,{get_base64_of_bin_file(background_image_path)}");
+            background-attachment: fixed;
+            background-size: cover;
+            background-position: center;
+        }}
+        
+        /* Style the sidebar with more transparent background */
+        .css-1d391kg {{
+            background-color: rgba(255, 255, 255, 0.2) !important;
+            backdrop-filter: blur(1px);
+            border-right: 1px solid rgba(255, 255, 255, 0.2);
+        }}
+        
+        /* Style the main content area */
+        .stApp > main {{
+            background-color: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(5px);
+        }}
+        
+        /* Style the header with more transparency */
+        .stApp > header {{
+            background-color: rgba(255, 255, 255, 0.1) !important;
+            backdrop-filter: blur(1px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+        }}
+        
+        /* Remove the white bar at the top */
+        .stApp > header > div {{
+            background: transparent !important;
+        }}
+        
+        /* Style cards and containers for better visibility */
+        .stCard {{
+            background-color: rgba(255, 255, 255, 0.85) !important;
+            backdrop-filter: blur(5px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }}
+        
+        /* Style buttons with better colors */
+        .stButton > button {{
+            background-color: #4CAF50 !important;
+            color: white !important;
+            border: none !important;
+            border-radius: 8px !important;
+            padding: 8px 16px !important;
+            font-weight: 500 !important;
+        }}
+        
+        .stButton > button:hover {{
+            background-color: #45a049 !important;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2) !important;
+        }}
+        
+        /* Style selectboxes */
+        .stSelectbox > div > div {{
+            background-color: rgba(255, 255, 255, 0.8) !important;
+            border: 1px solid rgba(0, 0, 0, 0.1) !important;
+        }}
+        
+        /* Fix dropdown text color */
+        .stSelectbox > div > div > div {{
+            color: #000000 !important;
+        }}
+        
+        .stSelectbox > div > div > div > div {{
+            color: #000000 !important;
+        }}
+        
+        /* Fix dropdown options text color */
+        .stSelectbox [data-baseweb="select"] {{
+            color: #000000 !important;
+        }}
+        
+        .stSelectbox [data-baseweb="select"] > div {{
+            color: #000000 !important;
+        }}
+        
+        /* Style text inputs */
+        .stTextInput > div > div > input {{
+            background-color: rgba(255, 255, 255, 0.8) !important;
+            border: 1px solid rgba(0, 0, 0, 0.1) !important;
+            color: #000000 !important;
+        }}
+        
+        /* Style radio buttons */
+        .stRadio > div {{
+            background-color: rgba(255, 255, 255, 0.7) !important;
+            padding: 10px !important;
+            border-radius: 8px !important;
+        }}
+        
+        /* Fix radio button text color */
+        .stRadio > div > div {{
+            color: #000000 !important;
+        }}
+        
+        .stRadio > div > div > div {{
+            color: #000000 !important;
+        }}
+        
+        .stRadio > div > div > div > div {{
+            color: #000000 !important;
+        }}
+        
+        /* Fix radio button labels */
+        .stRadio > div > div > div > div > label {{
+            color: #000000 !important;
+        }}
+        
+        /* Fix radio button text in format_func */
+        .stRadio > div > div > div > div > label > div {{
+            color: #000000 !important;
+        }}
+        
+        /* Additional radio button text fixes */
+        .stRadio [data-baseweb="radio"] {{
+            color: #000000 !important;
+        }}
+        
+        .stRadio [data-baseweb="radio"] > div {{
+            color: #000000 !important;
+        }}
+        
+        .stRadio [data-baseweb="radio"] > div > div {{
+            color: #000000 !important;
+        }}
+        
+        /* Style expanders */
+        .streamlit-expanderHeader {{
+            background-color: rgba(255, 255, 255, 0.8) !important;
+            border: 1px solid rgba(0, 0, 0, 0.1) !important;
+        }}
+        
+        /* Style tabs - make completely transparent */
+        .stTabs {{
+            background: transparent !important;
+        }}
+        
+        .stTabs [data-baseweb="tab-list"] {{
+            background: transparent !important;
+            border-radius: 8px 8px 0 0 !important;
+        }}
+        
+        .stTabs [data-baseweb="tab"] {{
+            background: transparent !important;
+            border-radius: 8px 8px 0 0 !important;
+            color: #000000 !important;
+        }}
+        
+        .stTabs [aria-selected="true"] {{
+            background: transparent !important;
+            color: #000000 !important;
+        }}
+        
+        /* Make tab content container transparent */
+        .stTabs [data-baseweb="tab-panel"] {{
+            background: transparent !important;
+        }}
+        
+        /* Fix any tab container backgrounds */
+        .stTabs > div {{
+            background: transparent !important;
+        }}
+        
+        .stTabs > div > div {{
+            background: transparent !important;
+        }}
+        
+        /* Hide Streamlit's default background */
+        .main .block-container {{
+            background: transparent !important;
+        }}
+        
+        /* Ensure sidebar background is properly applied with more transparency */
+        section[data-testid="stSidebar"] {{
+            background-color: rgba(255, 255, 255, 0.2) !important;
+            backdrop-filter: blur(1px);
+        }}
+        
+        /* Additional header transparency fixes */
+        .stApp > header > div > div {{
+            background: transparent !important;
+        }}
+        
+        /* Fix any remaining white bars */
+        .stApp > header > div > div > div {{
+            background: transparent !important;
+        }}
+        </style>
+        """,
+        unsafe_allow_html=True
+    )
+
+def get_base64_of_bin_file(bin_file):
+    import base64
+    with open(bin_file, 'rb') as f:
+        data = f.read()
+    return base64.b64encode(data).decode()
 
 def initialize_session_state():
     """Initialize session state variables"""
@@ -151,14 +358,12 @@ def render_youtube_input():
                                     
                                     # Display the first question
                                     st.write("**Question 1:**")
-                                    st.write("**Introduction:**")
-                                    st.write(questions[0]['Introduction'])
-                                    st.write("**Conversation:**")
-                                    st.write(questions[0]['Conversation'])
+                                    if 'category' in questions[0]:
+                                        st.write(f"**Category:** {questions[0]['category']}")
                                     st.write("**Question:**")
-                                    st.write(questions[0]['Question'])
+                                    st.write(questions[0]['question'])
                                     st.write("**Options:**")
-                                    for i, option in enumerate(questions[0]['Options'], 1):
+                                    for i, option in enumerate(questions[0]['options'], 1):
                                         st.write(f"{i}. {option}")
                                     
                                     # Add navigation buttons for questions
@@ -204,46 +409,113 @@ def render_interactive_practice():
         "Phrase Matching": ["Announcements", "Instructions", "Weather Reports", "News Updates"]
     }
     topic = st.selectbox("Select Topic", topics[practice_type])
+    
+    # Load stored questions and filter by selected topic and practice type
+    stored_questions = load_stored_questions()
+    filtered_questions = []
+    
+    for qid, qdata in stored_questions.items():
+        if qdata.get('practice_type') == practice_type and qdata.get('topic') == topic:
+            filtered_questions.append((qid, qdata))
+    
+    if not filtered_questions:
+        st.info(f"No questions available for {practice_type} - {topic}. Please process a video or generate questions first.")
+        return
+    
+    # Select a random question from the filtered list
+    import random
+    if 'current_topic_question_index' not in st.session_state:
+        st.session_state.current_topic_question_index = 0
+    
+    # Update question index if topic/practice type changed
+    topic_key = f"{practice_type}_{topic}"
+    if 'last_topic_key' not in st.session_state or st.session_state.last_topic_key != topic_key:
+        st.session_state.current_topic_question_index = 0
+        st.session_state.last_topic_key = topic_key
+    
+    # Get current question
+    current_qid, current_qdata = filtered_questions[st.session_state.current_topic_question_index]
+    current_question = current_qdata['question']
+    
     col1, col2 = st.columns([2, 1])
     with col1:
-        if st.session_state.current_question:
-            st.write("**Introduction:**")
-            st.write(st.session_state.current_question['Introduction'])
-            st.write("**Conversation:**")
-            st.write(st.session_state.current_question['Conversation'])
-            st.write("**Question:**")
-            st.write(st.session_state.current_question['Question'])
+        if 'category' in current_question:
+            st.write(f"**Category:** {current_question['category']}")
+        st.write("**Question:**")
+        st.write(current_question['question'])
 
-            # Display the image if available
-            image_path = st.session_state.current_question.get('image_path')
-            if image_path:
-                st.image(image_path, caption="Select the correct option.")
-            else:
-                st.info("No image available for this question.")
+        # Display the image if available - check both old image_path and new images structure
+        image_path = current_question.get('image_path')
+        images = current_question.get('images', {})
+        
+        if image_path and os.path.exists(image_path):
+            st.image(image_path, caption="Select the correct option.")
+        elif images:
+            # Display all available images from the images dictionary
+            st.write("**Visual Options:**")
+            
+            # Construct full path to images directory
+            current_dir = os.path.dirname(os.path.abspath(__file__))
+            project_root = os.path.dirname(current_dir)
+            images_dir = os.path.join(project_root, "backend", "data", "images")
+            
+            # Create columns for displaying images
+            image_cols = st.columns(len(images))
+            
+            for i, (option_letter, image_filename) in enumerate(images.items()):
+                full_image_path = os.path.join(images_dir, image_filename)
+                
+                with image_cols[i]:
+                    if os.path.exists(full_image_path):
+                        st.image(full_image_path, caption=f"Option {option_letter}", use_container_width=True)
+                    else:
+                        st.info(f"Image {option_letter} not found: {full_image_path}")
+        else:
+            st.info("No image available for this question.")
 
-            options = st.session_state.current_question['Options']
-            selected = st.radio(
-                "Choose your answer:",
-                options,
-                format_func=lambda x: f"{options.index(x) + 1}. {x}"
+        options = current_question['options']
+        selected = st.radio(
+            "Choose your answer:",
+            options,
+            format_func=lambda x: f"{options.index(x) + 1}. {x}"
+        )
+        if selected and st.button("Submit Answer"):
+            selected_index = options.index(selected) + 1
+            st.session_state.feedback = st.session_state.question_generator.get_feedback(
+                current_question,
+                selected_index
             )
-            if selected and st.button("Submit Answer"):
-                selected_index = options.index(selected) + 1
-                st.session_state.feedback = st.session_state.question_generator.get_feedback(
-                    st.session_state.current_question,
-                    selected_index
-                )
+            st.rerun()
+        
+        # Navigation buttons for questions within the same topic
+        col_nav1, col_nav2 = st.columns(2)
+        with col_nav1:
+            if st.button("Previous Question") and st.session_state.current_topic_question_index > 0:
+                st.session_state.current_topic_question_index -= 1
                 st.rerun()
+        with col_nav2:
+            if st.button("Next Question") and st.session_state.current_topic_question_index < len(filtered_questions) - 1:
+                st.session_state.current_topic_question_index += 1
+                st.rerun()
+        
+        # Show question counter
+        st.write(f"Question {st.session_state.current_topic_question_index + 1} of {len(filtered_questions)} for {topic}")
+        
     with col2:
         st.write("**Audio Controls**")
-        if st.session_state.current_audio:
-            st.audio(st.session_state.current_audio)
-        elif st.session_state.current_question:
+        current_audio = current_qdata.get('audio_file')
+        
+        if current_audio:
+            st.audio(current_audio)
+        elif current_question:
             if st.button("Generate Audio"):
                 with st.spinner("Generating audio..."):
-                    question_text = st.session_state.current_question['Question']
+                    question_text = current_question['question']
                     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-                    output_file = os.path.join("backend", "data", "audio", f"question_{timestamp}.mp3")
+                    # Use absolute path to ensure correct directory
+                    current_dir = os.path.dirname(os.path.abspath(__file__))
+                    project_root = os.path.dirname(current_dir)
+                    output_file = os.path.join(project_root, "backend", "data", "audio", f"question_{timestamp}.mp3")
                     print(f"Generating audio for question: {question_text}")
                     print(f"Output file path: {output_file}")
                     audio_file = st.session_state.audio_generator.generate_audio(
@@ -253,7 +525,16 @@ def render_interactive_practice():
                     if audio_file:
                         print(f"Audio file generated: {audio_file}")
                         print(f"File exists: {os.path.exists(audio_file)}")
-                        st.session_state.current_audio = audio_file
+                        # Update the stored question with audio file
+                        current_qdata['audio_file'] = audio_file
+                        # Save updated questions
+                        stored_questions[current_qid] = current_qdata
+                        questions_file = os.path.join(
+                            os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+                            "backend", "data", "stored_questions.json"
+                        )
+                        with open(questions_file, 'w', encoding='utf-8') as f:
+                            json.dump(stored_questions, f, ensure_ascii=False, indent=2)
                         st.rerun()
                     else:
                         print("Audio generation failed.")
@@ -276,7 +557,7 @@ def render_sidebar():
         else:
             st.info("No saved questions yet. Process a video or generate questions to see them here!")
         # Add button to generate images for old questions
-        if st.button("Generate Images for Old Questions"):
+        if st.button("Generate Any Missing Images"):
             with st.spinner("Generating images for old questions..."):
                 st.session_state.question_generator.generate_image_for_old_questions()
                 st.success("Images generated for old questions!")
@@ -306,6 +587,7 @@ def render_rag_visualization():
 
 def main():
     st.title("JLPT Listening Practice")
+    add_background_image()
     initialize_session_state()
     render_sidebar()
     tab1, tab2, tab3 = st.tabs(["Process YouTube Video", "Practice Questions", "RAG Visualization"])

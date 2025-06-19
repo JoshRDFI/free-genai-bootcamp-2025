@@ -10,6 +10,13 @@ import streamlit as st
 import aiosqlite
 import base64
 
+# Configure Streamlit page - must be the first Streamlit command
+st.set_page_config(
+    page_title="Vocabulary Generator",
+    page_icon="📚",
+    layout="wide"
+)
+
 from src.generator import VocabularyGenerator
 from src.validator import JLPTValidator
 from src.converter import JapaneseConverter
@@ -141,6 +148,11 @@ class VocabularyManager:
             # Ensure connection pool is initialized before first use by any method that needs it.
             await self.db.init_db() # Initializes pool
 
+            # Update word group levels for existing groups
+            print("DEBUG: Updating word group levels")
+            logger.debug("Updating word group levels")
+            await self.db.update_word_group_levels()
+
             backup_target_dir = self.config['storage'].get('backup_dir')
             if os.path.exists(self.db.db_path):
                 print("DEBUG: Creating database backup")
@@ -201,7 +213,7 @@ class VocabularyManager:
             elif not isinstance(parts_for_db, str):
                 parts_for_db = '{}' # Default to empty JSON object string if not suitable type
             
-            group_id = await self.db.add_word_group(target_group_name)
+            group_id = await self.db.add_word_group(target_group_name, level)
             if group_id is None:
                 logger.error(f"Failed to get or create group ID for '{target_group_name}'")
                 # Decide if we should raise an error or just log and not add to DB
@@ -248,7 +260,10 @@ class VocabularyManager:
         with open(file_path, 'r', encoding='utf-8') as f:
             entries_from_file = json.load(f)
         
-        group_id = await self.db.add_word_group(group_name)
+        # Extract level from the first entry or default to N5
+        level = entries_from_file[0].get('level', 'N5') if entries_from_file else 'N5'
+        
+        group_id = await self.db.add_word_group(group_name, level)
         if group_id is None: # Should not happen if add_word_group raises on error
             st.error(f"Failed to find or create group: {group_name}")
             return []
@@ -474,13 +489,6 @@ def get_manager_instance():
 
 manager = get_manager_instance()
 
-# Configure Streamlit page
-st.set_page_config(
-    page_title="Vocabulary Generator",
-    page_icon="📚",
-    layout="wide"
-)
-
 def format_activity_type(activity_type: str) -> str:
     return {
         'typing_tutor': 'Typing Tutor',
@@ -623,6 +631,17 @@ st.markdown("""
             padding: 20px;
             border-radius: 10px;
         }
+        /* Add dark text color for all text elements */
+        .stMarkdown, .stText, .stWrite {
+            color: #333333 !important;
+        }
+        /* Style for the session info box */
+        div[data-testid="stVerticalBlock"] > div:has(> div.session-info) {
+            background-color: rgba(173, 216, 230, 0.9);
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
     </style>
 """, unsafe_allow_html=True)
 
@@ -671,7 +690,6 @@ if manager and 'user_id' in st.session_state:
             # Get user's current level
             stats = asyncio.run(manager.get_user_stats())
             current_level = stats['current_level'] if stats else 'N5'
-            current_level_num = int(current_level[1:])  # Convert N5 to 5, N4 to 4, etc.
             
             # Fetch word groups and filter by level
             word_groups_raw = asyncio.run(manager.db.get_all_word_groups(current_level))
@@ -725,9 +743,27 @@ if manager and 'user_id' in st.session_state:
         else:
             # --- UI for Active Study Session ---
             st.subheader(f"Active Study Session: {format_activity_type(st.session_state.current_session_details.get('activity_type'))}")
-            st.write(f"Session ID: {st.session_state.active_session_id}")
-            st.write(f"Studying Group ID: {st.session_state.current_session_details.get('group_id')}")
-            st.write(f"Words in session: {len(st.session_state.session_words)}")
+            
+            # Create a container for session info with the light blue background
+            session_info = f"""
+            <div style="background-color: rgba(173, 216, 230, 0.9); padding: 20px; border-radius: 10px; margin-bottom: 20px;">
+                <div style="display: flex; justify-content: space-between;">
+                    <div>
+                        <p>Session ID: {st.session_state.active_session_id}</p>
+                        <p>Studying Group ID: {st.session_state.current_session_details.get('group_id')}</p>
+                    </div>
+                    <div>
+                        <p>Words in session: {len(st.session_state.session_words)}</p>
+            """
+            if st.session_state.session_words:
+                current_word = st.session_state.session_words[st.session_state.current_word_index]
+                session_info += f"<p>Current word: {current_word['kanji']} ({current_word['romaji']}) - {current_word['english']}</p>"
+            session_info += """
+                    </div>
+                </div>
+            </div>
+            """
+            st.markdown(session_info, unsafe_allow_html=True)
 
             if not st.session_state.session_words:
                 st.warning("No words found for this session group. Ending session.")
@@ -756,15 +792,6 @@ if manager and 'user_id' in st.session_state:
                     # Only clear if we are about to show a new word and form
                     # If we just completed the session, the feedback for the last word should persist until new session
 
-                st.write(f"Current word: {current_word['kanji']} ({current_word['romaji']}) - {current_word['english']}")
-                # Display parts if available
-                if 'parts' in current_word and current_word['parts']:
-                    try:
-                        parts_data = json.loads(current_word['parts'])
-                        st.json(parts_data, expanded=False) # Display JSON, collapsed by default
-                    except json.JSONDecodeError:
-                        st.text(f"Parts of speech (raw): {current_word['parts']}") # Fallback for invalid JSON
-                
                 # --- Typing Tutor specific UI ---
                 if st.session_state.current_session_details.get('activity_type') == 'typing_tutor':
                     with st.form(key=f"typing_tutor_form_{current_word['id']}"): # Ensure unique form key per word

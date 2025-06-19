@@ -14,6 +14,7 @@ from backend.utils.helper import (
     save_json_file
 )
 from backend.image.image_generator import ImageGenerator
+from backend.image.prompt_generator import ImagePromptGenerator
 
 # Get the absolute path to the logs directory
 logs_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "logs")
@@ -42,6 +43,8 @@ class QuestionGenerator:
     def __init__(self):
         """Initialize the question generator"""
         self.questions_file = get_file_path("data", "stored_questions", "json")
+        self.image_generator = ImageGenerator()
+        self.prompt_generator = ImagePromptGenerator(self.image_generator.llm_client)
 
     def format_question(self, raw_text: str, section_num: int) -> Optional[Dict]:
         """Format raw text into a structured question"""
@@ -99,17 +102,30 @@ class QuestionGenerator:
             # Load existing questions
             questions = load_json_file(self.questions_file) or {}
 
-            # Add new question
+            # Convert the new question structure to the expected format
+            formatted_question = {
+                "Question": question.get("question", ""),
+                "Options": question.get("options", []),
+                "images": question.get("images", {})
+            }
+
+            # Add new question with the expected structure
             questions[timestamp] = {
-                "question": question,
+                "question": formatted_question,
                 "video_id": video_id,
                 "section_num": section_num,
+                "category": question.get("category", "General"),
+                "practice_type": "Dialogue Practice",  # Default practice type
+                "topic": question.get("category", "General"),  # Use category as topic
                 "created_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             }
 
             # Save to JSON file
             if not save_json_file(self.questions_file, questions):
+                logger.error(f"Failed to save questions to {self.questions_file}")
                 return False
+
+            logger.info(f"Successfully saved question {timestamp} to {self.questions_file}")
 
             # Save to text file
             text_file = get_file_path(
@@ -120,14 +136,17 @@ class QuestionGenerator:
 
             with open(text_file, 'w', encoding='utf-8') as f:
                 f.write("<question>\n")
-                for key in ['Introduction', 'Conversation', 'Question']:
-                    if key in question:
-                        f.write(f"{key}:\n{question[key]}\n\n")
+                f.write(f"Category: {question.get('category', 'General')}\n\n")
+                f.write(f"Question: {question.get('question', '')}\n\n")
+                f.write("Options:\n")
+                for i, option in enumerate(question.get('options', []), 1):
+                    f.write(f"{i}. {option}\n")
+                f.write(f"\nCorrect Answer: {question.get('correct_answer', 1)}\n")
                 f.write("</question>\n")
 
             return True
         except Exception as e:
-            print(f"Error saving question: {str(e)}")
+            logger.error(f"Error saving question: {str(e)}")
             return False
 
     def generate_questions(self, transcript: List[Dict], video_id: str, num_questions: int = 3) -> List[Dict]:
@@ -169,32 +188,40 @@ class QuestionGenerator:
 
             # Process and format each question
             processed_questions = []
-            image_generator = ImageGenerator()
             for i, raw_question in enumerate(raw_questions, 1):
                 try:
                     logger.info(f"Processing question {i}")
+                    
+                    # Generate image prompts for each option
+                    prompts = self.prompt_generator.generate_prompts(
+                        raw_question.get("Question", ""),
+                        raw_question.get("Options", [])
+                    )
+                    
+                    # Generate images for each option
+                    base_filename = f"question_{video_id}_{i}"
+                    image_paths = self.image_generator.generate_option_images(prompts, base_filename)
+                    
+                    # Create the question object with images
+                    question_obj = {
+                        "video_id": video_id,
+                        "section_num": i,
+                        "category": raw_question.get("Category", "General"),
+                        "question": raw_question.get("Question", ""),
+                        "options": raw_question.get("Options", []),
+                        "correct_answer": raw_question.get("CorrectAnswer", 1),
+                        "images": image_paths
+                    }
+                    
                     # Save the question
-                    if self.save_question(raw_question, video_id, i):
+                    if self.save_question(question_obj, video_id, i):
                         logger.info(f"Successfully saved question {i}")
-                        # Generate image for the question
-                        prompt = raw_question.get("Question", "")
-                        options = raw_question.get("Options", [])
-                        # Use a simple prompt: question + options
-                        image_prompt = prompt + " " + ", ".join(options)
-                        image_data = image_generator.generate_image(image_prompt)
-                        image_path = None
-                        if image_data:
-                            image_filename = f"question_{video_id}_{i}.png"
-                            image_path = os.path.join("backend", "data", "images", image_filename)
-                            image_generator.save_image(image_data, image_path)
-                        # Add image_path to the question dict
-                        raw_question["image_path"] = image_path
-                        processed_questions.append(raw_question)
+                        processed_questions.append(question_obj)
                     else:
                         logger.error(f"Failed to save question {i}")
+                        
                 except Exception as e:
                     logger.error(f"Error processing question {i}: {str(e)}", exc_info=True)
-                    # Continue processing other questions even if one fails
                     continue
 
             if not processed_questions:
@@ -292,7 +319,7 @@ class QuestionGenerator:
 
     def generate_image_for_old_questions(self):
         """Generate images for old questions that do not have an image_path."""
-        print("generate_image_for_old_questions called")
+        logger.info("Starting image generation for old questions")
         try:
             # Load existing questions from JSON file
             questions = load_json_file(self.questions_file) or {}
@@ -300,29 +327,74 @@ class QuestionGenerator:
             if not questions:
                 logger.info("No stored questions found.")
                 return
+
+            # Get absolute path for images directory
+            current_dir = os.path.dirname(os.path.abspath(__file__))
+            project_root = os.path.dirname(os.path.dirname(current_dir))
+            images_dir = os.path.join(project_root, "backend", "data", "images")
+            
+            logger.info(f"Using absolute images directory path: {images_dir}")
+            
+            # Ensure images directory exists
+            os.makedirs(images_dir, exist_ok=True)
+            
+            # Check directory permissions and contents
+            if not os.access(images_dir, os.W_OK):
+                logger.error(f"No write permission for directory: {images_dir}")
+                return
+                
+            # List current contents of images directory
+            existing_files = os.listdir(images_dir)
+            logger.info(f"Current contents of images directory: {existing_files}")
+            
             image_generator = ImageGenerator()
             updated = False
+            failed_questions = []
+
             for qid, qdata in questions.items():
-                question = qdata.get("question", {})
-                if not question.get("image_path"):
-                    logger.info(f"Question {qid} missing image_path, generating image.")
-                    prompt = question.get("Question", "")
-                    options = question.get("Options", [])
-                    image_prompt = prompt + " " + ", ".join(options)
-                    image_data = image_generator.generate_image(image_prompt)
-                    if image_data:
-                        image_filename = f"question_{qid}.png"
-                        image_path = os.path.join("backend", "data", "images", image_filename)
-                        image_generator.save_image(image_data, image_path)
-                        question["image_path"] = image_path
+                try:
+                    question = qdata.get("question", {})
+                    base_filename = f"question_{qid}"
+                    
+                    logger.info(f"Processing question {qid}")
+                    
+                    # Generate prompts for each option
+                    prompts = self.prompt_generator.generate_prompts(
+                        question.get("Question", ""),
+                        question.get("Options", [])
+                    )
+                    
+                    # Generate images for each option
+                    image_paths = image_generator.generate_option_images(prompts, base_filename)
+                    
+                    if image_paths:
+                        # Update question with new images structure
+                        question["images"] = image_paths
+                        # Remove old image_path if it exists
+                        question.pop("image_path", None)
                         updated = True
+                        logger.info(f"Successfully generated images for question {qid}")
                     else:
-                        logger.warning(f"Failed to generate image for question {qid}.")
+                        logger.error(f"Failed to generate images for question {qid}")
+                        failed_questions.append(qid)
+                        
+                except Exception as e:
+                    logger.error(f"Error processing question {qid}: {str(e)}", exc_info=True)
+                    failed_questions.append(qid)
+                    continue
+
             if updated:
-                save_json_file(self.questions_file, questions)
-                logger.info("Updated old questions with generated images.")
+                if save_json_file(self.questions_file, questions):
+                    logger.info("Successfully updated questions file with new image paths")
+                else:
+                    logger.error("Failed to save updated questions file")
+
+            if failed_questions:
+                logger.warning(f"Failed to generate images for {len(failed_questions)} questions: {failed_questions}")
             else:
-                logger.info("No old questions needed image generation.")
+                logger.info("Successfully processed all questions")
+
         except Exception as e:
-            logger.error(f"Error generating images for old questions: {str(e)}")
+            logger.error(f"Error in generate_image_for_old_questions: {str(e)}", exc_info=True)
+            raise
     

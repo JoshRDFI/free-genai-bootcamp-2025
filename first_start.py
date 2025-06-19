@@ -624,6 +624,13 @@ def main():
             return False
             
         logger.info("Setup completed successfully!")
+        
+        # Run launch.sh after successful setup
+        logger.info("Launching the project...")
+        if not run_command("bash ./launch.sh"):
+            logger.error("Failed to launch the project")
+            return False
+            
         return True
             
     except Exception as e:

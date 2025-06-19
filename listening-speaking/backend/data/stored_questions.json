@@ -5,15 +5,22 @@
       "Conversation": "男の人：このバッグはどれくらいしますか 店員：このバッグは5,000円です。他に何かご覧になりたいものがあれば教えてください。 女の人：あの、赤い靴は在庫ありますか？ 店員：はい、赤い靴はサイズ7とサイズ8があります。 男の人：じゃあ、このバッグを購入します。",
       "Question": "男の人が購入する商品は何ですか A) バッグ B) 靴 C) 靴とバッグ D) 何も購入しない",
       "Options": [
-        "ピザを食べる",
-        "ハンバーガーを食べる",
-        "サラダを食べる",
-        "パスタを食べる"
-      ]
+        "バッグ",
+        "靴",
+        "靴とバッグ",
+        "何も購入しない"
+      ],
+      "images": {
+        "A": "question_20250215_204111_option_A.png",
+        "B": "question_20250215_204111_option_B.png",
+        "C": "question_20250215_204111_option_C.png",
+        "D": "question_20250215_204111_option_D.png"
+      }
     },
     "practice_type": "Dialogue Practice",
     "topic": "Shopping",
-    "created_at": "2025-02-15 20:41:11"
+    "created_at": "2025-02-15 20:41:11",
+    "audio_file": "/home/sage/free-genai-bootcamp-2025/listening-speaking/backend/data/audio/question_20250618_144257.mp3"
   },
   "20250215_204153": {
     "question": {
@@ -21,11 +28,17 @@
       "Conversation": "男: 来週の旅行はどこへ行きますか？ 女: 京都に行きます。桜が見たくて。 男: そうですか、楽しみですね。新幹線で行きますか？ 女: いいえ、飛行機の方が早いですよ。友達と一緒だから。",
       "Question": "女の人はどこへ旅行に行きますか？",
       "Options": [
-        "a) 東京",
-        "b) 大阪",
-        "c) 京都",
-        "d) 北海道"
-      ]
+        "東京",
+        "大阪",
+        "京都",
+        "北海道"
+      ],
+      "images": {
+        "A": "question_20250215_204153_option_A.png",
+        "B": "question_20250215_204153_option_B.png",
+        "C": "question_20250215_204153_option_C.png",
+        "D": "question_20250215_204153_option_D.png"
+      }
     },
     "practice_type": "Dialogue Practice",
     "topic": "Travel",
@@ -37,16 +50,21 @@
       "Conversation": "男の人：このバッグはどれくらいしますか 店員：このバッグは5,000円です。他に何かご覧になりたいものがあれば教えてください。 女の人：あの、赤い靴は在庫ありますか？ 店員：はい、赤い靴はサイズ7とサイズ8があります。 男の人：じゃあ、このバッグを購入します。",
       "Question": "男の人が購入する商品は何ですか A) バッグ B) 靴 C) 靴とバッグ D) 何も購入しない",
       "Options": [
-        "ピザを食べる",
-        "ハンバーガーを食べる",
-        "サラダを食べる",
-        "パスタを食べる"
-      ]
+        "バッグ",
+        "靴",
+        "靴とバッグ",
+        "何も購入しない"
+      ],
+      "images": {
+        "A": "question_20250215_211441_option_A.png",
+        "B": "question_20250215_211441_option_B.png",
+        "C": "question_20250215_211441_option_C.png",
+        "D": "question_20250215_211441_option_D.png"
+      }
     },
     "practice_type": "Dialogue Practice",
     "topic": "Shopping",
-    "created_at": "2025-02-15 21:14:41",
-    "audio_file": "/mnt/c/Users/andre/Sites/omenking/free-genai-bootcamp-2025/listening-comp/frontend/static/audio/question_20250215_211437.mp3"
+    "created_at": "2025-02-15 21:14:41"
   },
   "20250215_211742": {
     "question": {
@@ -54,15 +72,89 @@
       "Conversation": "男の人：このバッグはどれくらいしますか 店員：このバッグは5,000円です。他に何かご覧になりたいものがあれば教えてください。 女の人：あの、赤い靴は在庫ありますか？ 店員：はい、赤い靴はサイズ7とサイズ8があります。 男の人：じゃあ、このバッグを購入します。",
       "Question": "男の人が購入する商品は何ですか A) バッグ B) 靴 C) 靴とバッグ D) 何も購入しない",
       "Options": [
-        "ピザを食べる",
-        "ハンバーガーを食べる",
-        "サラダを食べる",
-        "パスタを食べる"
-      ]
+        "バッグ",
+        "靴",
+        "靴とバッグ",
+        "何も購入しない"
+      ],
+      "images": {
+        "A": "question_20250215_211742_option_A.png",
+        "B": "question_20250215_211742_option_B.png",
+        "C": "question_20250215_211742_option_C.png",
+        "D": "question_20250215_211742_option_D.png"
+      }
     },
     "practice_type": "Dialogue Practice",
     "topic": "Shopping",
-    "created_at": "2025-02-15 21:17:42",
-    "audio_file": "/mnt/c/Users/andre/Sites/omenking/free-genai-bootcamp-2025/listening-comp/frontend/static/audio/question_20250215_211737.mp3"
+    "created_at": "2025-02-15 21:17:42"
+  },
+  "20250618_212509": {
+    "question": {
+      "Question": "クラテルの利金はどのように見られている?",
+      "Options": [
+        "暑いうちに食べるべきだ",
+        "辛いので食べないで",
+        "お腹が減っている",
+        "焼けそうに辛い"
+      ],
+      "images": {
+        "A": "test_image_A.png",
+        "B": "test_image_B.png",
+        "C": "test_image_C.png",
+        "D": "test_image_D.png"
+      }
+    },
+    "video_id": "test_video_123",
+    "section_num": 1,
+    "category": "Food/Cooking",
+    "practice_type": "Dialogue Practice",
+    "topic": "Food/Cooking",
+    "created_at": "2025-06-18 21:25:09"
+  },
+  "20250618_214307": {
+    "question": {
+      "Question": "このコンビネーションが、レシピには入るべきか?",
+      "Options": [
+        "これは本物の絡みだよ!",
+        "これであなたの味は絶対に必要ない。",
+        "これはオバケイイベントの必須",
+        "この強烈な絡みとうまさだけが必要"
+      ],
+      "images": {
+        "A": "question_test_video_full_123_1_option_A.png",
+        "B": "question_test_video_full_123_1_option_B.png",
+        "C": "question_test_video_full_123_1_option_C.png",
+        "D": "question_test_video_full_123_1_option_D.png"
+      }
+    },
+    "video_id": "test_video_full_123",
+    "section_num": 1,
+    "category": "Food/Cooking",
+    "practice_type": "Dialogue Practice",
+    "topic": "Food/Cooking",
+    "created_at": "2025-06-18 21:43:07"
+  },
+  "20250618_215959": {
+    "question": {
+      "Question": "雪ひらちンは、俺に何でかつつもり?",
+      "Options": [
+        "人間は経った一人",
+        "レシピもまだあったよね",
+        "この強烈な絡みとうまさだけが必要",
+        "これは本物の絡みだよ!"
+      ],
+      "images": {
+        "A": "question_test_video_full_123_2_option_A.png",
+        "B": "question_test_video_full_123_2_option_B.png",
+        "C": "question_test_video_full_123_2_option_C.png",
+        "D": "question_test_video_full_123_2_option_D.png"
+      }
+    },
+    "video_id": "test_video_full_123",
+    "section_num": 2,
+    "category": "Food/Cooking",
+    "practice_type": "Dialogue Practice",
+    "topic": "Food/Cooking",
+    "created_at": "2025-06-18 21:59:59"
   }
 }

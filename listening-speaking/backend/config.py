@@ -64,10 +64,10 @@ class ServiceConfig:
         "default": 30,
         "llm": 60,
         "tts": 120,
-        "asr": 60,
+        "asr": 300,  # Increased from 60 to 300 seconds for large audio files
         "vision": 60,
         "embedding": 30,
-        "waifu-diffusion": 120,  # Longer timeout for image generation
+        "waifu-diffusion": 900,  # Increased timeout for CPU-based image generation (15 minutes)
         "chromadb": 30  # Timeout for ChromaDB operations
     }
     

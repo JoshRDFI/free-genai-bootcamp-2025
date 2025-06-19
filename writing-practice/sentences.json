@@ -83,5 +83,11 @@
     "english": "I am a Japanese person.",
     "category": "Basic Greetings",
     "level": "N5"
+  },
+  {
+    "japanese": "\u3055\u3088\u3046\u306a\u3089\u3002",
+    "english": "Goodbye.",
+    "category": "Basic Greetings",
+    "level": "N5"
   }
 ]

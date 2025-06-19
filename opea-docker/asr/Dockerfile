@@ -25,7 +25,8 @@ RUN pip install --no-cache-dir -r main.txt
 
 # After installing base.txt and main.txt
 RUN pip install numpy==1.22.0
-RUN pip install whisper
+RUN pip uninstall -y whisper || true
+RUN pip install openai-whisper
 
 # Copy and install container-specific requirements
 COPY extra-requirements.txt .
@@ -36,7 +37,7 @@ COPY app.py /app/app.py
 COPY . .
 
 # Create directory for ASR data
-RUN mkdir -p /home/asr/.xtts_data
+RUN mkdir -p /home/asr/.asr_data
 
 # Expose the port
 EXPOSE 9300
