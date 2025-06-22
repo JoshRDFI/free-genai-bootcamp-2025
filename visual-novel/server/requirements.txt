@@ -11,4 +11,15 @@ SQLAlchemy>=2.0.28
 Flask-Migrate>=3.1.0
 alembic>=1.7.7
 
+# HTTP and API
+requests>=2.28.0
+httpx>=0.24.0
+
+# FastAPI and Pydantic (for API models)
+fastapi>=0.100.0
+pydantic>=2.0.0
+
+# Environment variables
+python-dotenv>=1.0.0
+
 # Note: Image processing is handled by Docker services

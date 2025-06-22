@@ -35,7 +35,7 @@ ASR_URL = os.environ.get('ASR_URL', 'http://localhost:9300')
 LLM_VISION_URL = os.environ.get('LLM_VISION_URL', 'http://localhost:9101')
 IMAGE_GEN_URL = os.environ.get('WAIFU_DIFFUSION_URL', 'http://localhost:9500')
 EMBEDDINGS_URL = os.environ.get('EMBEDDINGS_URL', 'http://localhost:6000')
-DB_PATH = os.environ.get('DB_PATH', '../data/shared_db/visual_novel.db')
+DB_PATH = os.environ.get('DB_PATH', '/app/data/shared_db/visual_novel.db')
 
 # LLM Service Configuration
 OLLAMA_URL = os.environ.get('OLLAMA_URL', 'http://localhost:11434')
@@ -68,7 +68,8 @@ def init_db():
         scene_id TEXT NOT NULL,
         completed BOOLEAN DEFAULT 0,
         last_accessed TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (user_id) REFERENCES users(id)
+        FOREIGN KEY (user_id) REFERENCES users(id),
+        UNIQUE(user_id, lesson_id, scene_id)
     )
     ''')
     
@@ -133,12 +134,21 @@ def create_app(config_object=None):
         cursor = conn.cursor()
         
         try:
+            # First check if user already exists
+            cursor.execute('SELECT id FROM users WHERE username = ?', (username,))
+            existing_user = cursor.fetchone()
+            
+            if existing_user:
+                # User already exists, return the existing user's ID
+                return jsonify({'id': existing_user[0], 'username': username}), 200
+            
+            # Create new user
             cursor.execute('INSERT INTO users (username) VALUES (?)', (username,))
             conn.commit()
             user_id = cursor.lastrowid
             return jsonify({'id': user_id, 'username': username}), 201
-        except sqlite3.IntegrityError:
-            return jsonify({'error': 'Username already exists'}), 409
+        except Exception as e:
+            return jsonify({'error': str(e)}), 500
         finally:
             conn.close()
 
@@ -176,15 +186,33 @@ def create_app(config_object=None):
         conn = sqlite3.connect(DB_PATH)
         cursor = conn.cursor()
         
+        # Check if progress record already exists
         cursor.execute(
-            '''
-            INSERT INTO progress (user_id, lesson_id, scene_id, completed, last_accessed)
-            VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)
-            ON CONFLICT(user_id, lesson_id, scene_id) 
-            DO UPDATE SET completed = ?, last_accessed = CURRENT_TIMESTAMP
-            ''',
-            (user_id, lesson_id, scene_id, completed, completed)
+            'SELECT id FROM progress WHERE user_id = ? AND lesson_id = ? AND scene_id = ?',
+            (user_id, lesson_id, scene_id)
         )
+        
+        existing_record = cursor.fetchone()
+        
+        if existing_record:
+            # Update existing record
+            cursor.execute(
+                '''
+                UPDATE progress 
+                SET completed = ?, last_accessed = CURRENT_TIMESTAMP
+                WHERE user_id = ? AND lesson_id = ? AND scene_id = ?
+                ''',
+                (completed, user_id, lesson_id, scene_id)
+            )
+        else:
+            # Insert new record
+            cursor.execute(
+                '''
+                INSERT INTO progress (user_id, lesson_id, scene_id, completed, last_accessed)
+                VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)
+                ''',
+                (user_id, lesson_id, scene_id, completed)
+            )
         
         conn.commit()
         conn.close()
@@ -212,6 +240,32 @@ def create_app(config_object=None):
                 return jsonify({'error': 'TTS service error', 'details': response.text}), 500
         except requests.RequestException as e:
             return jsonify({'error': 'TTS service unavailable', 'details': str(e)}), 503
+
+    @app.route('/api/speech-to-text', methods=['POST'])
+    def speech_to_text():
+        data = request.json
+        audio_data = data.get('audio_data')
+        language = data.get('language', 'ja-JP')
+        
+        if not audio_data:
+            return jsonify({'error': 'Audio data is required'}), 400
+        
+        try:
+            response = requests.post(
+                f"{ASR_URL}/transcribe",
+                json={
+                    'audio_data': audio_data,
+                    'language': language
+                }
+            )
+            
+            if response.status_code == 200:
+                result = response.json()
+                return jsonify({'text': result.get('text', '')})
+            else:
+                return jsonify({'error': 'ASR service error', 'details': response.text}), 500
+        except requests.RequestException as e:
+            return jsonify({'error': 'ASR service unavailable', 'details': str(e)}), 503
 
     @app.route('/api/translate', methods=['POST'])
     def translate_text():
@@ -309,7 +363,7 @@ def create_app(config_object=None):
             response = requests.post(
                 f"{LLM_TEXT_URL}/api/chat",
                 json={
-                    "model": "llama3.2",
+                    "model": OLLAMA_MODEL,
                     "messages": [
                         {
                             "role": "system",
@@ -369,7 +423,7 @@ def create_app(config_object=None):
             response = requests.post(
                 f"{LLM_TEXT_URL}/api/chat",
                 json={
-                    "model": "llama3.2",
+                    "model": OLLAMA_MODEL,
                     "messages": [
                         {
                             "role": "system",
@@ -421,7 +475,18 @@ def create_app(config_object=None):
                     lesson_data = json.loads(lesson_text)
                     return jsonify({'lesson': lesson_data})
                 except json.JSONDecodeError:
-                    # If parsing fails, return the raw text
+                    # If parsing fails, try to extract JSON from markdown code blocks
+                    import re
+                    # Look for JSON code blocks (```json ... ```)
+                    json_match = re.search(r'```(?:json)?\s*(\{.*?\})\s*```', lesson_text, re.DOTALL)
+                    if json_match:
+                        try:
+                            lesson_data = json.loads(json_match.group(1))
+                            return jsonify({'lesson': lesson_data})
+                        except json.JSONDecodeError:
+                            pass
+                    
+                    # If still failing, return the raw text
                     return jsonify({'error': 'Failed to parse lesson', 'raw_response': lesson_text}), 500
             else:
                 return jsonify({'error': 'Lesson generation error', 'details': response.text}), 500
@@ -539,7 +604,7 @@ def create_app(config_object=None):
             response = await httpx.post(
                 f"{OLLAMA_URL}/api/chat",
                 json={
-                    "model": "llama3.2",
+                    "model": OLLAMA_MODEL,
                     "messages": [
                         {"role": "user", "content": request.prompt}
                     ],
@@ -560,7 +625,7 @@ def create_app(config_object=None):
             response = await httpx.post(
                 f"{OLLAMA_URL}/api/chat",
                 json={
-                    "model": "llama3.2",
+                    "model": OLLAMA_MODEL,
                     "messages": [
                         {"role": "system", "content": "You are a helpful assistant that explains Japanese text in simple terms."},
                         {"role": "user", "content": f"Please explain this Japanese text in simple terms: {request.text}"}
@@ -582,7 +647,7 @@ def create_app(config_object=None):
             response = await httpx.post(
                 f"{OLLAMA_URL}/api/chat",
                 json={
-                    "model": "llama3.2",
+                    "model": OLLAMA_MODEL,
                     "messages": [
                         {"role": "system", "content": "You are a helpful assistant that analyzes Japanese text for grammar and vocabulary."},
                         {"role": "user", "content": f"Please analyze this Japanese text: {request.text}"}

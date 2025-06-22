@@ -16,10 +16,11 @@ def run_tests():
     # Create a test suite
     test_suite = unittest.TestSuite()
     
-    # Add test cases
-    test_suite.addTest(unittest.makeSuite(TestAPIService))
-    test_suite.addTest(unittest.makeSuite(TestJLPTCurriculum))
-    test_suite.addTest(unittest.makeSuite(TestProgressTracker))
+    # Add test cases using the new recommended method
+    loader = unittest.TestLoader()
+    test_suite.addTest(loader.loadTestsFromTestCase(TestAPIService))
+    test_suite.addTest(loader.loadTestsFromTestCase(TestJLPTCurriculum))
+    test_suite.addTest(loader.loadTestsFromTestCase(TestProgressTracker))
     
     # Run the tests
     runner = unittest.TextTestRunner(verbosity=2)

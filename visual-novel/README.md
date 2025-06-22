@@ -70,15 +70,8 @@ The project is organized into several components:
 ### Installation
 
 1. Clone this repository
-2. Ensure opea-docker is running
-3. Start the visual novel services:
-
-```bash
-cd visual-novel/docker
-docker-compose up -d
-```
-
-4. Access the web version at http://localhost:8000 or run the Ren'Py game directly
+2. Ensure opea-docker is running (Visual Novel services are now included automatically)
+3. Access the web version at http://localhost:8001 or run the Ren'Py game directly
 
 See the [Setup Guide](docs/setup.md) for detailed installation instructions.
 

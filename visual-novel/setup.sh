@@ -36,7 +36,7 @@ if ! python -c "import flask, flask_cors, flask_sqlalchemy" 2>/dev/null; then
 fi
 cd ..
 
-# Check if opea-docker services are running
+# Check if opea-docker services are running (including Visual Novel services)
 echo "Checking opea-docker services..."
 cd ../opea-docker
 if ! docker compose ps | grep -q "Up"; then
@@ -52,15 +52,16 @@ if ! docker compose ps | grep -q "Up"; then
 fi
 cd ../visual-novel
 
-# Check if visual novel Docker containers are running
-echo "Checking visual novel Docker containers..."
-if ! docker compose -f docker/docker-compose.yml ps | grep -q "Up"; then
-    echo "Visual novel Docker containers are not running."
-    echo "Starting visual novel containers..."
-    docker compose -f docker/docker-compose.yml up -d
-    
-    echo "Waiting for containers to start..."
-    sleep 5
+# Check if Visual Novel services are running (they should be part of opea-docker now)
+echo "Checking Visual Novel services..."
+if ! docker compose ps | grep -q "vn-game-server.*Up"; then
+    echo "Visual Novel services are not running."
+    echo "The Visual Novel services should be started automatically with opea-docker."
+    echo "Please restart opea-docker services:"
+    echo "  cd ../opea-docker"
+    echo "  docker compose down"
+    echo "  docker compose up -d"
+    exit 1
 fi
 
 # Check Docker network
@@ -77,7 +78,7 @@ if curl -s http://localhost:8080/api/health > /dev/null; then
     echo "✅ Visual novel API server is responding"
 else
     echo "❌ Visual novel API server is not responding"
-    echo "Check the logs with: docker compose -f docker/docker-compose.yml logs vn-game-server"
+    echo "Check the logs with: docker compose logs vn-game-server"
 fi
 
 echo ""
@@ -89,7 +90,7 @@ echo "✅ opea-docker services: running"
 echo "✅ Visual novel containers: running"
 echo ""
 echo "Access URLs:"
-echo "  Web version: http://localhost:8000"
+echo "  Web version: http://localhost:8001"
 echo "  API server: http://localhost:8080"
 echo ""
 echo "To run the server locally for development:"
@@ -98,4 +99,4 @@ echo "  source .venv-vn/bin/activate"
 echo "  python app.py"
 echo ""
 echo "To view container logs:"
-echo "  docker compose -f docker/docker-compose.yml logs -f" 
+echo "  docker compose logs -f" 

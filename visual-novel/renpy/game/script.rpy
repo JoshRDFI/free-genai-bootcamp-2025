@@ -34,7 +34,14 @@ init python:
     api = APIService()
     jlpt = JLPTCurriculum()
     
+    # Test Ollama connection
+    api.test_ollama_connection()
+    
     # Helper functions that wrap the API service
+    def create_user(username):
+        """Create a new user in the database"""
+        return api.create_user(username)
+    
     def save_progress(lesson_id, scene_id, completed=False):
         """Save player progress to the server"""
         result = api.save_progress(user_id, lesson_id, scene_id, completed)
@@ -79,7 +86,9 @@ init python:
     
     def generate_lesson(topic, grammar_points=None, vocabulary_focus=None, lesson_number=1, scene_setting="classroom"):
         """Generate a complete lesson using the LLM"""
+        print(f"DEBUG: generate_lesson called with topic: {topic}")
         lesson = api.generate_lesson(topic, grammar_points, vocabulary_focus, lesson_number, scene_setting)
+        print(f"DEBUG: api.generate_lesson returned: {lesson}")
         if not lesson:
             renpy.notify("Lesson generation failed")
         return lesson
@@ -122,6 +131,22 @@ screen vocab_added():
         ypadding 10
         text "Added to vocabulary!" size 20
 
+# Custom screen for yes/no prompts
+screen yes_no_prompt(message):
+    modal True
+    frame:
+        xalign 0.5
+        yalign 0.5
+        xpadding 20
+        ypadding 20
+        vbox:
+            spacing 10
+            text message size 20
+            hbox:
+                spacing 20
+                textbutton "Yes" action [Return(True), Hide("yes_no_prompt")]
+                textbutton "No" action [Return(False), Hide("yes_no_prompt")]
+
 # The game starts here
 label start:
     # Player name input
@@ -129,6 +154,14 @@ label start:
     $ player_name = player_name.strip()
     if player_name == "":
         $ player_name = "Student"
+    
+    # Create user
+    $ user_id = create_user(player_name)
+    if user_id is None:
+        $ user_id = 1  # Fallback to default user ID
+        "Note: Could not create user profile. Using default settings."
+    else:
+        "User profile created successfully with ID: [user_id]"
     
     # Save initial progress
     $ save_progress("lesson1", "intro")

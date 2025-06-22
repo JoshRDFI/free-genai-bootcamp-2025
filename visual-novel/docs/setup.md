@@ -28,19 +28,17 @@ The visual novel requires two sets of services:
 **Option A: Use the main launcher (Recommended)**
 ```bash
 # From the project root directory
-python first_start.py  # Creates virtual environments and starts opea-docker services
-python project_start.py  # Launches the visual novel with all required services
+python first_start.py  # Creates virtual environments and starts opea-docker services (including Visual Novel)
+python project_start.py  # Launches the visual novel (services already running)
 ```
 
 **Option B: Manual setup**
 ```bash
-# 1. Create virtual environments and start opea-docker services
+# 1. Create virtual environments and start opea-docker services (includes Visual Novel)
 python first_start.py
 
-# 2. Start visual novel services
-cd visual-novel
-chmod +x setup.sh
-./setup.sh
+# 2. Visual Novel services are now automatically included in opea-docker
+# No additional setup needed!
 ```
 
 ### Step 2: Configure Environment Variables
@@ -80,16 +78,23 @@ USE_REMOTE_DB=true
 Check that all services are running correctly:
 
 ```bash
-# Check opea-docker services
+# Check all services including Visual Novel
 cd opea-docker
 docker compose ps
-
-# Check visual novel services
-cd ../visual-novel
-docker compose -f docker/docker-compose.yml ps
 ```
 
-You should see all services in the "Up" state.
+You should see all services in the "Up" state, including:
+- ollama-server
+- chromadb
+- tts
+- asr
+- llm-vision
+- mangaocr
+- waifu-diffusion
+- guardrails
+- embeddings
+- vn-game-server
+- vn-web-server
 
 Test the API Gateway:
 
@@ -106,7 +111,7 @@ You should receive a response like: `{"status":"ok"}`
 Access the web version of the visual novel by opening a browser and navigating to:
 
 ```
-http://localhost:8000
+http://localhost:8001
 ```
 
 #### Desktop Version (Development)
@@ -144,7 +149,7 @@ The visual novel uses a microservices architecture:
 
 ### Visual Novel Services
 - **vn-game-server**: Game server and API gateway (port 8080)
-- **vn-web-server**: Web server for Ren'Py web export (port 8000)
+- **vn-web-server**: Web server for Ren'Py web export (port 8001)
 
 ## Configuration Options
 
@@ -169,13 +174,9 @@ The application communicates with various AI services through the opea-docker co
 If any of the Docker services fail to start, check the logs:
 
 ```bash
-# Check opea-docker services
+# Check all services including Visual Novel
 cd opea-docker
 docker compose logs
-
-# Check visual novel services
-cd ../visual-novel
-docker compose -f docker/docker-compose.yml logs
 ```
 
 Common issues include:
@@ -187,16 +188,16 @@ Common issues include:
 
 If the web version doesn't load correctly:
 
-1. Check that the web server is running: `docker compose -f docker/docker-compose.yml ps vn-web-server`
+1. Check that the web server is running: `docker compose ps vn-web-server`
 2. Verify that the Ren'Py web export files exist in `visual-novel/renpy/web`
-3. Check the web server logs: `docker compose -f docker/docker-compose.yml logs vn-web-server`
+3. Check the web server logs: `docker compose logs vn-web-server`
 
 ### API Communication Issues
 
 If the visual novel can't communicate with the API services:
 
-1. Ensure the game server is running: `docker compose -f docker/docker-compose.yml ps vn-game-server`
-2. Check the game server logs: `docker compose -f docker/docker-compose.yml logs vn-game-server`
+1. Ensure the game server is running: `docker compose ps vn-game-server`
+2. Check the game server logs: `docker compose logs vn-game-server`
 3. Verify that the opea-docker services are accessible from the game server container
 
 ### Virtual Environment Issues

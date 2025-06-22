@@ -101,9 +101,8 @@ PROJECTS = {
     "visual-novel": {
         "name": "Visual Novel",
         "description": "Interactive story with AI-generated content",
-        "docker_services": ["ollama-server", "tts", "asr", "mangaocr", "llm-vision", "embeddings", "chromadb", "guardrails", "waifu-diffusion"],
-        "requires_gpu": False,
-        "run_command": "visual-novel app.py 8505"
+        "docker_services": ["ollama-server", "tts", "asr", "mangaocr", "llm-vision", "embeddings", "chromadb", "guardrails", "waifu-diffusion", "vn-game-server", "vn-web-server"],
+        "requires_gpu": False
     },
     "lang-portal": {
         "name": "Language Portal",
@@ -371,8 +370,7 @@ def validate_project(project_name: str, project: dict) -> tuple[bool, str]:
             required_files = [
                 "app.py",
                 "server",
-                "renpy",
-                "docker/docker-compose.yml"
+                "renpy"
             ]
         else:
             return False, f"Unknown project type: {project_name}"
@@ -484,18 +482,54 @@ def run_project(project_name):
         # Check if Docker services are required and start them if needed
         if project.get('docker_services'):
             status_placeholder.info("Checking required services...")
-            if not verify_services(project['docker_services']):
+            
+            # Filter out Visual Novel services for the main verification
+            main_services = [s for s in project['docker_services'] if not s.startswith('vn-')]
+            vn_services = [s for s in project['docker_services'] if s.startswith('vn-')]
+            
+            if not verify_services(main_services, vn_services):
                 status_placeholder.info("Starting required Docker services...")
                 if not start_docker_services(project_name):
                     st.error("Failed to start required Docker services.")
                     return False
                 # Wait for services to be fully up
                 time.sleep(5)
-                if not verify_services(project['docker_services']):
+                if not verify_services(main_services, vn_services):
                     st.error("Required Docker services are still not running after startup attempt.")
                     return False
 
-        # Run the project command
+        # Special handling for visual-novel (web-based, no Streamlit)
+        if project_name == "visual-novel":
+            status_placeholder.info("Checking Visual Novel services...")
+            
+            # Wait a moment for services to be fully ready
+            time.sleep(2)
+            
+            # Test if the web server is responding
+            try:
+                response = requests.get("http://localhost:8001", timeout=10)
+                if response.status_code == 200:
+                    status_placeholder.success("Visual Novel is ready!")
+                    st.info("""
+                    The Visual Novel is now running! You can access it at:
+                    http://localhost:8001
+                    
+                    The web interface should open automatically in your browser.
+                    """)
+                    
+                    # Try to open the browser
+                    try:
+                        webbrowser.open("http://localhost:8001")
+                    except:
+                        pass  # Browser opening is optional
+                    
+                    return True
+                else:
+                    raise Exception(f"Web server returned status code: {response.status_code}")
+            except requests.exceptions.RequestException as e:
+                raise Exception(f"Visual Novel web server is not responding: {str(e)}")
+        
+        # For Streamlit projects, run the project command
         status_placeholder.info(f"Starting {project_name}...")
         
         # Get the appropriate Python interpreter and Streamlit command

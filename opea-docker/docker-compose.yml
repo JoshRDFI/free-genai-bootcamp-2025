@@ -11,13 +11,7 @@ services:
     environment:
       - OLLAMA_HOST=http://0.0.0.0:11434
       - OLLAMA_MAX_LOADED_MODELS=0
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: all
-              capabilities: [gpu]
+      - CUDA_VISIBLE_DEVICES=""
 
   chromadb:
     image: chromadb/chroma:latest
@@ -151,6 +145,53 @@ services:
       - CUDA_VISIBLE_DEVICES=""
     depends_on:
       - chromadb
+    restart: unless-stopped
+
+  # Visual Novel Services
+  vn-game-server:
+    build:
+      context: ../visual-novel/server
+    container_name: vn-game-server
+    ports:
+      - "8080:8080"
+    volumes:
+      - ../visual-novel/server:/app
+      - ${SHARED_DB_PATH:-../data/shared_db}:/app/data/shared_db
+    environment:
+      - OLLAMA_SERVER_URL=http://ollama-server:11434
+      - LLM_TEXT_URL=http://ollama-server:11434
+      - GUARDRAILS_URL=http://guardrails:9400
+      - CHROMADB_URL=http://chromadb:8000
+      - TTS_URL=http://tts:9200
+      - ASR_URL=http://asr:9300
+      - LLM_VISION_URL=http://llm-vision:9101
+      - WAIFU_DIFFUSION_URL=http://waifu-diffusion:9500
+      - EMBEDDINGS_URL=http://embeddings:6000
+      - USE_REMOTE_DB=true
+      - OLLAMA_HOST=http://ollama-server:11434
+      - OLLAMA_MODEL=llama3.2
+      - DB_PATH=/app/data/shared_db/visual_novel.db
+    depends_on:
+      - ollama-server
+      - guardrails
+      - chromadb
+      - tts
+      - asr
+      - llm-vision
+      - waifu-diffusion
+      - embeddings
+    restart: unless-stopped
+
+  vn-web-server:
+    image: nginx:alpine
+    container_name: vn-web-server
+    ports:
+      - "8001:80"
+    volumes:
+      - ../visual-novel/web/visualnovel-1.0-web:/usr/share/nginx/html
+      - ../visual-novel/nginx.conf:/etc/nginx/conf.d/default.conf
+    depends_on:
+      - vn-game-server
     restart: unless-stopped
 
 volumes:
