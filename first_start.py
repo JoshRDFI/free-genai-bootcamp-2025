@@ -444,6 +444,39 @@ def verify_services():
     
     return True
 
+def create_visual_novel_database():
+    """Create the Visual Novel database with all required tables and initial data."""
+    logger.info("Creating Visual Novel database...")
+    
+    try:
+        # Import and run the create_visual_novel_db script
+        import sys
+        import os
+        
+        # Get the path to the create_visual_novel_db.py script
+        script_path = os.path.join(os.getcwd(), "create_visual_novel_db.py")
+        
+        if not os.path.exists(script_path):
+            logger.error(f"Visual Novel database script not found at: {script_path}")
+            return False
+        
+        # Run the script using the main virtual environment Python
+        main_venv_python = get_venv_python(".venv-main")
+        if not main_venv_python:
+            logger.error("Main virtual environment not found. Cannot create Visual Novel database.")
+            return False
+        
+        if not run_command(f"{main_venv_python} {script_path}"):
+            logger.error("Failed to create Visual Novel database")
+            return False
+        
+        logger.info("Visual Novel database created successfully")
+        return True
+        
+    except Exception as e:
+        logger.error(f"Error creating Visual Novel database: {e}")
+        return False
+
 def initialize_database():
     """Initialize the SQLite database with schema and default user."""
     logger.info("Initializing database...")
@@ -480,6 +513,11 @@ def initialize_database():
         from data.shared_db.initialize_basic_words import initialize_basic_words
         if not initialize_basic_words():
             logger.error("Failed to initialize basic words")
+            return False
+        
+        # Create Visual Novel database
+        if not create_visual_novel_database():
+            logger.error("Failed to create Visual Novel database")
             return False
             
         return True

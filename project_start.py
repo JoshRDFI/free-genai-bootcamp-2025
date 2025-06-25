@@ -606,9 +606,59 @@ def set_background():
     except Exception as e:
         logger.warning(f"Could not set background image: {str(e)}")
 
+def check_visual_novel_database():
+    """Check if the Visual Novel database exists and create it if not."""
+    import os
+    import subprocess
+    
+    db_path = "data/shared_db/visual_novel.db"
+    script_path = "create_visual_novel_db.py"
+    
+    # Check if database exists
+    if os.path.exists(db_path):
+        logger.info("Visual Novel database already exists")
+        return True
+    
+    # Check if the creation script exists
+    if not os.path.exists(script_path):
+        logger.error(f"Visual Novel database script not found at: {script_path}")
+        return False
+    
+    logger.info("Visual Novel database not found. Creating it...")
+    
+    try:
+        # Get the main virtual environment Python
+        main_venv_python = get_venv_python("main")
+        if not main_venv_python:
+            logger.error("Main virtual environment not found. Cannot create Visual Novel database.")
+            return False
+        
+        # Run the database creation script
+        result = subprocess.run(
+            [main_venv_python, script_path],
+            capture_output=True,
+            text=True,
+            cwd=os.getcwd()
+        )
+        
+        if result.returncode == 0:
+            logger.info("Visual Novel database created successfully")
+            return True
+        else:
+            logger.error(f"Failed to create Visual Novel database: {result.stderr}")
+            return False
+            
+    except Exception as e:
+        logger.error(f"Error creating Visual Novel database: {e}")
+        return False
+
 def main():
     """Main function to run the project launcher."""
     try:
+        # Check and create Visual Novel database if needed
+        if not check_visual_novel_database():
+            st.error("Failed to create Visual Novel database. Some features may not work properly.")
+        
         # Configure Streamlit page
         st.set_page_config(
             page_title="JLPT5 Language Tutor Launcher",

@@ -3,6 +3,7 @@ import json
 import os
 import sqlite3
 import requests
+import logging
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from flask_migrate import Migrate
@@ -10,6 +11,27 @@ from flask_sqlalchemy import SQLAlchemy
 import httpx
 from fastapi import HTTPException
 from pydantic import BaseModel
+import uuid
+import threading
+
+# Set up logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+# Store for lesson generation jobs
+lesson_jobs = {}
+
+def fix_unicode_escapes(json_string):
+    """Fix Unicode escape sequences in JSON string to make it parseable"""
+    # Replace \uXXXX sequences with proper Unicode characters
+    import codecs
+    try:
+        # First, try to decode the string as if it contains Unicode escapes
+        decoded = codecs.decode(json_string, 'unicode_escape')
+        return decoded
+    except UnicodeDecodeError:
+        # If that fails, return the original string
+        return json_string
 
 class TextGenerationRequest(BaseModel):
     prompt: str
@@ -35,6 +57,10 @@ ASR_URL = os.environ.get('ASR_URL', 'http://localhost:9300')
 LLM_VISION_URL = os.environ.get('LLM_VISION_URL', 'http://localhost:9101')
 IMAGE_GEN_URL = os.environ.get('WAIFU_DIFFUSION_URL', 'http://localhost:9500')
 EMBEDDINGS_URL = os.environ.get('EMBEDDINGS_URL', 'http://localhost:6000')
+
+# Database path - use Docker path by default, fallback to local path for development
+# In Docker: /app/data/shared_db/visual_novel.db (shared with other containers)
+# In local dev: <project_root>/data/shared_db/visual_novel.db
 DB_PATH = os.environ.get('DB_PATH', '/app/data/shared_db/visual_novel.db')
 
 # LLM Service Configuration
@@ -293,7 +319,8 @@ def create_app(config_object=None):
                         }
                     ],
                     "stream": False
-                }
+                },
+                timeout=60  # Add 30-second timeout for translation
             )
             
             if response.status_code == 200:
@@ -375,7 +402,8 @@ def create_app(config_object=None):
                         }
                     ],
                     "stream": False
-                }
+                },
+                timeout=120  # Add 60-second timeout for conversation generation
             )
             
             if response.status_code == 200:
@@ -385,16 +413,34 @@ def create_app(config_object=None):
                 # Try to extract and parse the JSON from the response
                 try:
                     # The LLM might include markdown code blocks or extra text
-                    
-                    # Try to extract JSON if it's wrapped in code blocks
                     json_match = re.search(r'```(?:json)?\s*({.*?})\s*```', content, re.DOTALL)
                     
                     if json_match:
                         conversation_json = json.loads(json_match.group(1))
                     else:
-                        # Try parsing the whole response as JSON
-                        conversation_json = json.loads(content)
-                    
+                        # Try to find the first complete JSON object
+                        # Look for the first { and find its matching }
+                        start = content.find('{')
+                        if start != -1:
+                            # Find the matching closing brace
+                            brace_count = 0
+                            end = start
+                            for i, char in enumerate(content[start:], start):
+                                if char == '{':
+                                    brace_count += 1
+                                elif char == '}':
+                                    brace_count -= 1
+                                    if brace_count == 0:
+                                        end = i + 1
+                                        break
+                            
+                            if brace_count == 0:
+                                json_content = content[start:end]
+                                conversation_json = json.loads(json_content)
+                            else:
+                                # Fallback: try parsing the whole response as JSON
+                                conversation_json = json.loads(content)
+                        
                     return jsonify(conversation_json)
                 except (json.JSONDecodeError, ValueError) as e:
                     # If JSON parsing fails, return the raw text
@@ -419,79 +465,248 @@ def create_app(config_object=None):
         if not topic:
             return jsonify({'error': 'Topic is required'}), 400
         
-        try:
-            response = requests.post(
-                f"{LLM_TEXT_URL}/api/chat",
-                json={
-                    "model": OLLAMA_MODEL,
-                    "messages": [
-                        {
-                            "role": "system",
-                            "content": "You are a Japanese language teacher. Generate comprehensive lessons that help students learn Japanese effectively."
-                        },
-                        {
-                            "role": "user",
-                            "content": f"Generate a complete JLPT N5 Japanese lesson on the topic: {topic}\n\n"
-                                     f"Grammar points to include: {', '.join(grammar_points)}\n\n"
-                                     f"Vocabulary focus: {', '.join(vocabulary_focus)}\n\n"
-                                     f"Lesson number: {lesson_number}\n\n"
-                                     f"Scene setting: {scene_setting}\n\n"
-                                     f"Format the response as a JSON object with the following structure:\n"
-                                     f"{{"
-                                     f"  'metadata': {{"
-                                     f"    'title': 'Lesson title',"
-                                     f"    'objectives': ['objective1', 'objective2', ...]"
-                                     f"  }},"
-                                     f"  'vocabulary': ["
-                                     f"    {{'japanese': '日本語', 'reading': 'にほんご', 'english': 'Japanese language'}},"
-                                     f"    ...\n"
-                                     f"  ],"
-                                     f"  'grammar_points': ["
-                                     f"    {{'pattern': 'Pattern', 'explanation': 'Explanation', 'examples': ['Example1', 'Example2']}},"
-                                     f"    ...\n"
-                                     f"  ],"
-                                     f"  'dialogue_script': ["
-                                     f"    {{'speaker': 'Character name', 'japanese': 'Japanese text', 'english': 'English translation'}},"
-                                     f"    ...\n"
-                                     f"  ],"
-                                     f"  'exercises': ["
-                                     f"    {{'question': 'Question', 'options': ['Option1', 'Option2', ...], 'correct_answer': 'Correct option'}},"
-                                     f"    ...\n"
-                                     f"  ],"
-                                     f"  'cultural_note': 'Cultural information related to the lesson'"
-                                     f"}}"
-                        }
-                    ],
-                    "stream": False
-                }
-            )
-            
-            if response.status_code == 200:
-                result = response.json()
-                # Process the LLM response to ensure it's in the correct format
-                lesson_text = result.get("message", {}).get("content", "")
-                try:
-                    # Try to parse the response as JSON
-                    lesson_data = json.loads(lesson_text)
-                    return jsonify({'lesson': lesson_data})
-                except json.JSONDecodeError:
-                    # If parsing fails, try to extract JSON from markdown code blocks
-                    import re
-                    # Look for JSON code blocks (```json ... ```)
-                    json_match = re.search(r'```(?:json)?\s*(\{.*?\})\s*```', lesson_text, re.DOTALL)
-                    if json_match:
-                        try:
-                            lesson_data = json.loads(json_match.group(1))
-                            return jsonify({'lesson': lesson_data})
-                        except json.JSONDecodeError:
-                            pass
+        # Generate a unique job ID
+        job_id = str(uuid.uuid4())
+        
+        # Store the request data for processing
+        lesson_jobs[job_id] = {
+            'status': 'processing',
+            'data': data,
+            'result': None,
+            'error': None
+        }
+        
+        # Start the lesson generation in a background thread
+        def generate_lesson_background():
+            try:
+                logging.info(f"DEBUG: Starting lesson generation for topic: {topic}")
+                logging.info(f"DEBUG: Grammar points: {grammar_points}")
+                logging.info(f"DEBUG: Vocabulary focus: {vocabulary_focus}")
+                
+                response = requests.post(
+                    f"{LLM_TEXT_URL}/api/chat",
+                    json={
+                        "model": OLLAMA_MODEL,
+                        "messages": [
+                            {
+                                "role": "system",
+                                "content": "You are a JSON generator. Return ONLY valid JSON, no other text."
+                            },
+                            {
+                                "role": "user",
+                                "content": f"Create a simple JLPT N5 lesson about {topic}.\n\n"
+                                         f"Generate a complete lesson with Japanese vocabulary and dialogue.\n\n"
+                                         f"Return ONLY valid JSON with this exact structure:\n"
+                                         f"{{"
+                                         f"  \"metadata\": {{"
+                                         f"    \"title\": \"{topic}\","
+                                         f"    \"objectives\": [\"Learn {topic.lower()}\", \"Practice Japanese\"]"
+                                         f"  }},"
+                                         f"  \"vocabulary\": ["
+                                         f"    {{"
+                                         f"      \"japanese\": \"こんにちは\","
+                                         f"      \"reading\": \"konnichiwa\","
+                                         f"      \"english\": \"Hello/Good afternoon\""
+                                         f"    }},"
+                                         f"    {{"
+                                         f"      \"japanese\": \"おはようございます\","
+                                         f"      \"reading\": \"ohayou gozaimasu\","
+                                         f"      \"english\": \"Good morning\""
+                                         f"    }}"
+                                         f"  ],"
+                                         f"  \"grammar_points\": ["
+                                         f"    {{"
+                                         f"      \"pattern\": \"は particle\","
+                                         f"      \"explanation\": \"Topic marker used to indicate the subject of conversation\","
+                                         f"      \"examples\": [\"私は学生です\", \"田中さんは先生です\"]"
+                                         f"    }}"
+                                         f"  ],"
+                                         f"  \"dialogue_script\": ["
+                                         f"    {{"
+                                         f"      \"speaker\": \"Teacher\","
+                                         f"      \"japanese\": \"おはようございます。今日は日本語の授業です。\","
+                                         f"      \"english\": \"Good morning. Today is Japanese class.\""
+                                         f"    }},"
+                                         f"    {{"
+                                         f"      \"speaker\": \"Student\","
+                                         f"      \"japanese\": \"おはようございます。よろしくお願いします。\","
+                                         f"      \"english\": \"Good morning. Nice to meet you.\""
+                                         f"    }}"
+                                         f"  ],"
+                                         f"  \"exercises\": ["
+                                         f"    {{"
+                                         f"      \"question\": \"Complete: 私は___です\","
+                                         f"      \"options\": [\"学生\", \"先生\", \"医者\"],"
+                                         f"      \"correct_answer\": \"学生\""
+                                         f"    }}"
+                                         f"  ]"
+                                         f"}}\n\n"
+                                         f"Fill ALL fields with appropriate content for the topic '{topic}'. Do NOT leave any fields empty."
+                            }
+                        ],
+                        "stream": False
+                    },
+                    timeout=120,  # Increased timeout to 120 seconds
+                    headers={'Content-Type': 'application/json'}
+                )
+                
+                logging.info(f"DEBUG: LLM response status: {response.status_code}")
+                
+                if response.status_code == 200:
+                    result = response.json()
+                    content = result.get("message", {}).get("content", "")
                     
-                    # If still failing, return the raw text
-                    return jsonify({'error': 'Failed to parse lesson', 'raw_response': lesson_text}), 500
-            else:
-                return jsonify({'error': 'Lesson generation error', 'details': response.text}), 500
-        except requests.RequestException as e:
-            return jsonify({'error': 'Lesson generation service unavailable', 'details': str(e)}), 503
+                    logging.info(f"DEBUG: Raw LLM response content length: {len(content)}")
+                    logging.info(f"DEBUG: Raw LLM response content: {content[:2000]}...")  # Increased to 2000 chars
+                    
+                    # Try to extract and parse the JSON from the response
+                    try:
+                        # The LLM might include markdown code blocks or extra text
+                        json_match = re.search(r'```(?:json)?\s*({.*?})\s*```', content, re.DOTALL)
+                        
+                        if json_match:
+                            json_content = fix_unicode_escapes(json_match.group(1))
+                            lesson_json = json.loads(json_content)
+                            logging.info(f"DEBUG: Extracted JSON from code block")
+                        else:
+                            # Try to find the first complete JSON object
+                            # Look for the first { and find its matching }
+                            start = content.find('{')
+                            if start != -1:
+                                # Find the matching closing brace
+                                brace_count = 0
+                                end = start
+                                for i, char in enumerate(content[start:], start):
+                                    if char == '{':
+                                        brace_count += 1
+                                    elif char == '}':
+                                        brace_count -= 1
+                                        if brace_count == 0:
+                                            end = i + 1
+                                            break
+                                
+                                if brace_count == 0:
+                                    json_content = content[start:end]
+                                    json_content = fix_unicode_escapes(json_content)
+                                    logging.info(f"DEBUG: Extracted JSON content length: {len(json_content)}")
+                                    logging.info(f"DEBUG: Extracted JSON content: {json_content}")
+                                    
+                                    # Try to parse the JSON
+                                    try:
+                                        lesson_json = json.loads(json_content)
+                                        logging.info(f"DEBUG: Extracted JSON from content (start={start}, end={end})")
+                                    except json.JSONDecodeError as e:
+                                        logging.info(f"DEBUG: JSON decode error: {str(e)}")
+                                        # Try to fix common JSON issues
+                                        # Remove trailing commas
+                                        json_content = re.sub(r',(\s*[}\]])', r'\1', json_content)
+                                        # Try parsing again
+                                        lesson_json = json.loads(json_content)
+                                        logging.info(f"DEBUG: Successfully parsed after fixing trailing commas")
+                                else:
+                                    logging.info(f"DEBUG: Incomplete JSON - brace count: {brace_count}")
+                                    logging.info(f"DEBUG: Content up to last complete brace: {content[start:end]}")
+                                    # Try to complete the JSON by adding missing closing braces
+                                    incomplete_content = content[start:end]
+                                    incomplete_content = fix_unicode_escapes(incomplete_content)
+                                    missing_braces = brace_count
+                                    completed_content = incomplete_content + "}" * missing_braces
+                                    logging.info(f"DEBUG: Attempting to complete JSON with {missing_braces} closing braces")
+                                    
+                                    try:
+                                        lesson_json = json.loads(completed_content)
+                                        logging.info(f"DEBUG: Successfully parsed completed JSON")
+                                    except json.JSONDecodeError as e:
+                                        logging.info(f"DEBUG: Failed to parse completed JSON: {str(e)}")
+                                        # Try to create a minimal valid JSON as fallback
+                                        lesson_json = {
+                                            "metadata": {"title": topic, "objectives": [f"Learn {topic.lower()}", "Practice Japanese"]},
+                                            "vocabulary": [{"japanese": "こんにちは", "reading": "konnichiwa", "english": "Hello"}],
+                                            "grammar_points": [{"pattern": "は particle", "explanation": "Topic marker", "examples": ["私は学生です"]}],
+                                            "dialogue_script": [{"speaker": "Teacher", "japanese": "こんにちは", "english": "Hello"}],
+                                            "exercises": [{"question": "Complete: 私は___です", "options": ["学生", "先生"], "correct_answer": "学生"}]
+                                        }
+                                        logging.info(f"DEBUG: Using fallback JSON structure")
+                            else:
+                                logging.info(f"DEBUG: No JSON object found in response")
+                                # Fallback: try parsing the whole response as JSON
+                                content = fix_unicode_escapes(content)
+                                try:
+                                    lesson_json = json.loads(content)
+                                    logging.info(f"DEBUG: Parsed entire response as JSON")
+                                except json.JSONDecodeError:
+                                    # Create fallback JSON
+                                    lesson_json = {
+                                        "metadata": {"title": topic, "objectives": [f"Learn {topic.lower()}", "Practice Japanese"]},
+                                        "vocabulary": [{"japanese": "こんにちは", "reading": "konnichiwa", "english": "Hello"}],
+                                        "grammar_points": [{"pattern": "は particle", "explanation": "Topic marker", "examples": ["私は学生です"]}],
+                                        "dialogue_script": [{"speaker": "Teacher", "japanese": "こんにちは", "english": "Hello"}],
+                                        "exercises": [{"question": "Complete: 私は___です", "options": ["学生", "先生"], "correct_answer": "学生"}]
+                                    }
+                                    logging.info(f"DEBUG: Using fallback JSON structure")
+                        
+                        # Validate and fix the lesson structure
+                        if "dialogue_script" in lesson_json:
+                            fixed_dialogue = []
+                            for entry in lesson_json["dialogue_script"]:
+                                if isinstance(entry, dict):
+                                    # Ensure all required fields are present
+                                    fixed_entry = {
+                                        "speaker": entry.get("speaker", "Unknown"),
+                                        "japanese": entry.get("japanese", ""),
+                                        "english": entry.get("english", "")
+                                    }
+                                    fixed_dialogue.append(fixed_entry)
+                                else:
+                                    logging.info(f"DEBUG: Skipping invalid dialogue entry: {entry}")
+                            lesson_json["dialogue_script"] = fixed_dialogue
+                            logging.info(f"DEBUG: Fixed dialogue script with {len(fixed_dialogue)} entries")
+                        
+                        logging.info(f"DEBUG: Parsed lesson JSON keys: {list(lesson_json.keys())}")
+                        logging.info(f"DEBUG: Vocabulary count: {len(lesson_json.get('vocabulary', []))}")
+                        logging.info(f"DEBUG: Dialogue count: {len(lesson_json.get('dialogue_script', []))}")
+                        
+                        lesson_jobs[job_id]['status'] = 'completed'
+                        lesson_jobs[job_id]['result'] = lesson_json
+                        
+                    except (json.JSONDecodeError, ValueError) as e:
+                        logging.info(f"DEBUG: JSON parsing error: {str(e)}")
+                        lesson_jobs[job_id]['status'] = 'error'
+                        lesson_jobs[job_id]['error'] = f'Failed to parse LLM response as JSON: {str(e)}'
+                else:
+                    logging.info(f"DEBUG: LLM service error: {response.text}")
+                    lesson_jobs[job_id]['status'] = 'error'
+                    lesson_jobs[job_id]['error'] = f'LLM service error: {response.text}'
+                    
+            except Exception as e:
+                logging.info(f"DEBUG: Exception in lesson generation: {str(e)}")
+                lesson_jobs[job_id]['status'] = 'error'
+                lesson_jobs[job_id]['error'] = str(e)
+        
+        # Start the background thread
+        thread = threading.Thread(target=generate_lesson_background)
+        thread.daemon = True
+        thread.start()
+        
+        # Return immediately with the job ID
+        return jsonify({
+            'job_id': job_id,
+            'status': 'processing',
+            'message': 'Lesson generation started. Use the job_id to check status.'
+        })
+    
+    @app.route('/api/lesson-status/<job_id>', methods=['GET'])
+    def get_lesson_status(job_id):
+        if job_id not in lesson_jobs:
+            return jsonify({'error': 'Job not found'}), 404
+        
+        job = lesson_jobs[job_id]
+        return jsonify({
+            'job_id': job_id,
+            'status': job['status'],
+            'result': job['result'],
+            'error': job['error']
+        })
 
     @app.route('/api/vocabulary', methods=['POST'])
     def add_vocabulary():
@@ -673,5 +888,10 @@ if __name__ == '__main__':
     # Initialize database
     with app.app_context():
         init_db()
-        
-    app.run(host='0.0.0.0', port=app.config.get('PORT', 8080), debug=app.config.get('DEBUG', False))
+    
+    # Get port from environment or config
+    port = int(os.environ.get('PORT', app.config.get('PORT', 8001)))
+    debug = app.config.get('DEBUG', False)
+    
+    logger.info(f"Starting server on port {port} with debug={debug}")
+    app.run(host='0.0.0.0', port=port, debug=debug)

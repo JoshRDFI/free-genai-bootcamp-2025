@@ -1,49 +1,92 @@
-# Japanese Learning Visual Novel - Tests
+# Visual Novel Tests
 
-This directory contains unit tests for the Japanese Learning Visual Novel application.
-
-## Running Tests
-
-To run all tests, use the following command from this directory:
-
-```bash
-python run_tests.py
-```
-
-Or to run individual test files:
-
-```bash
-python -m unittest test_api_service.py
-python -m unittest test_jlpt_curriculum.py
-python -m unittest test_progress_tracker.py
-```
+This directory contains all tests and utility scripts for the Visual Novel project.
 
 ## Test Files
 
-- `test_api_service.py`: Tests for the API service that communicates with external services
-- `test_jlpt_curriculum.py`: Tests for the JLPT curriculum module
-- `test_progress_tracker.py`: Tests for the progress tracking module
-- `run_tests.py`: Script to run all tests
+### Core Tests
+- **`test_api_service.py`** - Unit tests for API service functionality
+- **`test_env_and_server.py`** - Tests .env file loading and server connectivity
+- **`test_progress_tracker.py`** - Tests for progress tracking functionality
+- **`test_jlpt_curriculum.py`** - Tests for JLPT curriculum functionality
 
-## Adding New Tests
+### Utility Scripts
+- **`copy_env_to_web.py`** - Copies .env file to web build directory
+- **`run_all_tests.py`** - Comprehensive test runner for all tests and utilities
 
-When adding new features to the application, please add corresponding tests to ensure functionality works as expected. Follow these guidelines:
+### Legacy Tests
+- **`test_services.py`** - Legacy service tests
+- **`test_timeout.py`** - Legacy timeout tests
+- **`run_tests.py`** - Legacy test runner
 
-1. Create a new test file if testing a new module
-2. Use the `unittest` framework for consistency
-3. Mock external dependencies to avoid actual API calls during testing
-4. Add the new test to `run_tests.py` to include it in the test suite
+## Usage
 
-## Test Coverage
+### Running All Tests
+```bash
+# From the visual-novel directory
+python3 tests/run_all_tests.py
+```
 
-The tests aim to cover:
+### Running Individual Tests
+```bash
+# Test environment and server connectivity
+python3 tests/test_env_and_server.py
 
-- API service functionality and error handling
-- JLPT curriculum data structure and access methods
-- Progress tracking and persistence
+# Run API service tests
+python3 tests/test_api_service.py
 
-Future improvements could include:
+# Copy .env file to web build
+python3 tests/copy_env_to_web.py
+```
 
-- Integration tests for the server API endpoints
-- End-to-end tests for the complete application flow
-- Performance tests for resource-intensive operations
+### Post-Build Setup
+After rebuilding with Ren'Py, run the post-build setup:
+```bash
+# From the visual-novel directory
+python3 post_build_setup.py
+```
+
+This will:
+1. Check if the web build exists
+2. Copy the .env file to the web build directory
+3. Provide next steps for testing
+
+## Test Structure
+
+### Environment Tests
+- **`test_env_and_server.py`** - Verifies that:
+  - .env file can be loaded correctly
+  - Environment variables are set properly
+  - Server endpoints are accessible
+  - API calls work correctly
+
+### API Service Tests
+- **`test_api_service.py`** - Tests the API service module including:
+  - Web request handling
+  - Request queue system
+  - Error handling
+  - Response processing
+
+### Utility Scripts
+- **`copy_env_to_web.py`** - Ensures .env file is available in web build
+- **`run_all_tests.py`** - Orchestrates running all tests with proper reporting
+
+## Workflow
+
+### After Ren'Py Rebuild
+1. Delete the old web build files
+2. Rebuild with Ren'Py
+3. Run post-build setup: `python3 post_build_setup.py`
+4. Test the application
+
+### Regular Testing
+1. Run all tests: `python3 tests/run_all_tests.py`
+2. Check for any failures
+3. Fix issues and re-test
+
+## Notes
+
+- The .env file must be copied to the web build directory after each Ren'Py rebuild
+- Tests are designed to work both in development and web environments
+- The queue system prevents concurrent fetch requests in web environments
+- All tests include proper error handling and debugging output

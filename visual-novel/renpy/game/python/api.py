@@ -8,69 +8,47 @@ import base64
 from io import BytesIO
 import tempfile
 import time
-import threading
+import sys
+import datetime
+import renpy.exports as renpy
 
 # Global variable for emscripten module (will be set if available)
 emscripten = None
 
+# Debug flag - set to False to disable verbose logging
+DEBUG_MODE = True
+
+def debug_print(message):
+    """Write debug messages to a log file instead of printing to screen"""
+    try:
+        log_dir = os.path.join(renpy.config.gamedir, "logs")
+        if not os.path.exists(log_dir):
+            os.makedirs(log_dir)
+        
+        timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        log_file = os.path.join(log_dir, "api_debug.log")
+        
+        with open(log_file, "a", encoding="utf-8") as f:
+            f.write(f"[{timestamp}] {message}\n")
+    except:
+        pass  # Silently fail if logging doesn't work
+
 # Load environment variables from .env file
 def load_env_file():
     """Load environment variables from .env file"""
-    # Try multiple possible paths for the .env file
-    # The .env file is in the visual-novel directory, but the game might be running from different locations
-    possible_paths = [
-        # Relative to current file location
-        os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), '.env'),
-        os.path.join(os.path.dirname(os.path.dirname(__file__)), '.env'),
-        os.path.join(os.path.dirname(__file__), '.env'),
-        # Relative to current working directory
-        '.env',
-        # Absolute paths that might work
-        '/home/sage/free-genai-bootcamp-2025/visual-novel/.env',
-        '/visual-novel/.env',
-        # Try going up directories from current location
-        os.path.join(os.getcwd(), '.env'),
-        os.path.join(os.getcwd(), '..', '.env'),
-        os.path.join(os.getcwd(), '..', '..', '.env'),
-    ]
+    # Hardcode the environment variables since .env file loading is unreliable in web builds
+    debug_print("Using hardcoded environment variables for web build")
     
-    env_path = None
-    for path in possible_paths:
-        print(f"DEBUG: Checking for .env file at: {path}")
-        if os.path.exists(path):
-            env_path = path
-            break
+    # Set essential environment variables for web builds
+    os.environ['FLASK_SERVER_URL'] = 'http://localhost:8001'
+    os.environ['SECRET_KEY'] = 'your-secret-key'
+    os.environ['FLASK_DEBUG'] = 'true'
+    os.environ['USE_REMOTE_DB'] = 'true'
     
-    if env_path:
-        print(f"DEBUG: .env file found at: {env_path}")
-        with open(env_path, 'r') as f:
-            for line in f:
-                line = line.strip()
-                if line and not line.startswith('#') and '=' in line:
-                    key, value = line.split('=', 1)
-                    os.environ[key] = value
-                    print(f"DEBUG: Set {key} = {value}")
-        print(f"DEBUG: Loaded environment variables from {env_path}")
-    else:
-        print(f"DEBUG: .env file not found in any of the checked locations")
-        print(f"DEBUG: Checked paths: {possible_paths}")
-        print(f"DEBUG: Current working directory: {os.getcwd()}")
-        print(f"DEBUG: Current file location: {__file__}")
-        
-        # Set fallback values for web builds
-        if 'FLASK_SERVER_URL' not in os.environ:
-            # For web builds, we need to use the nginx server on port 8001
-            # This is the server that serves the Ren'Py web app and proxies API calls
-            os.environ['FLASK_SERVER_URL'] = 'http://localhost:8001'
-            print("DEBUG: Set fallback FLASK_SERVER_URL = http://localhost:8001 for web build")
-        
-        # Set other essential environment variables for web builds
-        if 'SECRET_KEY' not in os.environ:
-            os.environ['SECRET_KEY'] = 'your-secret-key'
-        if 'FLASK_DEBUG' not in os.environ:
-            os.environ['FLASK_DEBUG'] = 'true'
-        if 'USE_REMOTE_DB' not in os.environ:
-            os.environ['USE_REMOTE_DB'] = 'true'
+    debug_print("Set hardcoded FLASK_SERVER_URL = http://localhost:8001")
+    debug_print("Set hardcoded SECRET_KEY = your-secret-key")
+    debug_print("Set hardcoded FLASK_DEBUG = true")
+    debug_print("Set hardcoded USE_REMOTE_DB = true")
 
 # Load environment variables
 load_env_file()
@@ -78,110 +56,18 @@ load_env_file()
 # Try to import emscripten if available
 try:
     import emscripten
-    print("DEBUG: Successfully imported emscripten module")
+    debug_print("Successfully imported emscripten module")
 except ImportError:
-    print("DEBUG: emscripten module not available")
+    debug_print("emscripten module not available")
     emscripten = None
 
 # Cache for web browser detection to avoid timing issues
 _web_browser_cache = None
 
-# API endpoints configuration
-# For web browser compatibility, we need to handle relative URLs properly
-
 def is_web_browser():
     """Detect if we're running in a web browser environment"""
-    global _web_browser_cache
-    
-    # Return cached result if available
-    if _web_browser_cache is not None:
-        return _web_browser_cache
-    
-    try:
-        # Most reliable: Emscripten is only present in web builds
-        if emscripten is not None:
-            print("DEBUG: Detected web browser via emscripten import (most reliable)")
-            _web_browser_cache = True
-            return True
-        
-        import platform
-        
-        # Manual override for known web environment (from previous logs)
-        # We know this is running in Emscripten web environment
-        if 'Emscripten' in str(platform) or 'WebKit' in str(platform):
-            print("DEBUG: Manual override - detected web browser from platform info")
-            _web_browser_cache = True
-            return True
-        
-        # Use Ren'Py's built-in platform detection
-        import renpy
-        
-        # Check if we're on the web platform
-        if hasattr(renpy, 'variant'):
-            if renpy.variant("web"):
-                print("DEBUG: Detected web platform via renpy.variant('web')")
-                _web_browser_cache = True
-                return True
-        
-        # Check for Emscripten environment (web browser)
-        import sys
-        
-        # Check multiple indicators of web browser environment
-        platform_str = str(platform).lower()
-        sys_str = str(sys).lower()
-        
-        # Look for Emscripten indicators
-        if 'emscripten' in platform_str or 'emscripten' in sys_str:
-            print("DEBUG: Detected web browser via emscripten in platform/sys")
-            _web_browser_cache = True
-            return True
-            
-        # Check for WebKit/WebGL renderer (from the log we can see this)
-        if 'webkit' in platform_str or 'webgl' in platform_str:
-            print("DEBUG: Detected web browser via webkit/webgl in platform")
-            _web_browser_cache = True
-            return True
-            
-        # Check if we're running in a browser environment
-        if hasattr(sys, 'get_platform'):
-            platform_name = sys.get_platform().lower()
-            if 'emscripten' in platform_name:
-                print("DEBUG: Detected web browser via sys.get_platform()")
-                _web_browser_cache = True
-                return True
-        
-        # Check for specific Ren'Py web indicators
-        try:
-            # Check if we're in a web build by looking for web-specific modules
-            if hasattr(renpy, 'web'):
-                print("DEBUG: Detected web browser via renpy.web")
-                _web_browser_cache = True
-                return True
-        except:
-            pass
-        
-        # Check environment variables that might indicate web environment
-        if 'RENPY_WEB' in os.environ or 'EMSCRIPTEN' in os.environ:
-            print("DEBUG: Detected web browser via environment variables")
-            _web_browser_cache = True
-            return True
-                
-        print("DEBUG: No web browser indicators found")
-        _web_browser_cache = False
-        return False
-    except Exception as e:
-        print(f"DEBUG: Error in web browser detection: {str(e)}")
-        # If we can't detect, try a few more methods
-        try:
-            import platform
-            if 'emscripten' in str(platform).lower():
-                print("DEBUG: Detected web browser via platform fallback")
-                _web_browser_cache = True
-                return True
-        except:
-            pass
-        _web_browser_cache = False
-        return False
+    # Hardcoded to True since this is a web build that only runs in browsers
+    return True
 
 def refresh_web_browser_detection():
     """Force refresh the web browser detection cache"""
@@ -193,7 +79,7 @@ def get_base_url():
     """Get the base URL for API requests"""
     # Try to get from environment first
     flask_url = os.environ.get('FLASK_SERVER_URL', '')
-    print(f"DEBUG: get_base_url: FLASK_SERVER_URL from env = '{flask_url}'")
+    debug_print(f"get_base_url: FLASK_SERVER_URL from env = '{flask_url}'")
     if flask_url:
         return flask_url.rstrip('/')
     
@@ -202,11 +88,11 @@ def get_base_url():
     if is_web_browser():
         # For web browser, use the nginx server on port 8001
         # The nginx server is serving the Ren'Py app and proxying API calls
-        print("DEBUG: get_base_url: Using http://localhost:8001 for web browser")
+        debug_print("get_base_url: Using http://localhost:8001 for web browser")
         return "http://localhost:8001"
     
     # For local development, default to localhost
-    print("DEBUG: get_base_url: Using http://localhost:8080 for local development")
+    debug_print("get_base_url: Using http://localhost:8080 for local development")
     return "http://localhost:8080"
 
 # Initialize API endpoints
@@ -223,11 +109,11 @@ PROGRESS_ENDPOINT = f"{GAME_API_BASE_URL}/progress"
 VOCABULARY_ENDPOINT = f"{GAME_API_BASE_URL}/vocabulary"
 
 # Print debug information about loaded endpoints
-print(f"DEBUG: FLASK_SERVER_URL = {FLASK_SERVER_URL}")
-print(f"DEBUG: LESSON_GENERATION_ENDPOINT = {LESSON_GENERATION_ENDPOINT}")
-print(f"DEBUG: GAME_API_BASE_URL = {GAME_API_BASE_URL}")
-print(f"DEBUG: Is web browser: {is_web_browser()}")
-print(f"DEBUG: Environment FLASK_SERVER_URL: {os.environ.get('FLASK_SERVER_URL', 'NOT_SET')}")
+debug_print(f"FLASK_SERVER_URL = {FLASK_SERVER_URL}")
+debug_print(f"LESSON_GENERATION_ENDPOINT = {LESSON_GENERATION_ENDPOINT}")
+debug_print(f"GAME_API_BASE_URL = {GAME_API_BASE_URL}")
+debug_print(f"Is web browser: {is_web_browser()}")
+debug_print(f"Environment FLASK_SERVER_URL: {os.environ.get('FLASK_SERVER_URL', 'NOT_SET')}")
 
 def reinitialize_endpoints():
     """Reinitialize API endpoints - useful if web browser detection changes after module load"""
@@ -249,233 +135,142 @@ def reinitialize_endpoints():
     PROGRESS_ENDPOINT = f"{GAME_API_BASE_URL}/progress"
     VOCABULARY_ENDPOINT = f"{GAME_API_BASE_URL}/vocabulary"
     
-    print(f"DEBUG: Reinitialized endpoints - FLASK_SERVER_URL = {FLASK_SERVER_URL}")
-    print(f"DEBUG: Reinitialized endpoints - Is web browser: {is_web_browser()}")
+    debug_print(f"Reinitialized endpoints - FLASK_SERVER_URL = {FLASK_SERVER_URL}")
+    debug_print(f"Reinitialized endpoints - Is web browser: {is_web_browser()}")
 
 def make_web_request(method, url, data=None, headers=None):
-    """Make HTTP request using appropriate method for the environment"""
-    # Check if we need to reinitialize endpoints (in case web browser detection changed)
-    if is_web_browser() and FLASK_SERVER_URL != get_base_url():
-        print("DEBUG: Web browser detection changed, reinitializing endpoints")
-        reinitialize_endpoints()
+    """Make a web request with proper error handling for both desktop and web environments"""
+    debug_print(f"make_web_request: {method} {url}")
+    debug_print(f"make_web_request: data = {data}")
     
     if is_web_browser():
-        print("DEBUG: Web browser detected, trying multiple HTTP request methods")
+        debug_print("Web browser detected, using Ren'Py's native fetch function")
         
-        # Method 1: Try using emscripten if available
-        if emscripten is not None:
-            print("DEBUG: Trying emscripten-based HTTP request")
+        try:
+            fetch = getattr(renpy, 'fetch', None)
+            debug_print(f"Found fetch in renpy.exports: {fetch is not None}")
+            if fetch is None:
+                debug_print("Fetch function not found in renpy.exports")
+                raise Exception("Fetch function not available")
+            
             try:
-                # Use simple synchronous XMLHttpRequest with timeout
-                print("DEBUG: Using simple synchronous XMLHttpRequest")
+                debug_print(f"Starting fetch {method}...")
                 
-                # Convert data to JSON string if provided
-                if data is not None:
-                    data_str = json.dumps(data)
-                else:
-                    data_str = ""
+                # Prepare request parameters
+                request_data = {
+                    'method': method,
+                    'url': url,
+                    'result': 'json'  # Automatically decode response as JSON
+                }
                 
-                print(f"DEBUG: Making simple XMLHttpRequest: {method} {url}")
+                # Handle headers
+                if headers:
+                    request_data['headers'] = headers
                 
-                # Use a very simple synchronous approach
-                js_code = f'''
-                (function() {{
-                    try {{
-                        var xhr = new XMLHttpRequest();
-                        xhr.timeout = 5000; // 5 second timeout
-                        xhr.open("{method.upper()}", "{url}", false); // synchronous
-                        xhr.setRequestHeader("Content-Type", "application/json");
-                        xhr.setRequestHeader("Accept", "application/json");
-                        xhr.send("{data_str}" || null);
-                        return xhr.status + " " + xhr.responseText;
-                    }} catch (error) {{
-                        return "ERROR " + error.message;
-                    }}
-                }})()
-                '''
-                
-                result = emscripten.run_script_string(js_code)
-                print(f"DEBUG: Simple XMLHttpRequest result: {result}")
-                
-                if result and not result.startswith('ERROR'):
-                    # Parse the result (format: "status_code response_text")
-                    parts = result.split(' ', 1)
-                    if len(parts) >= 2:
-                        status_code = int(parts[0])
-                        response_text = parts[1]
-                        
-                        print(f"DEBUG: Simple XMLHttpRequest success: status={status_code}, text={response_text[:100]}...")
-                        
-                        return type('Response', (), {
-                            'status_code': status_code,
-                            'text': response_text,
-                            'json': lambda *args: json.loads(response_text) if response_text else {}
-                        })()
-                else:
-                    print(f"DEBUG: Simple XMLHttpRequest error: {result}")
-                    raise Exception(f"Simple XMLHttpRequest failed: {result}")
-                    
-            except Exception as js_error:
-                print(f"DEBUG: emscripten-based request failed: {str(js_error)}")
-                # Continue to next method
-        
-        # Method 2: Try using Ren'Py's built-in web functionality
-        print("DEBUG: Trying Ren'Py built-in web functionality")
-        try:
-            import renpy
-            
-            # Check if renpy has web-specific functionality
-            if hasattr(renpy, 'web'):
-                print("DEBUG: Found renpy.web module")
-                # Try to use renpy.web functionality if available
-                pass
-            
-            # Check if there's a way to access JavaScript functions through renpy
-            if hasattr(renpy, 'execute'):
-                print("DEBUG: Found renpy.execute, trying to use it")
-                # Try to execute JavaScript through renpy
-                pass
-                
-        except Exception as renpy_error:
-            print(f"DEBUG: Ren'Py web functionality failed: {str(renpy_error)}")
-        
-        # Method 3: Try using a different approach to access JavaScript
-        print("DEBUG: Trying alternative JavaScript access method")
-        try:
-            # Try to access JavaScript functions through a different method
-            # This might work if the emscripten module is available but not imported correctly
-            import sys
-            
-            # Check if we can access JavaScript through sys.modules
-            if 'emscripten' in sys.modules:
-                print("DEBUG: emscripten found in sys.modules")
-                emscripten_module = sys.modules['emscripten']
-                if hasattr(emscripten_module, 'run_script_string'):
-                    print("DEBUG: Using emscripten from sys.modules")
-                    # Try the same approach as above but with the module from sys.modules
-                    pass
-                    
-        except Exception as alt_error:
-            print(f"DEBUG: Alternative JavaScript access failed: {str(alt_error)}")
-        
-        # Method 4: Try using fetchFile directly if available
-        print("DEBUG: Trying fetchFile directly")
-        try:
-            # Convert data to JSON string if provided
-            if data is not None:
-                import tempfile
-                with tempfile.NamedTemporaryFile(mode='w', delete=False, suffix='.json') as f:
-                    json.dump(data, f)
-                    data_file = f.name
-            else:
-                data_file = ""  # explicitly use an empty string for no data
-            
-            print(f"DEBUG: Calling fetchFile with data_file={data_file}")
-            
-            # Try to access fetchFile through different methods
-            fetch_id = None
-            
-            # Try method 1: emscripten if available
-            if emscripten is not None:
-                try:
-                    fetch_id = emscripten.run_script_int(f'fetchFile("{method}", "{url}", "{data_file}", "", "application/json", \'{json.dumps(headers)}\')')
-                    print(f"DEBUG: fetchFile returned ID: {fetch_id}")
-                except Exception as e:
-                    print(f"DEBUG: emscripten fetchFile failed: {str(e)}")
-            
-            # Try method 2: sys.modules if emscripten is there
-            if fetch_id is None:
-                try:
-                    import sys
-                    if 'emscripten' in sys.modules:
-                        emscripten_module = sys.modules['emscripten']
-                        if hasattr(emscripten_module, 'run_script_int'):
-                            fetch_id = emscripten_module.run_script_int(f'fetchFile("{method}", "{url}", "{data_file}", "", "application/json", \'{json.dumps(headers)}\')')
-                            print(f"DEBUG: fetchFile from sys.modules returned ID: {fetch_id}")
-                except Exception as e:
-                    print(f"DEBUG: sys.modules fetchFile failed: {str(e)}")
-            
-            if fetch_id is not None and fetch_id != 0:
-                # Wait for result with timeout
-                import time
-                start_time = time.time()
-                timeout = 5  # Reduced timeout for faster debugging
-                
-                while True:
-                    if time.time() - start_time > timeout:
-                        print(f"DEBUG: fetchFile timeout after {timeout} seconds")
-                        raise Exception(f"HTTP request timeout after {timeout} seconds")
-                    
-                    try:
-                        # Try to get result through emscripten
-                        if emscripten is not None:
-                            result = emscripten.run_script_string(f'fetchFileResult({fetch_id})')
+                # Handle data/body for different HTTP methods
+                if data:
+                    if method == 'GET':
+                        # For GET requests, append data as query parameters
+                        import urllib.parse
+                        query_string = urllib.parse.urlencode(data)
+                        if '?' in url:
+                            url += '&' + query_string
                         else:
-                            # Try through sys.modules
-                            import sys
-                            if 'emscripten' in sys.modules:
-                                emscripten_module = sys.modules['emscripten']
-                                result = emscripten_module.run_script_string(f'fetchFileResult({fetch_id})')
-                            else:
-                                result = None
-                        
-                        print(f"DEBUG: fetchFileResult returned: {result}")
-                        
-                        if result is None:
-                            print("DEBUG: fetchFileResult returned None, waiting...")
-                            time.sleep(0.1)
-                            continue
-                        
-                        if not result.startswith('PENDING'):
-                            break
-                    except Exception as e:
-                        print(f"DEBUG: Error calling fetchFileResult: {str(e)}")
-                        time.sleep(0.1)
-                        continue
-                    
-                    time.sleep(0.1)
+                            url += '?' + query_string
+                        request_data['url'] = url
+                    elif method in ('POST', 'PUT'):
+                        # For POST/PUT requests, use the json parameter for Ren'Py fetch
+                        if isinstance(data, dict):
+                            # Use the json parameter instead of manually encoding
+                            request_data['json'] = data
+                            debug_print(f"Using 'json' parameter with data: {data}")
+                        else:
+                            # For non-dict data, use the data parameter
+                            request_data['data'] = str(data).encode('utf-8')
+                            debug_print(f"Using 'data' parameter with string data: {data}")
                 
-                # Parse result
-                if result.startswith('OK'):
-                    # Success - extract status code and response
-                    parts = result.split(' ', 2)
-                    status_code = int(parts[1])
-                    status_text = parts[2] if len(parts) > 2 else ''
-                    
-                    print(f"DEBUG: fetchFile success: status={status_code}, text={status_text[:100]}...")
-                    
-                    # Return a response object similar to requests
-                    return type('Response', (), {
-                        'status_code': status_code,
-                        'text': status_text,
-                        'json': lambda *args: json.loads(status_text) if status_text else {}
-                    })()
+                debug_print(f"Using fetch {method}: {url}")
+                debug_print(f"Request data: {request_data}")
+                
+                # Add more detailed debugging around the fetch call
+                debug_print(f"About to call fetch with parameters: {request_data}")
+                debug_print(f"Fetch function type: {type(fetch)}")
+                
+                # Try to add a simple timeout mechanism using a different approach
+                start_time = time.time()
+                
+                # Make the fetch call directly without any retry mechanism
+                debug_print(f"Calling fetch now...")
+                
+                # Try a simple approach - just call fetch and see if it works
+                try:
+                    response = fetch(**request_data)
+                    debug_print(f"fetch {method} completed successfully: {response}")
+                    debug_print(f"Fetch took {time.time() - start_time:.2f} seconds")
+                except Exception as immediate_error:
+                    debug_print(f"Immediate fetch error: {immediate_error}")
+                    raise immediate_error
+                
+                # Since we're using result="json", response should already be decoded JSON
+                # But we need to handle the case where it might still be a response object
+                if hasattr(response, 'status_code'):
+                    # It's a response object with status_code
+                    response_text = str(response)
+                    status_code = response.status_code
                 else:
-                    # Error
-                    print(f"DEBUG: fetchFile error: {result}")
-                    raise Exception(f"HTTP request failed: {result}")
-            else:
-                print("DEBUG: fetchFile returned None/0, fetchFile not available")
-                raise Exception("fetchFile not available")
+                    # It's the decoded JSON data directly - pass it as-is
+                    response_text = response  # Don't convert to string!
+                    status_code = 200  # Assume success if we got JSON data
                 
-        except Exception as fetchfile_error:
-            print(f"DEBUG: fetchFile approach failed: {str(fetchfile_error)}")
-        
-        # If all methods fail, return error response
-        print("DEBUG: All web request methods failed, returning error response")
-        return type('Response', (), {
-            'status_code': 503,
-            'text': '{"error": "No working HTTP request method available in web environment"}',
-            'json': lambda *args: {"error": "No working HTTP request method available in web environment"}
-        })()
+                debug_print(f"Response status: {status_code}")
+                debug_print(f"Response text: {response_text}")
+                
+                class ResponseWrapper:
+                    def __init__(self, text, status_code=200):
+                        self.text = text
+                        self.status_code = status_code
+                    def json(self):
+                        import json
+                        # If text is already a dict/list (decoded JSON), return it directly
+                        if isinstance(self.text, (dict, list)):
+                            return self.text
+                        # If it's a string representation of JSON, parse it
+                        elif isinstance(self.text, str):
+                            return json.loads(self.text)
+                        # Otherwise, try to parse it as JSON
+                        else:
+                            return json.loads(str(self.text))
+                
+                return ResponseWrapper(response_text, status_code)
+                
+            except Exception as fetch_error:
+                debug_print(f"fetch {method} failed with exception: {fetch_error}")
+                debug_print(f"Exception type: {type(fetch_error).__name__}")
+                debug_print(f"Exception details: {str(fetch_error)}")
+                raise fetch_error
+                
+        except Exception as e:
+            debug_print(f"Error in web request: {str(e)}")
+            raise e
     else:
-        # Use requests library for local development
-        if method.upper() == 'GET':
-            return requests.get(url, headers=headers, timeout=5)
-        elif method.upper() == 'POST':
-            return requests.post(url, json=data, headers=headers, timeout=5)
-        else:
-            raise Exception(f"Unsupported HTTP method: {method}")
+        debug_print("Desktop environment detected, using requests library")
+        try:
+            import requests
+            if method == 'GET':
+                response = requests.get(url, params=data, headers=headers)
+            elif method == 'POST':
+                response = requests.post(url, json=data, headers=headers)
+            elif method == 'PUT':
+                response = requests.put(url, json=data, headers=headers)
+            elif method == 'DELETE':
+                response = requests.delete(url, headers=headers)
+            else:
+                raise ValueError(f"Unsupported HTTP method: {method}")
+            debug_print(f"Desktop request completed: {response.status_code}")
+            return response
+        except Exception as e:
+            debug_print(f"Desktop request failed: {str(e)}")
+            raise e
 
 class APIService:
     """Centralized API service for all external calls"""
@@ -485,60 +280,21 @@ class APIService:
         """Test if Flask server is reachable"""
         try:
             health_url = f"{GAME_API_BASE_URL}/health"
-            print(f"DEBUG: Testing connection to {health_url}")
+            debug_print(f"Testing connection to {health_url}")
             
-            # For web environments, don't use threading (not supported in Emscripten)
-            if is_web_browser():
-                print("DEBUG: Web environment detected, using direct request without threading")
-                try:
-                    response = make_web_request('GET', health_url)
-                    print(f"DEBUG: Flask server connection test status: {response.status_code}")
-                    return response.status_code == 200
-                except Exception as e:
-                    print(f"DEBUG: Web request failed: {str(e)}")
-                    print("DEBUG: Server connection failed - servers are required for game functionality")
-                    return False
-            else:
-                # For local development, use threading with timeout
-                import threading
-                import time
-                
-                result = [None]
-                exception = [None]
-                
-                def make_request():
-                    try:
-                        response = make_web_request('GET', health_url)
-                        result[0] = response
-                    except Exception as e:
-                        exception[0] = e
-                
-                # Start the request in a separate thread
-                thread = threading.Thread(target=make_request)
-                thread.daemon = True
-                thread.start()
-                
-                # Wait for up to 5 seconds
-                timeout = 5
-                start_time = time.time()
-                while thread.is_alive() and (time.time() - start_time) < timeout:
-                    time.sleep(0.1)
-                
-                if thread.is_alive():
-                    print(f"DEBUG: Connection test timed out after {timeout} seconds")
-                    print("DEBUG: Server connection failed - servers are required for game functionality")
-                    return False
-                
-                if exception[0]:
-                    raise exception[0]
-                
-                response = result[0]
-                print(f"DEBUG: Flask server connection test status: {response.status_code}")
+            # Use direct request for all environments
+            try:
+                response = make_web_request('GET', health_url)
+                debug_print(f"Flask server connection test status: {response.status_code}")
                 return response.status_code == 200
+            except Exception as e:
+                debug_print(f"Web request failed: {str(e)}")
+                debug_print("Server connection failed - servers are required for game functionality")
+                return False
                 
         except Exception as e:
-            print(f"DEBUG: Flask server connection test failed: {str(e)}")
-            print("DEBUG: Server connection failed - servers are required for game functionality")
+            debug_print(f"Flask server connection test failed: {str(e)}")
+            debug_print("Server connection failed - servers are required for game functionality")
             return False
     
     @staticmethod
@@ -546,21 +302,21 @@ class APIService:
         """Create a new user in the database"""
         try:
             user_url = f"{GAME_API_BASE_URL}/user"
-            print(f"DEBUG: Creating user with URL: {user_url}")
-            print(f"DEBUG: Username: {username}")
+            debug_print(f"Creating user with URL: {user_url}")
+            debug_print(f"Username: {username}")
             response = make_web_request('POST', user_url, {"username": username})
-            print(f"DEBUG: Response status: {response.status_code}")
-            print(f"DEBUG: Response text: {response.text}")
+            debug_print(f"Response status: {response.status_code}")
+            debug_print(f"Response text: {response.text}")
             if response.status_code in [200, 201]:  # 200 for existing user, 201 for new user
                 result = response.json()
                 user_id = result.get("id")
-                print(f"User creation successful: {result}")
+                debug_print(f"User creation successful: {result}")
                 return user_id
             else:
-                print(f"Failed to create user: {response.status_code} - {response.text}")
+                debug_print(f"Failed to create user: {response.status_code} - {response.text}")
                 return None
         except Exception as e:
-            print(f"Failed to create user: {str(e)}")
+            debug_print(f"Failed to create user: {str(e)}")
             return None
     
     @staticmethod
@@ -577,7 +333,7 @@ class APIService:
             })
             return response.json()
         except Exception as e:
-            print(f"Failed to save progress: {str(e)}")
+            debug_print(f"Failed to save progress: {str(e)}")
             return {"error": str(e)}
     
     @staticmethod
@@ -593,7 +349,7 @@ class APIService:
             })
             return response.json()
         except Exception as e:
-            print(f"Translation failed: {str(e)}")
+            debug_print(f"Translation failed: {str(e)}")
             return {"error": str(e)}
     
     @staticmethod
@@ -612,42 +368,49 @@ class APIService:
             result = response.json()
             if "audio" in result:
                 # The TTS service returns base64 encoded audio
-                # We need to save it to a file and return the path
                 audio_data = base64.b64decode(result["audio"])
                 
-                # Create a temporary file
-                with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as temp_file:
-                    temp_file.write(audio_data)
-                    temp_path = temp_file.name
+                # Save to a temporary file
+                with tempfile.NamedTemporaryFile(delete=False, suffix='.wav') as f:
+                    f.write(audio_data)
+                    temp_path = f.name
                 
+                debug_print(f"Audio saved to temporary file: {temp_path}")
                 return temp_path
-            return None
+            else:
+                debug_print(f"TTS service error: {result}")
+                return None
+                
         except Exception as e:
-            print(f"TTS failed: {str(e)}")
+            debug_print(f"TTS failed: {str(e)}")
             return None
     
     @staticmethod
     def speech_to_text(audio_path, language="ja-JP"):
         """Convert speech to text using ASR service"""
         try:
-            with open(audio_path, "rb") as audio_file:
-                audio_data = base64.b64encode(audio_file.read()).decode("utf-8")
-            
             asr_url = f"{GAME_API_BASE_URL}/speech-to-text"
             
+            # Read the audio file
+            with open(audio_path, 'rb') as f:
+                audio_data = f.read()
+            
+            # Encode as base64
+            audio_b64 = base64.b64encode(audio_data).decode('utf-8')
+            
             response = make_web_request('POST', asr_url, {
-                "audio_data": audio_data,
+                "audio": audio_b64,
                 "language": language
             })
             
-            result = response.json()
-            return result.get("text", "")
+            return response.json()
         except Exception as e:
-            print(f"ASR failed: {str(e)}")
-            return ""
+            debug_print(f"Speech to text failed: {str(e)}")
+            return {"error": str(e)}
+    
     @staticmethod
     def add_vocabulary(user_id, japanese, reading=None, english=None, lesson_id=None):
-        """Add vocabulary to player's list"""
+        """Add vocabulary to user's study list"""
         try:
             vocab_url = VOCABULARY_ENDPOINT
             
@@ -658,203 +421,169 @@ class APIService:
                 "english": english,
                 "lesson_id": lesson_id
             })
+            
             return response.json()
         except Exception as e:
-            print(f"Failed to add vocabulary: {str(e)}")
+            debug_print(f"Failed to add vocabulary: {str(e)}")
             return {"error": str(e)}
     
     @staticmethod
     def generate_image(prompt, image_type="background", negative_prompt=None, 
                       width=512, height=512, style="anime"):
-        """Generate an image using the image generation service
-        
-        Args:
-            prompt: The text prompt for image generation
-            image_type: Either 'background' or 'character' to determine save location
-            negative_prompt: What to avoid in the image
-            width: Image width
-            height: Image height
-            style: Image style (anime, realistic, etc.)
-            
-        Returns:
-            Path to the generated image or None if generation failed
-        """
+        """Generate an image using the image generation service"""
         try:
             image_url = IMAGE_GEN_ENDPOINT
             
+            debug_print(f"Starting image generation for prompt: {prompt}")
+            
+            # Generate image using the image generation service
             response = make_web_request('POST', image_url, {
                 "prompt": prompt,
+                "image_type": image_type,
                 "negative_prompt": negative_prompt,
                 "width": width,
                 "height": height,
-                "style": style,
-                "return_format": "base64"
+                "style": style
             })
             
-            if response.status_code != 200:
-                print(f"Image generation failed: {response.text}")
-                return None
-                
-            result = response.json()
+            debug_print(f"Image generation response status: {response.status_code}")
             
+            result = response.json()
             if "image" in result:
-                # Save the base64 image to a file
+                # The service returns base64 encoded image
                 image_data = base64.b64decode(result["image"])
                 
-                # Determine the save directory based on image_type
-                if image_type.lower() == "character":
-                    save_dir = "images/characters"
-                else:  # Default to backgrounds
-                    save_dir = "images/backgrounds"
-                
-                # Create directory if it doesn't exist
-                os.makedirs(save_dir, exist_ok=True)
-                
-                # Create a safe filename from the prompt
-                safe_filename = "".join(c for c in prompt if c.isalnum() or c in " _-").strip()
-                safe_filename = safe_filename.replace(" ", "_")[:30]
-                
-                # Save the image
-                image_path = f"{save_dir}/{safe_filename}.png"
-                
-                with open(image_path, "wb") as f:
+                # Save to a temporary file
+                with tempfile.NamedTemporaryFile(delete=False, suffix='.png') as f:
                     f.write(image_data)
+                    temp_path = f.name
                 
-                # Log the saved image
-                print(f"Generated image saved to: {image_path}")
-                
-                return image_path
+                debug_print(f"Image saved to temporary file: {temp_path}")
+                return temp_path
             else:
-                print("Image generation failed: No image data received")
+                debug_print(f"Image generation error: {result}")
                 return None
+                
         except Exception as e:
-            print(f"Image generation failed: {str(e)}")
+            debug_print(f"Image generation failed: {str(e)}")
             return None
-            
+    
     @staticmethod
     def generate_conversation(context, characters, grammar_points=None, vocabulary=None, num_exchanges=3):
-        """Generate a dynamic conversation using the LLM"""
+        """Generate a conversation using the conversation service"""
         try:
-            if grammar_points is None:
-                grammar_points = []
-            if vocabulary is None:
-                vocabulary = []
-                
-            # Create a prompt for conversation generation
-            prompt = f"""
-            Generate a natural Japanese conversation with the following context:
-            Context: {context}
-            Characters: {', '.join(characters)}
-            Grammar points to include: {', '.join(grammar_points)}
-            Vocabulary to include: {', '.join(vocabulary)}
-            Number of exchanges: {num_exchanges}
-            
-            Please provide the conversation in JSON format with the following structure:
-            {{
-                "conversation": [
-                    {{"speaker": "Character1", "japanese": "こんにちは", "english": "Hello"}},
-                    {{"speaker": "Character2", "japanese": "こんにちは", "english": "Hello"}}
-                ]
-            }}
-            """
-            
             conversation_url = CONVERSATION_ENDPOINT
             
+            debug_print(f"Starting conversation generation with {num_exchanges} exchanges")
+            
+            # Generate conversation using the conversation service
             response = make_web_request('POST', conversation_url, {
                 "context": context,
                 "characters": characters,
-                "grammar_points": grammar_points,
-                "vocabulary": vocabulary,
+                "grammar_points": grammar_points or [],
+                "vocabulary": vocabulary or [],
                 "num_exchanges": num_exchanges
             })
             
-            if response.status_code != 200:
-                print(f"Conversation generation failed: {response.text}")
-                return None
-                
+            debug_print(f"Conversation generation response status: {response.status_code}")
             result = response.json()
-            conversation_data = result.get("conversation", [])
+            debug_print(f"Conversation generation completed successfully")
+            return result
             
-            # The Flask server should return the conversation data directly
-            if conversation_data:
-                return conversation_data
-            else:
-                print("Unexpected response format from conversation generator")
-                return None
         except Exception as e:
-            print(f"Failed to generate conversation: {str(e)}")
-            return None
-            
+            debug_print(f"Conversation generation failed: {str(e)}")
+            return {"error": str(e)}
+    
     @staticmethod
     def generate_lesson(topic, grammar_points=None, vocabulary_focus=None, lesson_number=1, scene_setting="classroom"):
-        """Generate a complete lesson using the LLM"""
+        """Generate a lesson using the lesson generation service with polling"""
+        debug_print(f"=== STARTING LESSON GENERATION ===")
+        debug_print(f"Topic: {topic}")
+        debug_print(f"Grammar points: {grammar_points}")
+        debug_print(f"Vocabulary focus: {vocabulary_focus}")
+        debug_print(f"Lesson number: {lesson_number}")
+        debug_print(f"Scene setting: {scene_setting}")
+        debug_print(f"Lesson URL: {LESSON_GENERATION_ENDPOINT}")
+        
         try:
-            if grammar_points is None:
-                grammar_points = []
-            if vocabulary_focus is None:
-                vocabulary_focus = []
-                
-            print(f"DEBUG: Generating lesson for topic: {topic}")
-            print(f"DEBUG: Using FLASK_SERVER_URL: {FLASK_SERVER_URL}")
-                
-            # Create a prompt for lesson generation
-            prompt = f"""
-            Generate a complete Japanese lesson with the following details:
-            Topic: {topic}
-            Lesson Number: {lesson_number}
-            Scene Setting: {scene_setting}
-            Grammar points to cover: {', '.join(grammar_points)}
-            Vocabulary focus: {', '.join(vocabulary_focus)}
-            
-            Please provide the lesson in JSON format with the following structure:
-            {{
-                "metadata": {{
-                    "title": "Lesson Title",
-                    "topic": "{topic}",
-                    "objectives": ["objective1", "objective2", "objective3"]
-                }},
-                "grammar_points": ["grammar1", "grammar2"],
-                "vocabulary": [
-                    {{"japanese": "こんにちは", "reading": "konnichiwa", "english": "hello"}}
-                ],
-                "dialogue_script": [
-                    {{"speaker": "Sensei", "text": "こんにちは", "translation": "Hello"}},
-                    {{"speaker": "Player", "text": "こんにちは", "translation": "Hello"}}
-                ]
-            }}
-            """
-            
-            # Use the correct endpoint URL
             lesson_url = LESSON_GENERATION_ENDPOINT
             
-            print(f"DEBUG: Sending request to {lesson_url}")
-                
+            debug_print(f"Starting lesson generation for topic: {topic}")
+            
+            # Start the lesson generation (this should return immediately with a job ID)
             response = make_web_request('POST', lesson_url, {
                 "topic": topic,
-                "grammar_points": grammar_points,
-                "vocabulary_focus": vocabulary_focus,
+                "grammar_points": grammar_points or [],
+                "vocabulary_focus": vocabulary_focus or [],
                 "lesson_number": lesson_number,
                 "scene_setting": scene_setting
             })
             
-            print(f"DEBUG: Response status code: {response.status_code}")
+            debug_print(f"Lesson generation start response status: {response.status_code}")
+            debug_print(f"Lesson generation start response: {response.text}")
             
             if response.status_code != 200:
-                print(f"Lesson generation failed: {response.text}")
-                return None
-                
+                debug_print(f"Failed to start lesson generation: {response.status_code}")
+                return {"error": f"Failed to start lesson generation: {response.status_code}"}
+            
             result = response.json()
-            lesson_data = result.get("lesson", {})
+            job_id = result.get('job_id')
             
-            print(f"DEBUG: Raw response content: {lesson_data}")
+            if not job_id:
+                debug_print(f"No job ID returned from lesson generation start")
+                return {"error": "No job ID returned from lesson generation start"}
             
-            # The Flask server already returns the lesson data in the correct format
-            if lesson_data:
-                print(f"DEBUG: Successfully received lesson data")
-                return lesson_data
-            else:
-                print("Lesson generation failed: No lesson data received")
-                return None
+            debug_print(f"Lesson generation job started with ID: {job_id}")
+            
+            # Poll for completion
+            max_poll_attempts = 60  # Poll for up to 5 minutes (60 * 5 seconds)
+            poll_interval = 5  # Check every 5 seconds
+            
+            for attempt in range(max_poll_attempts):
+                debug_print(f"Polling attempt {attempt + 1}/{max_poll_attempts} for job {job_id}")
+                
+                # Check job status
+                status_url = f"{GAME_API_BASE_URL}/lesson-status/{job_id}"
+                status_response = make_web_request('GET', status_url)
+                
+                if status_response.status_code != 200:
+                    debug_print(f"Failed to check job status: {status_response.status_code}")
+                    continue
+                
+                status_result = status_response.json()
+                job_status = status_result.get('status')
+                
+                debug_print(f"Job {job_id} status: {job_status}")
+                
+                if job_status == 'completed':
+                    lesson_data = status_result.get('result')
+                    debug_print(f"Lesson generation completed successfully: {lesson_data}")
+                    debug_print(f"=== LESSON GENERATION COMPLETE ===")
+                    return {'lesson': lesson_data}
+                
+                elif job_status == 'error':
+                    error_msg = status_result.get('error', 'Unknown error')
+                    debug_print(f"Lesson generation failed: {error_msg}")
+                    debug_print(f"=== LESSON GENERATION FAILED ===")
+                    return {"error": f"Lesson generation failed: {error_msg}"}
+                
+                elif job_status == 'processing':
+                    debug_print(f"Lesson generation still processing... (attempt {attempt + 1})")
+                    # Wait before next poll
+                    import time
+                    time.sleep(poll_interval)
+                    continue
+                
+                else:
+                    debug_print(f"Unknown job status: {job_status}")
+                    continue
+            
+            # If we get here, we've exceeded max poll attempts
+            debug_print(f"Lesson generation timed out after {max_poll_attempts} polling attempts")
+            debug_print(f"=== LESSON GENERATION TIMED OUT ===")
+            return {"error": f"Lesson generation timed out after {max_poll_attempts * poll_interval} seconds"}
+            
         except Exception as e:
-            print(f"Lesson generation failed: {str(e)}")
-            return None
+            debug_print(f"Lesson generation failed with exception: {str(e)}")
+            debug_print(f"=== LESSON GENERATION FAILED ===")
+            return {"error": f"Lesson generation failed: {str(e)}"}

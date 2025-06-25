@@ -1,3 +1,36 @@
+# Learn Japanese: The Visual Novel
+# A Ren'Py visual novel for learning Japanese
+
+# Initialize logging function
+init python:
+    import os
+    import datetime
+    
+    def log_debug(message):
+        """Write debug messages to a log file instead of displaying onscreen"""
+        try:
+            log_dir = os.path.join(renpy.config.gamedir, "logs")
+            if not os.path.exists(log_dir):
+                os.makedirs(log_dir)
+            
+            timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            log_file = os.path.join(log_dir, "debug.log")
+            
+            with open(log_file, "a", encoding="utf-8") as f:
+                f.write(f"[{timestamp}] {message}\n")
+        except Exception as e:
+            # Try to write to a fallback location
+            try:
+                with open("/tmp/renpy_debug.log", "a", encoding="utf-8") as f:
+                    f.write(f"[{timestamp}] {message} (error: {str(e)})\n")
+            except:
+                pass  # Silently fail if logging doesn't work
+
+# Test logging at startup
+init python:
+    log_debug("=== REN'PY SCRIPT STARTED ===")
+    log_debug("Logging system initialized")
+
 # Define characters used by this game
 define sensei = Character("先生", color="#c8ffc8", what_italic=False)
 define player = Character("[player_name]", color="#c8c8ff")
@@ -26,7 +59,7 @@ default user_id = 1
 init python:
     import os
     import json
-    from python.api import APIService
+    from python.api import APIService, LESSON_GENERATION_ENDPOINT, GAME_API_BASE_URL, make_web_request
     from python.jlpt import JLPTCurriculum
     from python.progress import ProgressTracker
     
@@ -34,8 +67,8 @@ init python:
     api = APIService()
     jlpt = JLPTCurriculum()
     
-    # Test Ollama connection
-    api.test_ollama_connection()
+    # Test Ollama connection (commented out to prevent startup errors)
+    # api.test_ollama_connection()
     
     # Helper functions that wrap the API service
     def create_user(username):
@@ -65,7 +98,20 @@ init python:
     
     def add_vocabulary(japanese, reading=None, english=None):
         """Add vocabulary to player's list"""
-        result = api.add_vocabulary(user_id, japanese, reading, english, current_lesson)
+        # Ensure user exists in database (in case start label was skipped)
+        if user_id == 1 and player_name == "Student":
+            # Try to create the user if we're using default values
+            try:
+                created_user = create_user(player_name)
+                if created_user and created_user != 1:
+                    # Update the global user_id with the real one
+                    renpy.store.user_id = created_user
+            except:
+                pass  # If creation fails, continue with default user_id
+        
+        # Use a default lesson ID if current_lesson is not properly set
+        lesson_id = getattr(renpy.store, 'current_lesson', 'custom_lesson')
+        result = api.add_vocabulary(user_id, japanese, reading, english, lesson_id)
         if "error" in result:
             renpy.notify(f"Failed to add vocabulary: {result['error']}")
         return result
@@ -86,12 +132,50 @@ init python:
     
     def generate_lesson(topic, grammar_points=None, vocabulary_focus=None, lesson_number=1, scene_setting="classroom"):
         """Generate a complete lesson using the LLM"""
-        print(f"DEBUG: generate_lesson called with topic: {topic}")
-        lesson = api.generate_lesson(topic, grammar_points, vocabulary_focus, lesson_number, scene_setting)
-        print(f"DEBUG: api.generate_lesson returned: {lesson}")
-        if not lesson:
-            renpy.notify("Lesson generation failed")
-        return lesson
+        log_debug(f"=== generate_lesson FUNCTION CALLED ===")
+        log_debug(f"generate_lesson called with topic: {topic}")
+        log_debug(f"grammar_points: {grammar_points}")
+        log_debug(f"vocabulary_focus: {vocabulary_focus}")
+        log_debug(f"lesson_number: {lesson_number}")
+        log_debug(f"scene_setting: {scene_setting}")
+        
+        try:
+            lesson = api.generate_lesson(topic, grammar_points, vocabulary_focus, lesson_number, scene_setting)
+            log_debug(f"api.generate_lesson returned: {lesson}")
+            
+            if not lesson:
+                log_debug("Lesson generation returned None")
+                renpy.notify("Lesson generation failed")
+                return {"error": "Lesson generation returned None"}
+            
+            log_debug(f"Lesson generation successful: {type(lesson)}")
+            return lesson
+            
+        except Exception as e:
+            log_debug(f"Exception in generate_lesson: {str(e)}")
+            log_debug(f"Exception type: {type(e)}")
+            import traceback
+            log_debug(f"Traceback: {traceback.format_exc()}")
+            return {"error": f"Generation failed: {str(e)}"}
+
+# Custom screen for loading
+screen loading_screen(message="Loading..."):
+    modal True
+    frame:
+        xalign 0.5
+        yalign 0.5
+        xpadding 40
+        ypadding 30
+        vbox:
+            spacing 15
+            text message size 24 xalign 0.5
+            text "Please wait..." size 18 xalign 0.5 color "#888888"
+            # Add a simple progress indicator
+            bar:
+                value AnimatedValue(0, 100, 2.0)  # Animate from 0 to 100 over 2 seconds, then repeat
+                xsize 200
+                ysize 10
+                xalign 0.5
 
 # Custom screen for translation
 screen translation_button(text):
@@ -112,7 +196,7 @@ screen translation_popup(text):
             text "Japanese:" size 20
             text text size 24
             text "English:" size 20
-            text get_translation(text) size 24
+            text "Translation temporarily unavailable" size 24
             textbutton "Close" action Hide("translation_popup")
 
 # Custom screen for vocabulary
@@ -141,6 +225,7 @@ screen yes_no_prompt(message):
         ypadding 20
         vbox:
             spacing 10
+            text "Japanese Font Test: こんにちは" size 20  # Test Japanese font
             text message size 20
             hbox:
                 spacing 20
@@ -149,22 +234,54 @@ screen yes_no_prompt(message):
 
 # The game starts here
 label start:
+    python:
+        log_debug("=== START LABEL REACHED ===")
+    
     # Player name input
     $ player_name = renpy.input("What is your name?", "Student", length=20)
     $ player_name = player_name.strip()
     if player_name == "":
         $ player_name = "Student"
     
+    python:
+        log_debug(f"Player name set to: {player_name}")
+    
     # Create user
     $ user_id = create_user(player_name)
     if user_id is None:
         $ user_id = 1  # Fallback to default user ID
         "Note: Could not create user profile. Using default settings."
+        $ renpy.pause(2.0)  # Show message for 2 seconds
     else:
-        "User profile created successfully with ID: [user_id]"
+        "Welcome [player_name]!"
+        $ renpy.pause(5.0)  # Show welcome message for 5 seconds
+    
+    python:
+        log_debug(f"User ID set to: {user_id}")
     
     # Save initial progress
     $ save_progress("lesson1", "intro")
+    
+    python:
+        log_debug("About to jump to main_menu")
+    
+    # Jump to main menu
+    jump main_menu
+
+# Main menu label
+label main_menu:
+    python:
+        log_debug("=== MAIN MENU REACHED ===")
+        # Ensure user is properly set up (in case start label was skipped)
+        if user_id == 1 and player_name == "Student":
+            log_debug("Using default user values, attempting to create proper user")
+            try:
+                created_user = create_user(player_name)
+                if created_user and created_user != 1:
+                    user_id = created_user
+                    log_debug(f"Created user with ID: {user_id}")
+            except Exception as e:
+                log_debug(f"Failed to create user: {str(e)}")
     
     menu:
         "Choose how to start:"
@@ -183,46 +300,232 @@ label start:
 
 # Dynamic lesson generator
 label dynamic_lesson_generator:
+    python:
+        log_debug("=== DYNAMIC LESSON GENERATOR STARTED ===")
+    
     scene bg classroom
     
-    "Welcome to the dynamic lesson generator! Here you can create custom Japanese lessons."
+    python:
+        log_debug("Classroom scene set")
     
+    # Topic selection
     $ topic = renpy.input("What topic would you like to learn about?", "Basic Greetings", length=50)
+    $ topic = topic.strip()
+    if topic == "":
+        $ topic = "Basic Greetings"
     
     python:
-        # Default grammar points for JLPT N5
+        log_debug(f"Topic selected: {topic}")
+    
+    # Set current lesson for vocabulary tracking
+    $ current_lesson = f"custom_{topic.lower().replace(' ', '_')}"
+    
+    # Grammar point selection
+    python:
+        log_debug("Starting grammar selection")
+        selected_grammar = []
+        
         grammar_options = [
             "Basic sentence structure",
-            "Desu/masu form",
+            "Desu/masu form", 
             "Basic particles (wa, ga, o, ni, de)",
-            "Question markers with ka",
-            "Demonstratives (kore, sore, are)",
-            "Te-form for requests",
-            "Past tense",
-            "Counting and numbers"
+            "Question formation",
+            "Negative forms",
+            "Past tense"
         ]
-        
-        # Let the player select grammar points
-        selected_grammar = []
-        for grammar in grammar_options[:3]:  # Limit to 3 for simplicity
-            if renpy.call_screen("yes_no_prompt", message=f"Include '{grammar}' in your lesson?"):
-                selected_grammar.append(grammar)
     
-    "Generating your custom lesson on [topic]..."
+    "Now let's select which grammar points to include in your lesson:"
+    
+    python:
+        for grammar in grammar_options:
+            log_debug(f"Asking about grammar: {grammar}")
+    
+    menu:
+        "Include 'Basic sentence structure' in your lesson?"
+        
+        "Yes, include this":
+            $ selected_grammar.append("Basic sentence structure")
+            $ log_debug("Added grammar: Basic sentence structure")
+        
+        "No, skip this":
+            $ log_debug("Skipped grammar: Basic sentence structure")
+    
+    menu:
+        "Include 'Desu/masu form' in your lesson?"
+        
+        "Yes, include this":
+            $ selected_grammar.append("Desu/masu form")
+            $ log_debug("Added grammar: Desu/masu form")
+        
+        "No, skip this":
+            $ log_debug("Skipped grammar: Desu/masu form")
+    
+    menu:
+        "Include 'Basic particles (wa, ga, o, ni, de)' in your lesson?"
+        
+        "Yes, include this":
+            $ selected_grammar.append("Basic particles (wa, ga, o, ni, de)")
+            $ log_debug("Added grammar: Basic particles")
+        
+        "No, skip this":
+            $ log_debug("Skipped grammar: Basic particles")
+    
+    menu:
+        "Include 'Question formation' in your lesson?"
+        
+        "Yes, include this":
+            $ selected_grammar.append("Question formation")
+            $ log_debug("Added grammar: Question formation")
+        
+        "No, skip this":
+            $ log_debug("Skipped grammar: Question formation")
+    
+    menu:
+        "Include 'Negative forms' in your lesson?"
+        
+        "Yes, include this":
+            $ selected_grammar.append("Negative forms")
+            $ log_debug("Added grammar: Negative forms")
+        
+        "No, skip this":
+            $ log_debug("Skipped grammar: Negative forms")
+    
+    menu:
+        "Include 'Past tense' in your lesson?"
+        
+        "Yes, include this":
+            $ selected_grammar.append("Past tense")
+            $ log_debug("Added grammar: Past tense")
+        
+        "No, skip this":
+            $ log_debug("Skipped grammar: Past tense")
+    
+    python:
+        log_debug(f"Grammar selection complete. Selected: {selected_grammar}")
+    
+    # Start lesson generation immediately with seamless flow
+    python:
+        log_debug("Starting seamless lesson generation flow")
+    
+    # Set classroom scene for generation
+    scene bg classroom
+    
+    # Display initial message and start generation immediately
+    "Generating your custom lesson..."    
+    
+    # Show second message without requiring click
     "This may take a moment as our AI creates your personalized content."
     
-    $ lesson_data = generate_lesson(topic, selected_grammar, None, 1, "classroom")
+    python:
+        log_debug("Starting lesson generation with progress messages")
+        # Start generation immediately after first message
+        try:
+            log_debug("Reached lesson generation code")
+            log_debug(f"About to call generate_lesson with topic: {topic}")
+            log_debug(f"Selected grammar points: {selected_grammar}")
+            
+            # Start the lesson generation (this returns immediately with a job ID)
+            lesson_url = LESSON_GENERATION_ENDPOINT
+            response = make_web_request('POST', lesson_url, {
+                "topic": topic,
+                "grammar_points": selected_grammar or [],
+                "vocabulary_focus": None,
+                "lesson_number": 1,
+                "scene_setting": "classroom"
+            })
+            
+            if response.status_code != 200:
+                lesson_data = {"error": f"Failed to start lesson generation: {response.status_code}"}
+            else:
+                result = response.json()
+                job_id = result.get('job_id')
+                
+                if not job_id:
+                    lesson_data = {"error": "No job ID returned from lesson generation start"}
+                else:
+                    log_debug(f"Lesson generation job started with ID: {job_id}")
+                    
+                    # Show progress messages during polling
+                    "Please wait while I create your lesson..."
+                    
+                    # Poll for completion with progress updates
+                    max_poll_attempts = 60  # Poll for up to 5 minutes (60 * 5 seconds)
+                    poll_interval = 5  # Check every 5 seconds
+                    
+                    for attempt in range(max_poll_attempts):
+                        log_debug(f"Polling attempt {attempt + 1}/{max_poll_attempts} for job {job_id}")
+                        
+                        # Show progress message every 10 seconds (every 2 attempts)
+                        if attempt % 2 == 0 and attempt > 0:
+                            "Still working on your lesson..."
+                        
+                        # Check job status
+                        status_url = f"{GAME_API_BASE_URL}/lesson-status/{job_id}"
+                        status_response = make_web_request('GET', status_url)
+                        
+                        if status_response.status_code != 200:
+                            log_debug(f"Failed to check job status: {status_response.status_code}")
+                            continue
+                        
+                        status_result = status_response.json()
+                        job_status = status_result.get('status')
+                        
+                        log_debug(f"Job {job_id} status: {job_status}")
+                        
+                        if job_status == 'completed':
+                            lesson_data = {'lesson': status_result.get('result')}
+                            log_debug(f"Lesson generation completed successfully")
+                            break
+                        
+                        elif job_status == 'error':
+                            error_msg = status_result.get('error', 'Unknown error')
+                            lesson_data = {"error": f"Lesson generation failed: {error_msg}"}
+                            log_debug(f"Lesson generation failed: {error_msg}")
+                            break
+                        
+                        elif job_status == 'processing':
+                            log_debug(f"Lesson generation still processing... (attempt {attempt + 1})")
+                            # Wait before next poll
+                            import time
+                            time.sleep(poll_interval)
+                            continue
+                        
+                        else:
+                            log_debug(f"Unknown job status: {job_status}")
+                            continue
+                    
+                    else:
+                        # If we get here, we've exceeded max poll attempts
+                        lesson_data = {"error": f"Lesson generation timed out after {max_poll_attempts * poll_interval} seconds"}
+                        log_debug(f"Lesson generation timed out after {max_poll_attempts} polling attempts")
+                        
+        except Exception as e:
+            log_debug(f"Exception in lesson generation: {str(e)}")
+            lesson_data = {"error": f"Generation failed: {str(e)}"}
     
-    if lesson_data:
-        $ lesson_title = lesson_data.get("metadata", {}).get("title", topic)
-        $ dialogue_script = lesson_data.get("dialogue_script", [])
-        $ vocabulary = lesson_data.get("vocabulary", [])
+    # Show completion message
+    "Lesson generation complete!"
+    
+    # Check if lesson generation was successful
+    if lesson_data and "error" not in lesson_data and "lesson" in lesson_data:
+        $ lesson_content = lesson_data.get("lesson", {})
+        $ lesson_title = lesson_content.get("metadata", {}).get("title", topic)
+        $ dialogue_script = lesson_content.get("dialogue_script", [])
+        $ vocabulary = lesson_content.get("vocabulary", [])
+        
+        # Set the classroom scene with teacher character
+        scene bg classroom
+        show sensei at center
         
         "Your custom lesson '[lesson_title]' is ready!"
         
+        # Teacher welcome message
+        sensei "こんにちは！今日は「[lesson_title]」について勉強しましょう。"
+        "Hello! Today we'll study about '[lesson_title]'."
+        
         # Display the lesson objectives
         python:
-            objectives = lesson_data.get("metadata", {}).get("objectives", [])
+            objectives = lesson_content.get("metadata", {}).get("objectives", [])
             if objectives:
                 renpy.say(None, "In this lesson, you will:")
                 for objective in objectives:
@@ -236,21 +539,27 @@ label dynamic_lesson_generator:
             python:
                 for line in dialogue_script:
                     speaker = line.get("speaker", "")
-                    text = line.get("text", "")
-                    translation = line.get("translation", "")
+                    japanese = line.get("japanese", "")
+                    english = line.get("english", "")
                     
                     if speaker == "Sensei":
-                        renpy.say(sensei, text)
-                        if translation:
-                            renpy.say(None, translation)
+                        # Ensure teacher is visible before speaking
+                        renpy.show("sensei")
+                        renpy.say(sensei, japanese)
+                        if english:
+                            renpy.say(None, english)
                     elif speaker == "Player":
-                        renpy.say(player, text)
-                        if translation:
-                            renpy.say(None, translation)
+                        # Hide teacher when player speaks
+                        renpy.hide("sensei")
+                        renpy.say(player, japanese)
+                        if english:
+                            renpy.say(None, english)
                     else:
-                        renpy.say(None, text)
-                        if translation:
-                            renpy.say(None, translation)
+                        # For other speakers, show teacher by default
+                        renpy.show("sensei")
+                        renpy.say(None, japanese)
+                        if english:
+                            renpy.say(None, english)
         
         # Show vocabulary list
         if vocabulary:
@@ -262,14 +571,63 @@ label dynamic_lesson_generator:
                     reading = word.get("reading", "")
                     english = word.get("english", "")
                     
-                    display_text = f"{japanese} - {reading} - {english}"
+                    # Fix duplicate Japanese text issue - only show Japanese once
+                    if japanese == reading:
+                        display_text = f"{japanese} - {english}"
+                    else:
+                        display_text = f"{japanese} ({reading}) - {english}"
+                    
+                    # Ensure teacher is visible when presenting vocabulary
+                    renpy.show("sensei")
                     renpy.say(sensei, display_text)
                     renpy.show_screen("add_vocab_button", japanese, reading, english)
                     renpy.pause(1.0)
                     renpy.hide_screen("add_vocab_button")
         
+        # Show exercises if available
+        python:
+            exercises = lesson_content.get("exercises", [])
+            if exercises:
+                renpy.say(None, "Let's practice with some exercises:")
+        
+        python:
+            for exercise in exercises:
+                question = exercise.get("question", "")
+                options = exercise.get("options", [])
+                correct_answer = exercise.get("correct_answer", "")
+                
+                if question and options and correct_answer:
+                    # Display the question
+                    renpy.say(sensei, question)
+                    
+                    # Create menu options
+                    menu_items = []
+                    for option in options:
+                        menu_items.append((option, option))
+                    
+                    # Show the menu and get the answer
+                    answer = renpy.display_menu(menu_items)
+                    
+                    # Check if answer is correct and show appropriate teacher expression
+                    if answer == correct_answer:
+                        renpy.show("sensei happy")
+                        renpy.say(sensei, "正解です！よくできました！")
+                        renpy.say(None, "Correct! Well done!")
+                        renpy.hide("sensei happy")
+                        renpy.show("sensei")
+                    else:
+                        renpy.show("sensei serious")
+                        renpy.say(sensei, f"違います。正解は「{correct_answer}」です。")
+                        renpy.say(None, f"That's incorrect. The correct answer is '{correct_answer}'.")
+                        renpy.hide("sensei serious")
+                        renpy.show("sensei")
+        
         # Save progress
         $ save_progress("custom", "completed", True)
+        
+        # Final teacher message
+        sensei "お疲れ様でした！今日のレッスンは終わりです。よくできました！"
+        "Good work! Today's lesson is finished. Well done!"
         
         "Congratulations! You've completed this custom lesson."
         
@@ -280,10 +638,30 @@ label dynamic_lesson_generator:
                 jump dynamic_lesson_generator
                 
             "Return to main menu":
-                jump start
+                jump main_menu
     else:
-        "Sorry, there was an error generating your lesson. Please try again with a different topic."
-        jump dynamic_lesson_generator
+        # Handle lesson generation failure
+        python:
+            error_message = "Unknown error"
+            if lesson_data and "error" in lesson_data:
+                error_message = lesson_data["error"]
+            elif not lesson_data:
+                error_message = "No response from server"
+            elif "lesson" not in lesson_data:
+                error_message = "Invalid response format from server"
+        
+        "Sorry, there was an error generating your lesson: [error_message]"
+        "This might be because the lesson generation is taking too long or the server is busy."
+        "Please try again with a different topic or check if the server is running."
+        
+        menu:
+            "What would you like to do?"
+            
+            "Try again with a different topic":
+                jump dynamic_lesson_generator
+                
+            "Return to main menu":
+                jump main_menu
 
 # Lesson 1: Basic Greetings
 label lesson1_intro:
@@ -441,7 +819,7 @@ label lesson1_intro:
             jump lesson2_intro
         
         "Return to main menu":
-            jump start
+            jump main_menu
 
 # Lesson 2: At the Cafe
 label lesson2_intro:
@@ -666,7 +1044,7 @@ label lesson2_intro:
             jump lesson3_intro
         
         "Return to main menu":
-            jump start
+            jump main_menu
 
 # Lesson 3: Shopping
 label lesson3_intro:
@@ -938,4 +1316,4 @@ label lesson3_intro:
             jump dynamic_lesson_generator
         
         "Return to main menu":
-            jump start
+            jump main_menu

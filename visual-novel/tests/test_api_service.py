@@ -178,11 +178,15 @@ class TestWebRequest(unittest.TestCase):
     """Test cases for the make_web_request function"""
     
     @patch('renpy.game.python.api.is_web_browser')
+    @patch('renpy.game.python.api.wait_for_request_queue')
+    @patch('renpy.game.python.api.release_request_queue')
     @patch('builtins.__import__')
-    def test_make_web_request_with_data(self, mock_import, mock_is_web_browser):
+    def test_make_web_request_with_data(self, mock_import, mock_release_queue, mock_wait_queue, mock_is_web_browser):
         """Test make_web_request when data is provided"""
         # Setup mocks
         mock_is_web_browser.return_value = True
+        mock_wait_queue.return_value = None
+        mock_release_queue.return_value = None
         mock_renpy = MagicMock()
         mock_renpy.fetch.return_value = MagicMock(
             status_code=200,
@@ -200,19 +204,25 @@ class TestWebRequest(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.text, '{"result": "success"}')
         mock_renpy.fetch.assert_called_once()
+        mock_wait_queue.assert_called_once()
+        mock_release_queue.assert_called_once()
         
         # Verify the call was made with proper parameters
         call_args = mock_renpy.fetch.call_args
         self.assertEqual(call_args[0][0], 'http://test.com')  # URL
         self.assertEqual(call_args[1]['method'], 'POST')
-        self.assertEqual(call_args[1]['data'], json.dumps(data))
+        self.assertEqual(call_args[1]['body'], json.dumps(data).encode('utf-8'))
     
     @patch('renpy.game.python.api.is_web_browser')
+    @patch('renpy.game.python.api.wait_for_request_queue')
+    @patch('renpy.game.python.api.release_request_queue')
     @patch('builtins.__import__')
-    def test_make_web_request_without_data(self, mock_import, mock_is_web_browser):
+    def test_make_web_request_without_data(self, mock_import, mock_release_queue, mock_wait_queue, mock_is_web_browser):
         """Test make_web_request when no data is provided (this tests our fix)"""
         # Setup mocks
         mock_is_web_browser.return_value = True
+        mock_wait_queue.return_value = None
+        mock_release_queue.return_value = None
         mock_renpy = MagicMock()
         mock_renpy.fetch.return_value = MagicMock(
             status_code=200,
@@ -227,19 +237,26 @@ class TestWebRequest(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.text, '{"result": "success"}')
         mock_renpy.fetch.assert_called_once()
+        mock_wait_queue.assert_called_once()
+        mock_release_queue.assert_called_once()
         
         # Verify the call was made with empty string for data (our fix)
         call_args = mock_renpy.fetch.call_args
         self.assertEqual(call_args[0][0], 'http://test.com')  # URL
         self.assertEqual(call_args[1]['method'], 'GET')
-        self.assertEqual(call_args[1]['data'], "")  # Should be empty string, not None
+        # No body parameter should be present for GET requests
+        self.assertNotIn('body', call_args[1])
     
     @patch('renpy.game.python.api.is_web_browser')
+    @patch('renpy.game.python.api.wait_for_request_queue')
+    @patch('renpy.game.python.api.release_request_queue')
     @patch('builtins.__import__')
-    def test_make_web_request_fetchfile_fallback_with_data(self, mock_import, mock_is_web_browser):
+    def test_make_web_request_fetchfile_fallback_with_data(self, mock_import, mock_release_queue, mock_wait_queue, mock_is_web_browser):
         """Test make_web_request fallback to fetchFile when data is provided"""
         # Setup mocks
         mock_is_web_browser.return_value = True
+        mock_wait_queue.return_value = None
+        mock_release_queue.return_value = None
         
         # Mock renpy without fetch attribute to trigger fallback
         mock_renpy = MagicMock()
@@ -273,6 +290,8 @@ class TestWebRequest(unittest.TestCase):
         # Assertions
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.text, 'Success')
+        mock_wait_queue.assert_called_once()
+        mock_release_queue.assert_called_once()
         
         # Verify fetchFile was called with proper parameters
         fetchfile_call = mock_emscripten.run_script.call_args_list[1]
@@ -282,11 +301,15 @@ class TestWebRequest(unittest.TestCase):
         self.assertNotIn('None', fetchfile_call[0][0])
     
     @patch('renpy.game.python.api.is_web_browser')
+    @patch('renpy.game.python.api.wait_for_request_queue')
+    @patch('renpy.game.python.api.release_request_queue')
     @patch('builtins.__import__')
-    def test_make_web_request_fetchfile_fallback_without_data(self, mock_import, mock_is_web_browser):
+    def test_make_web_request_fetchfile_fallback_without_data(self, mock_import, mock_release_queue, mock_wait_queue, mock_is_web_browser):
         """Test make_web_request fallback to fetchFile when no data is provided (tests our fix)"""
         # Setup mocks
         mock_is_web_browser.return_value = True
+        mock_wait_queue.return_value = None
+        mock_release_queue.return_value = None
         
         # Mock renpy without fetch attribute to trigger fallback
         mock_renpy = MagicMock()
@@ -317,6 +340,8 @@ class TestWebRequest(unittest.TestCase):
         # Assertions
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.text, 'Success')
+        mock_wait_queue.assert_called_once()
+        mock_release_queue.assert_called_once()
         
         # Verify fetchFile was called with empty string for data_file (our fix)
         fetchfile_call = mock_emscripten.run_script.call_args_list[1]

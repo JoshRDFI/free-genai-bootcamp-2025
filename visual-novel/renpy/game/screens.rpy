@@ -358,6 +358,19 @@ screen main_menu():
     frame:
         style "main_menu_frame"
 
+    if gui.show_name:
+
+        vbox:
+            style "main_menu_vbox"
+
+            text "[config.name!t]":
+                style "main_menu_title"
+                xpos -100
+                ypos -300
+
+            text "[config.version]":
+                style "main_menu_version"
+
     ## The use statement includes another screen inside this one. The actual
     ## contents of the main menu are in the navigation screen.
     use navigation
@@ -369,8 +382,6 @@ screen main_menu():
 
             text "[config.name!t]":
                 style "main_menu_title"
-                xpos -100
-                ypos -300
 
             text "[config.version]":
                 style "main_menu_version"
