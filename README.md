@@ -121,12 +121,12 @@ This will:
 
 2. **Launch the Application**:
 ```bash
-python3 project_start.py
+./launch.sh
 ```
 This launches the main interface where you can start any component.
 
 ### **Language Portal Setup** (Optional)
-The Language Portal is a standalone application:
+The Language Portal can be a standalone application:
 ```bash
 cd lang-portal
 chmod +x setup.sh
@@ -198,7 +198,7 @@ MIT License
 There are two ways to run the writing practice app:
 
 1. **Through Project Start** (Recommended):
-   - Start the project using `project_start.py`
+   - Start the project using `./launch.sh`
    - Click on "Writing Practice" in the interface
    - The app will start automatically with all required services
 
